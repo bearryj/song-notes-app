@@ -140,6 +140,14 @@ html, body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+.list-section-header {
+  padding: 10px 16px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 .list-item {
   display: flex;
   align-items: center;
@@ -148,9 +156,16 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   border-bottom: 1px solid var(--separator);
   margin: 0;
+  transition: opacity 0.15s;
 }
 .list-item:active {
   background: var(--bg-surface);
+}
+.list-item .item-pin {
+  color: var(--section-label);
+  font-size: 14px;
+  margin-right: 8px;
+  flex-shrink: 0;
 }
 .list-item .item-icon {
   font-size: 18px;

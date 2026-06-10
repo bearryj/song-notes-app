@@ -90,7 +90,8 @@ function createSong(title) {
     id: generateId(), title: title || 'Untitled', key: '', bpm: null, time_sig: null,
     tags: [], folder: currentFolder === 'All Songs' ? null : currentFolder,
     sections: [{ type: 'Verse', lines: [{ text: '', chords: [] }] }],
-    audio: [], created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+    audio: [], pinned: false,
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
   };
 }
 
@@ -300,18 +301,189 @@ async function persistFolders() {
   if (isTauri) await tauriSaveFolders(folders);
 }
 
+// Song context menu (long press)
+let contextSongId = null;
+function showSongContext(songId, anchorEl) {
+  contextSongId = songId;
+  const song = getSong(songId);
+  if (!song) return;
+  // Close any existing context menus
+  document.querySelectorAll('.popover').forEach(m => m.style.display = 'none');
+  
+  // Build or reuse context menu
+  let menu = $('song-context-menu');
+  if (!menu) {
+    menu = document.createElement('div');
+    menu.id = 'song-context-menu';
+    menu.className = 'popover';
+    menu.innerHTML = `
+      <button data-action="pin">★ Pin</button>
+      <button data-action="duplicate">⧉ Duplicate</button>
+      <button data-action="export-txt">Export Text</button>
+      <button data-action="export-md">Export MD</button>
+      <button data-action="delete" class="danger">Delete</button>
+    `;
+    document.body.appendChild(menu);
+    
+    menu.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        menu.style.display = 'none';
+        const s = getSong(contextSongId);
+        if (!s) return;
+        
+        if (btn.dataset.action === 'pin') {
+          s.pinned = !s.pinned;
+          await saveSingleSong(s);
+          renderSongList($('search-input').value);
+          toast(s.pinned ? 'Pinned ★' : 'Unpinned');
+        } else if (btn.dataset.action === 'duplicate') {
+          const copy = JSON.parse(JSON.stringify(s));
+          copy.id = generateId();
+          copy.title = s.title + ' (copy)';
+          copy.pinned = false;
+          copy.created_at = new Date().toISOString();
+          copy.updated_at = new Date().toISOString();
+          songs.unshift(copy);
+          await saveSongs();
+          renderSongList($('search-input').value);
+          toast('Duplicated');
+        } else if (btn.dataset.action === 'export-txt') {
+          downloadFile(buildExportText(s), `${s.title}.txt`, 'text/plain');
+        } else if (btn.dataset.action === 'export-md') {
+          downloadFile(buildExportMarkdown(s), `${s.title}.md`, 'text/markdown');
+        } else if (btn.dataset.action === 'delete') {
+          if (confirm(`Delete "${s.title}"?`)) {
+            await deleteSong(contextSongId);
+            if (currentSongId === contextSongId) { currentSongId = null; }
+            renderSongList($('search-input').value);
+            toast('Deleted');
+          }
+        }
+      });
+    });
+  }
+  
+  // Update pin button text
+  const pinBtn = menu.querySelector('[data-action="pin"]');
+  if (pinBtn) pinBtn.textContent = song.pinned ? '☆ Unpin' : '★ Pin';
+  
+  // Position menu
+  const rect = anchorEl.getBoundingClientRect();
+  menu.style.position = 'fixed';
+  menu.style.top = Math.min(rect.top, window.innerHeight - 200) + 'px';
+  menu.style.left = 'auto';
+  menu.style.right = '16px';
+  menu.style.display = 'block';
+}
+
 // Song list
 function renderSongList(filter = '') {
   const el = $('song-list');
   let list = currentFolder === 'All Songs' ? songs : songs.filter(s => s.folder === currentFolder);
-  if (filter) { const q = filter.toLowerCase(); list = list.filter(s => s.title?.toLowerCase().includes(q)); }
+
+  if (filter) {
+    const q = filter.toLowerCase();
+    list = list.filter(s => {
+      if (s.title?.toLowerCase().includes(q)) return true;
+      // Search within song content too
+      if (s.key?.toLowerCase().includes(q)) return true;
+      if (s.sections?.some(sec => sec.lines?.some(l => l.text?.toLowerCase().includes(q)))) return true;
+      if (s.tags?.some(t => t.toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }
+
   if (!list.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">♪</div><h2>No Songs</h2><p>Tap + to create one</p></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">♪</div><h2>' + (filter ? 'No Results' : 'No Songs') + '</h2><p>' + (filter ? 'Try a different search' : 'Tap + to create one') + '</p></div>';
     return;
   }
-  el.innerHTML = list.map(s => `<div class="list-item" data-id="${s.id}"><span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}</span><span class="item-meta">${fmtDate(s.updated_at)}</span></div>`).join('');
+
+  // Sort: pinned first (by updated_at), then unpinned (by updated_at)
+  const sorted = [...list].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+  });
+
+  // Build date-based sections
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const thisWeek = new Date(today.getTime() - 6 * 86400000);
+
+  let html = '';
+  let lastSection = '';
+
+  sorted.forEach((s, i) => {
+    const d = new Date(s.updated_at || s.created_at || 0);
+    let section = '';
+    const dd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    if (dd.getTime() === today.getTime()) section = 'Today';
+    else if (dd.getTime() === yesterday.getTime()) section = 'Yesterday';
+    else if (dd >= thisWeek) section = 'This Week';
+    else if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) section = 'This Month';
+    else section = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+    if (section !== lastSection) {
+      if (html) html += '</div>';
+      html += `<div class="list-section-header">${esc(section)}</div><div class="list-section">`;
+      lastSection = section;
+    }
+
+    const pinned = s.pinned ? '<span class="item-pin">★</span>' : '';
+    html += `<div class="list-item" data-id="${s.id}">
+      ${pinned}
+      <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}</span>
+      <span class="item-meta">${fmtDate(s.updated_at)}</span>
+    </div>`;
+  });
+  if (html) html += '</div>';
+
+  el.innerHTML = html;
+
+  // Attach events: click to open
   el.querySelectorAll('.list-item').forEach(item => {
-    item.addEventListener('click', () => { currentSongId = item.dataset.id; openEditor(currentSongId); pushView('editor-view'); });
+    // Long press / hover context menu
+    let longPressTimer = null;
+    item.addEventListener('touchstart', e => {
+      longPressTimer = setTimeout(() => { longPressTimer = null; showSongContext(item.dataset.id, item); }, 500);
+    }, { passive: true });
+    item.addEventListener('touchend', () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }, { passive: true });
+    item.addEventListener('touchmove', () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }, { passive: true });
+
+    item.addEventListener('click', () => {
+      currentSongId = item.dataset.id;
+      localStorage.setItem('songs_app_last', currentSongId);
+      openEditor(currentSongId);
+      pushView('editor-view');
+    });
+
+    // Swipe to delete
+    let startX = 0, currentX = 0, isDragging = false;
+    item.addEventListener('touchstart', e => {
+      startX = e.changedTouches[0].clientX;
+      isDragging = false;
+    }, { passive: true });
+    item.addEventListener('touchmove', e => {
+      currentX = e.changedTouches[0].clientX;
+      const diff = startX - currentX;
+      if (diff > 20) { isDragging = true; item.style.transform = `translateX(${-Math.min(diff, 80)}px)`; item.style.transition = 'none'; }
+      else if (diff < -20 && isDragging) { item.style.transform = ''; isDragging = false; }
+    }, { passive: true });
+    item.addEventListener('touchend', e => {
+      if (isDragging && (startX - currentX) > 60) {
+        // Swipe left = show delete
+        const id = item.dataset.id;
+        if (confirm(`Delete "${getSong(id)?.title || 'this song'}"?`)) {
+          deleteSong(id);
+          if (currentSongId === id) { currentSongId = null; }
+          renderSongList($('search-input').value);
+          toast('Deleted');
+        }
+      }
+      item.style.transform = ''; item.style.transition = 'transform 0.2s ease';
+      isDragging = false;
+    }, { passive: true });
   });
 }
 
@@ -841,6 +1013,13 @@ async function init() {
   if (isTauri) { const bf = await tauriLoadFolders(); if (bf?.length) folders = bf; }
 
   addSampleSongs();
+  
+  // Remember last opened song
+  const lastId = localStorage.getItem('songs_app_last');
+  if (lastId && getSong(lastId)) {
+    currentSongId = lastId;
+  }
+  
   renderFolders();
   setupEvents();
 }
