@@ -4,4 +4,4 @@ target/
 src-tauri/gen/
 *.apk
 *.aab
-.DS_Store
+.DS_Storestart-vite.ps1
