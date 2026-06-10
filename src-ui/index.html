@@ -23,6 +23,7 @@
       <div class="nav-bar">
         <button id="back-to-folders" class="nav-btn">‹</button>
         <h1 id="folder-title" class="nav-title">All Songs</h1>
+        <button id="view-toggle" class="nav-btn" title="Toggle view">⊞</button>
         <button id="import-btn" class="nav-btn">↓</button>
         <button id="new-song-btn" class="nav-btn nav-btn-primary">+</button>
       </div>
@@ -37,14 +38,18 @@
       <div class="nav-bar editor-nav">
         <button id="back-to-songs" class="nav-btn">‹</button>
         <div class="nav-title-wrap">
+          <span id="auto-save-dot" class="save-dot"></span>
           <input type="text" id="song-title" class="nav-title-input" placeholder="Untitled" />
         </div>
         <div class="nav-btn-group">
+          <button id="theme-toggle" class="nav-btn" title="Toggle theme">☀️</button>
+          <button id="info-btn" class="nav-btn" title="Info">ℹ</button>
           <button id="undo-btn" class="nav-btn" disabled>↶</button>
           <button id="save-btn" class="nav-btn nav-btn-primary" disabled>Done</button>
         </div>
       </div>
       <div id="song-body" class="editor-body"></div>
+      <div id="info-bar" class="info-bar" style="display:none;"></div>
       <div class="bottom-bar">
         <button id="record-btn" class="bar-btn" title="Record">●</button>
         <button id="recordings-btn" class="bar-btn" title="Recordings" style="display:none">▸</button>

@@ -76,8 +76,19 @@ html, body {
   flex: 1;
   display: flex;
   align-items: center;
+  gap: 4px;
   padding: 0 4px;
 }
+.save-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.save-dot.saved { background: var(--chord); }
+.save-dot.saving { background: var(--section-label); }
+.save-dot.unsaved { background: var(--fg-tertiary); }
 .nav-title-input {
   flex: 1;
   font-size: 17px;
@@ -592,3 +603,66 @@ html, body {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--separator); border-radius: 2px; }
+
+/* ===== Info Bar (word count, metadata) ===== */
+.info-bar {
+  padding: 6px 16px;
+  padding-bottom: calc(6px + var(--safe-bottom));
+  font-size: 11px;
+  color: var(--fg-tertiary);
+  background: var(--bg-surface);
+  border-top: 1px solid var(--separator);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ===== Gallery View ===== */
+.list.gallery {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px 16px;
+}
+.list.gallery .list-item {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1px solid var(--separator);
+  border-radius: var(--radius);
+  margin: 0;
+  background: var(--bg-surface);
+  min-height: 100px;
+}
+.list.gallery .list-section-header {
+  grid-column: 1 / -1;
+  padding: 16px 0 4px;
+}
+.list.gallery .list-item .item-meta {
+  margin-top: 6px;
+  margin-left: 0;
+}
+
+/* ===== Light Theme ===== */
+:root,
+[data-theme="dark"] {
+  --bg: #000;
+  --bg-surface: #1c1c1e;
+  --bg-secondary: #2c2c2e;
+  --bg-tertiary: #3a3a3c;
+  --separator: #38383a;
+  --fg: #fff;
+  --fg-secondary: #98989e;
+  --fg-tertiary: #636366;
+}
+[data-theme="light"] {
+  --bg: #f2f2f7;
+  --bg-surface: #ffffff;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e5e5ea;
+  --separator: #c6c6c8;
+  --fg: #000000;
+  --fg-secondary: #636366;
+  --fg-tertiary: #aeaeb2;
+}

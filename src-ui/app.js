@@ -234,23 +234,40 @@ function triggerAutoSave(song) {
   clearTimeout(autoSaveTimer);
   hasChanges = true;
   $('save-btn').disabled = false;
+  updateSaveDot('unsaved');
   autoSaveTimer = setTimeout(async () => {
     if (!song) return;
     song.updated_at = new Date().toISOString();
     await saveSingleSong(song);
     hasChanges = false;
     $('save-btn').disabled = true;
+    updateSaveDot('saved');
   }, 1200);
+}
+
+function updateSaveDot(state) {
+  const dot = $('auto-save-dot');
+  if (!dot) return;
+  dot.className = 'save-dot ' + state;
 }
 
 // Folders
 function renderFolders() {
   const el = $('folder-list');
-  el.innerHTML = folders.map(f => {
-    const count = f === 'All Songs' ? songs.length : songs.filter(s => s.folder === f).length;
+  // Smart folders always at top
+  const smartFolders = ['All Songs', 'Recently Edited'];
+  const customFolders = folders.filter(f => !smartFolders.includes(f));
+  
+  el.innerHTML = [...smartFolders, ...customFolders].map(f => {
+    const count = f === 'All Songs' ? songs.length : 
+                  f === 'Recently Edited' ? songs.filter(s => {
+                    const d = new Date(s.updated_at || s.created_at || 0);
+                    return Date.now() - d.getTime() < 7 * 86400000;
+                  }).length :
+                  songs.filter(s => s.folder === f).length;
     const cls = f === currentFolder ? 'list-item active' : 'list-item';
-    const icon = f === 'All Songs' ? '♫' : '♪';
-    return `<div class="${cls}" data-folder="${esc(f)}"><span class="item-icon">${icon}</span><span class="item-title">${esc(f)}</span><span class="item-meta">${count}</span>${f !== 'All Songs' ? '<span class="folder-dots">⋯</span>' : ''}</div>`;
+    const icon = f === 'All Songs' ? '♫' : f === 'Recently Edited' ? '⏱' : '♪';
+    return `<div class="${cls}" data-folder="${esc(f)}"><span class="item-icon">${icon}</span><span class="item-title">${esc(f === 'Recently Edited' ? 'Recently Edited' : f)}</span><span class="item-meta">${count}</span>${!smartFolders.includes(f) ? '<span class="folder-dots">⋯</span>' : ''}</div>`;
   }).join('');
   el.querySelectorAll('.list-item[data-folder]').forEach(item => {
     item.addEventListener('click', e => {
@@ -379,7 +396,15 @@ function showSongContext(songId, anchorEl) {
 // Song list
 function renderSongList(filter = '') {
   const el = $('song-list');
-  let list = currentFolder === 'All Songs' ? songs : songs.filter(s => s.folder === currentFolder);
+  let list = songs;
+  if (currentFolder === 'Recently Edited') {
+    list = songs.filter(s => {
+      const d = new Date(s.updated_at || s.created_at || 0);
+      return Date.now() - d.getTime() < 7 * 86400000;
+    });
+  } else if (currentFolder !== 'All Songs') {
+    list = songs.filter(s => s.folder === currentFolder);
+  }
 
   if (filter) {
     const q = filter.toLowerCase();
@@ -498,6 +523,10 @@ function openEditor(id) {
   updateUndoBtn();
   renderEditorBody(song);
   updateRecordUI();
+  updateSaveDot('saved');
+  // Update info bar if visible
+  const infoBar = $('info-bar');
+  if (infoBar && infoBar.style.display === 'flex') updateInfoBar();
   // Update set-key button text in more menu
   const keyBtn = $('more-menu')?.querySelector('[data-action="set-key"]');
   if (keyBtn) keyBtn.textContent = song.key ? `Set Key: ${song.key}` : 'Set Key: —';
@@ -1051,12 +1080,74 @@ function setupEvents() {
   });
 
   setupFolderActions();
+  
+  // Theme toggle
+  $('theme-toggle')?.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem('sn_app_theme', next);
+    $('theme-toggle').textContent = next === 'dark' ? '☀️' : '🌙';
+  });
+  
+  // Info panel toggle
+  $('info-btn')?.addEventListener('click', () => {
+    const bar = $('info-bar');
+    if (bar.style.display === 'none' || !bar.style.display) {
+      updateInfoBar();
+      bar.style.display = 'flex';
+    } else {
+      bar.style.display = 'none';
+    }
+  });
+  
+  // View toggle (list / gallery)
+  let galleryMode = false;
+  $('view-toggle')?.addEventListener('click', () => {
+    galleryMode = !galleryMode;
+    const list = $('song-list');
+    list.classList.toggle('gallery', galleryMode);
+    $('view-toggle').textContent = galleryMode ? '☰' : '⊞';
+  });
 }
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = $('theme-toggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#000000' : '#f2f2f7');
+}
+
+function updateInfoBar() {
+  const bar = $('info-bar');
+  const song = getSong(currentSongId);
+  if (!bar || !song) return;
+  
+  let wordCount = 0, lineCount = 0, chordCount = 0;
+  song.sections?.forEach(sec => {
+    sec.lines?.forEach(l => {
+      if (l.text) {
+        wordCount += l.text.split(/\s+/).filter(Boolean).length;
+        lineCount++;
+      }
+      chordCount += l.chords?.length || 0;
+    });
+  });
+  
+  const created = song.created_at ? new Date(song.created_at).toLocaleDateString() : '—';
+  const updated = song.updated_at ? fmtDate(song.updated_at) : '—';
+  
+  bar.innerHTML = `<span>${lineCount} lines · ${wordCount} words · ${chordCount} chords</span><span>Created ${created} · Modified ${updated}</span>`;
+};
 
 // Init
 async function init() {
   await initTauri();
   await loadSongs();
+
+  // Restore theme
+  const savedTheme = localStorage.getItem('sn_app_theme') || 'dark';
+  applyTheme(savedTheme);
 
   try { const s = JSON.parse(localStorage.getItem('folders_app')); if (s?.length) folders = s; } catch {}
   if (isTauri) { const bf = await tauriLoadFolders(); if (bf?.length) folders = bf; }
