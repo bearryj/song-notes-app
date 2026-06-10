@@ -873,6 +873,59 @@ function addSampleSongs() {
   saveSongs();
 }
 
+// Song templates
+const SONG_TEMPLATES = {
+  'Blank': { sections: [{ type: 'Verse', lines: [{ text: '', chords: [] }] }] },
+  'Verse-Chorus': {
+    sections: [
+      { type: 'Verse', lines: [{ text: 'Verse lyrics', chords: [] }, { text: 'More lyrics here', chords: [] }] },
+      { type: 'Chorus', lines: [{ text: 'Catchy chorus hook', chords: [] }, { text: 'Repeated refrain', chords: [] }] },
+      { type: 'Verse', lines: [{ text: 'Second verse', chords: [] }] },
+      { type: 'Chorus', lines: [{ text: 'Chorus again', chords: [] }] }
+    ]
+  },
+  'AABA': {
+    sections: [
+      { type: 'A', lines: [{ text: 'First A section', chords: [] }] },
+      { type: 'A', lines: [{ text: 'Second A section', chords: [] }] },
+      { type: 'B', lines: [{ text: 'Bridge', chords: [] }] },
+      { type: 'A', lines: [{ text: 'Final A section', chords: [] }] }
+    ]
+  },
+  'Verse Only': {
+    sections: [
+      { type: 'Verse', lines: [{ text: '', chords: [] }, { text: '', chords: [] }] },
+      { type: 'Verse', lines: [{ text: '', chords: [] }, { text: '', chords: [] }] }
+    ]
+  }
+};
+
+function showNewSongMenu() {
+  const name = prompt('Song title:', '');
+  if (name === null) return;
+  
+  let templateKey = 'Blank';
+  // Ask for template after title
+  const tmplKeys = Object.keys(SONG_TEMPLATES);
+  const tmplChoice = prompt(`Choose template:\n1: ${tmplKeys[0]}\n2: ${tmplKeys[1]}\n3: ${tmplKeys[2]}\n4: ${tmplKeys[3]}`, '1');
+  
+  if (tmplChoice !== null) {
+    const idx = parseInt(tmplChoice) - 1;
+    if (idx >= 0 && idx < tmplKeys.length) templateKey = tmplKeys[idx];
+  }
+  
+  const song = createSong(name || 'Untitled');
+  const template = SONG_TEMPLATES[templateKey];
+  if (template) {
+    song.sections = template.sections.map(s => ({
+      type: s.type,
+      lines: s.lines.map(l => ({ text: l.text, chords: [] }))
+    }));
+  }
+  songs.unshift(song); saveSingleSong(song);
+  renderSongList(); currentSongId = song.id; openEditor(currentSongId); pushView('editor-view');
+}
+
 // Events
 function setupEvents() {
   $('back-to-folders').addEventListener('click', popView);
@@ -895,11 +948,7 @@ function setupEvents() {
   });
 
   $('new-song-btn').addEventListener('click', () => {
-    const name = prompt('Song title:');
-    if (name === null) return;
-    const song = createSong(name || 'Untitled');
-    songs.unshift(song); saveSingleSong(song);
-    renderSongList(); currentSongId = song.id; openEditor(currentSongId); pushView('editor-view');
+    showNewSongMenu();
   });
 
   $('search-input').addEventListener('input', e => renderSongList(e.target.value));
