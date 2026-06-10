@@ -25,6 +25,12 @@ pub struct SectionFile {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AudioFile {
+    pub data: String,
+    pub ts: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SongFile {
     pub id: String,
     pub title: String,
@@ -34,6 +40,7 @@ pub struct SongFile {
     pub tags: Vec<String>,
     pub folder: Option<String>,
     pub sections: Vec<SectionFile>,
+    pub audio: Option<Vec<AudioFile>>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -125,6 +132,11 @@ fn save_folders(state: tauri::State<AppState>, folders: Vec<String>) -> Result<(
     Ok(())
 }
 
+#[tauri::command]
+fn read_file_content(path: String) -> Result<String, String> {
+    fs::read_to_string(&path).map_err(|e| e.to_string())
+}
+
 // ===== App Entry =====
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -151,6 +163,7 @@ pub fn run() {
             delete_song,
             load_folders,
             save_folders,
+            read_file_content,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

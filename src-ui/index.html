@@ -23,6 +23,7 @@
       <div class="nav-bar">
         <button id="back-to-folders" class="nav-back">‹</button>
         <h1 id="folder-title" class="nav-title">All Songs</h1>
+        <button id="import-btn" class="nav-icon-btn" title="Import">📁</button>
         <button id="new-song-btn" class="nav-action">+</button>
       </div>
       <div class="search-bar">
@@ -41,8 +42,9 @@
       <div id="song-body" class="editor-body"></div>
       <!-- Bottom Toolbar -->
       <div class="bottom-bar">
+        <button id="record-btn" class="bar-btn">⏺</button>
         <button id="add-section-btn" class="bar-btn">+ Section</button>
-        <button id="chords-btn" class="bar-btn">🎸</button>
+        <button id="history-btn" class="bar-btn">↩</button>
         <button id="toolbar-more-btn" class="bar-btn">⋯</button>
       </div>
     </div>
@@ -52,13 +54,49 @@
       <button data-action="transpose-up">♯ Transpose Up</button>
       <button data-action="transpose-down">♭ Transpose Down</button>
       <button data-action="set-key">Key: None</button>
+      <button data-action="import">📁 Import</button>
       <button data-action="export">Export</button>
       <button data-action="delete" class="danger">Delete Song</button>
+    </div>
+
+    <!-- Import Popover -->
+    <div id="import-menu" class="popover" style="display:none;">
+      <button data-action="import-txt">📄 Import Text</button>
+      <button data-action="import-pdf">📕 Import PDF</button>
+    </div>
+
+    <!-- Export Popover -->
+    <div id="export-menu" class="popover" style="display:none;">
+      <button data-action="export-txt">📄 Plain Text</button>
+      <button data-action="export-md">📝 Markdown</button>
+      <button data-action="export-clipboard">📋 Copy to Clipboard</button>
+    </div>
+
+    <!-- History Panel -->
+    <div id="history-panel" class="side-panel" style="display:none;">
+      <div class="side-panel-header">
+        <span>Version History</span>
+        <button id="close-hist" class="bar-btn">✕</button>
+      </div>
+      <div id="hist-list" class="side-panel-body"></div>
+    </div>
+
+    <!-- Recordings Popover -->
+    <div id="recordings-dropdown" class="popover" style="display:none;">
+      <div class="rec-dropdown-header">Recordings</div>
+      <div id="rec-list"></div>
+      <button id="delete-all-recordings" class="danger" style="display:block;width:100%;text-align:left;">🗑 Delete All</button>
+    </div>
+
+    <!-- Folder Actions Popover -->
+    <div id="folder-actions" class="popover" style="display:none;">
+      <button data-action="rename">✏️ Rename</button>
+      <button data-action="delete-folder" class="danger">🗑 Delete</button>
     </div>
   </div>
 
   <template id="section-template">
-    <div class="song-section">
+    <div class="song-section" draggable="true">
       <div class="section-header">
         <select class="section-type">
           <option value="Verse 1">Verse</option>
@@ -69,9 +107,21 @@
           <option value="Outro">Outro</option>
           <option value="Intro">Intro</option>
         </select>
+        <button class="move-up" title="Move up">↑</button>
+        <button class="move-down" title="Move down">↓</button>
+        <button class="duplicate-section" title="Duplicate">⧉</button>
         <button class="delete-section">✕</button>
       </div>
       <div class="section-editor"></div>
+    </div>
+  </template>
+
+  <template id="folder-item-template">
+    <div class="list-item folder-item" data-folder="">
+      <span class="item-icon">📁</span>
+      <span class="item-title"></span>
+      <span class="item-meta"></span>
+      <span class="folder-dots">⋯</span>
     </div>
   </template>
 
