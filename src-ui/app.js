@@ -399,61 +399,147 @@ function renderLine(container, song, si, li, line) {
   const lineEl = document.createElement('div');
   lineEl.className = 'chord-line';
 
-  const textArea = document.createElement('div');
-  textArea.className = 'lyric-text';
-  textArea.contentEditable = true;
-  textArea.dataset.placeholder = 'Lyrics';
-  textArea.textContent = line.text;
+  // Chord row — click to add/position chords
+  const chordRow = document.createElement('div');
+  chordRow.className = 'chord-row';
 
-  textArea.addEventListener('input', () => {
-    line.text = textArea.textContent;
+  // Lyric input — click to type
+  const lyricInput = document.createElement('div');
+  lyricInput.className = 'lyric-text';
+  lyricInput.contentEditable = true;
+  lyricInput.dataset.placeholder = 'Lyrics';
+  lyricInput.textContent = line.text;
+
+  lyricInput.addEventListener('input', () => {
+    line.text = lyricInput.textContent;
     triggerAutoSave(song);
   });
 
-  // Render chord placeholders above the text
-  function renderChords() {
-    lineEl.querySelectorAll('.chord-placeholder').forEach(e => e.remove());
-    line.chords.forEach(ch => {
-      const span = document.createElement('span');
-      span.className = 'chord-placeholder';
-      span.textContent = ch.name;
-      span.style.left = ch.x + 'px';
-      span.addEventListener('click', e => { e.stopPropagation(); showChordEdit(song, line, ch); });
-      lineEl.appendChild(span);
-    });
-  }
-
-  // Click on the line background (not the text) to add a chord
-  lineEl.addEventListener('click', e => {
-    // Only add chord when clicking on the line background, NOT on the textArea or existing chords
-    if (e.target === lineEl) {
-      const rect = lineEl.getBoundingClientRect();
-      const x = Math.round(e.clientX - rect.left);
-      if (line.chords.find(c => Math.abs(c.x - x) < 20)) return;
-      const chord = { x, name: '' };
-      line.chords.push(chord);
-      line.chords.sort((a, b) => a.x - b.x);
+  // Enter = split line, preserving chords
+  lyricInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      const sel = window.getSelection();
+      const textBefore = lyricInput.textContent.substring(0, sel?.focusOffset || 0);
+      const textAfter = lyricInput.textContent.substring(sel?.focusOffset || 0);
+      lyricInput.textContent = textBefore;
+      const cursorX = (sel?.focusOffset || 0) * 8;
+      // Chords before cursor stay, chords after move to new line
+      const chordsBefore = line.chords.filter(c => c.x < cursorX);
+      const chordsAfter = line.chords.filter(c => c.x >= cursorX).map(c => ({ ...c, x: c.x - cursorX }));
+      line.chords = chordsBefore;
+      song.sections[si].lines.splice(li + 1, 0, { text: textAfter, chords: chordsAfter });
       saveSingleSong(song);
-      renderChords();
-      showChordEdit(song, line, chord);
+      renderEditorBody(song);
     }
   });
 
-  lineEl.appendChild(textArea);
+  // Render chord markers in the chord row
+  function renderChordMarkers() {
+    chordRow.innerHTML = '';
+    line.chords.forEach((ch, i) => {
+      if (!ch.name) return;
+      const marker = document.createElement('span');
+      marker.className = 'chord-marker';
+      marker.textContent = ch.name;
+      marker.style.left = ch.x + 'px';
+      marker.addEventListener('click', e => {
+        e.stopPropagation();
+        showChordEdit(song, line, ch);
+      });
+      chordRow.appendChild(marker);
+    });
+    // Line delete button (always at end of chord row)
+    const delBtn = document.createElement('button');
+    delBtn.className = 'line-delete-btn';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      song.sections[si].lines.splice(li, 1);
+      saveSingleSong(song);
+      renderEditorBody(song);
+    });
+    chordRow.appendChild(delBtn);
+  }
+
+  // Click chord row anywhere to place a chord at that x position
+  chordRow.addEventListener('click', e => {
+    const rect = chordRow.getBoundingClientRect();
+    const x = Math.max(0, Math.round(e.clientX - rect.left));
+    if (line.chords.find(c => Math.abs(c.x - x) < 20)) return;
+    const chord = { x, name: '' };
+    line.chords.push(chord);
+    line.chords.sort((a, b) => a.x - b.x);
+    saveSingleSong(song);
+    renderChordMarkers();
+    showChordEdit(song, line, chord);
+  });
+
+  lineEl.appendChild(chordRow);
+  lineEl.appendChild(lyricInput);
+
   const addBtn = container.lastElementChild;
   if (addBtn && addBtn.classList.contains('add-line-btn')) container.insertBefore(lineEl, addBtn);
   else container.appendChild(lineEl);
-  renderChords();
+  renderChordMarkers();
 }
 
 // Chord Popup
 let chordPopup = null;
 function showChordEdit(song, line, chord) {
   if (chordPopup) chordPopup.remove();
+
   chordPopup = document.createElement('div');
   chordPopup.className = 'chord-popup';
+
   const input = document.createElement('input');
   input.value = chord.name; input.placeholder = 'Am'; input.autofocus = true; input.spellcheck = false;
+
+  // Common chord quick-select
+  const roots = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+  const suffixes = ['', 'm', '7', 'm7', 'maj7', 'dim', 'aug', 'sus4', 'add9'];
+
+  const quickRow = document.createElement('div');
+  quickRow.className = 'chord-quick';
+
+  // Root note buttons
+  const rootRow = document.createElement('div');
+  rootRow.className = 'chord-quick-row';
+  roots.forEach(r => {
+    const btn = document.createElement('button');
+    btn.textContent = r;
+    btn.className = 'chord-q-btn' + (chord.name === r ? ' active' : '');
+    btn.addEventListener('click', () => {
+      input.value = r;
+      chord.name = r;
+    });
+    rootRow.appendChild(btn);
+  });
+  quickRow.appendChild(rootRow);
+
+  // Suffix buttons
+  const suffixRow = document.createElement('div');
+  suffixRow.className = 'chord-quick-row';
+  suffixes.forEach(s => {
+    const root = chord.name?.match(/^[A-G][#b]?/)?.[0] || 'C';
+    const full = root + s;
+    const btn = document.createElement('button');
+    btn.textContent = full;
+    btn.className = 'chord-q-btn chord-q-small' + (chord.name === full ? ' active' : '');
+    btn.addEventListener('click', () => {
+      input.value = full;
+      chord.name = full;
+    });
+    suffixRow.appendChild(btn);
+  });
+  quickRow.appendChild(suffixRow);
+
+  input.addEventListener('input', () => {
+    // Update active state on quick buttons
+    rootRow.querySelectorAll('.chord-q-btn').forEach(b => b.classList.toggle('active', b.textContent === input.value));
+    suffixRow.querySelectorAll('.chord-q-btn').forEach(b => b.classList.toggle('active', b.textContent === input.value));
+  });
   const doneBtn = document.createElement('button');
   doneBtn.className = 'done-btn'; doneBtn.textContent = 'Done';
   doneBtn.addEventListener('click', () => {
@@ -469,7 +555,13 @@ function showChordEdit(song, line, chord) {
     saveSingleSong(song);
     chordPopup.remove(); chordPopup = null;
   });
-  chordPopup.appendChild(input); chordPopup.appendChild(doneBtn); chordPopup.appendChild(removeBtn);
+  chordPopup.appendChild(input);
+  chordPopup.appendChild(quickRow);
+  const btnRow = document.createElement('div');
+  btnRow.className = 'chord-popup-actions';
+  btnRow.appendChild(doneBtn);
+  btnRow.appendChild(removeBtn);
+  chordPopup.appendChild(btnRow);
   document.body.appendChild(chordPopup); input.focus();
   input.addEventListener('keydown', e => { if (e.key === 'Enter') doneBtn.click(); });
   const closeOnOutside = e => { if (chordPopup && !chordPopup.contains(e.target)) { chordPopup.remove(); chordPopup = null; document.removeEventListener('click', closeOnOutside); } };
