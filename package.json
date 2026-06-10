@@ -1,0 +1,28 @@
+{
+  "name": "song-notes-app",
+  "version": "1.0.0",
+  "description": "Mobile songwriting app — Apple Notes inspired, built for musicians. Target: Android via Tauri 2.x.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "keywords": [
+    "songwriting",
+    "music",
+    "chords",
+    "lyrics"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.2",
+    "vite": "^8.0.16"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.0",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@tauri-apps/plugin-fs": "^2.5.1"
+  }
+}
