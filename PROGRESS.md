@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (replaced all raw prompt()/confirm() with polished bottom sheets)
+2026-06-11 by OWL (added visual key picker for transposition)
 
 ## Build & Test Commands
 ```bash
@@ -58,7 +58,8 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Song statistics (chord frequency, word count, key detection with Krumhansl-Schmuckler, section breakdown, chord progression)
 - Tag management (add/edit/remove tags, filter songs by tag, display tags in song list)
 - New song creation sheet (title input + visual template picker, replacing raw prompt() dialogs)
-- Polished bottom sheets replacing all raw browser prompt()/confirm() dialogs (input sheet + confirm sheet)
+61|- Polished bottom sheets replacing all raw browser prompt()/confirm() dialogs (input sheet + confirm sheet)
+62|- Visual key picker for transposition (circle-of-fifths grid, 12 keys, quick ♭/♯ buttons)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -74,6 +75,8 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 11. [x] Debounce search input (2026-06-11)
 12. [x] Tag management UI (add/edit/display/filter tags — data model supports it, search already indexes it, but no editor UI) (2026-06-11)
 13. [x] Replace remaining raw prompt()/confirm() dialogs with proper UI (folder rename/delete, setlist create/rename, set key, set BPM, import) (2026-06-11)
+14. [ ] Visual key picker in toolbar (2026-06-11)
+15. [ ] Haptic feedback on key/metronome taps (if supported)
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~60K), CSS (styles.css ~19K), HTML (index.html)
