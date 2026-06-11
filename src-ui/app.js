@@ -189,6 +189,76 @@ function showConfirmSheet({ title, body, confirmText = 'Confirm', confirmClass =
   return sheet;
 }
 
+// ===== Key Picker (circle-of-fifths grid) =====
+const KEYS_SHARP = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'G#', 'D#', 'A#'];
+const KEYS_FLAT  = ['C', 'G', 'D', 'A', 'E', 'B', 'Gb', 'Db', 'Ab', 'Eb', 'Bb'];
+const KEY_LABELS = ['C', 'G', 'D', 'A', 'E', 'B', 'F#/Gb', 'C#/Db', 'G#/D#', 'D#/Eb', 'A#/Bb'];
+const KEY_ROMAN = ['I', 'V', 'ii', 'vi', 'iii', 'vii°', 'IV', '♭VII', '♭III', '♭VI'];
+
+function showKeyPicker(song) {
+  const sheet = document.createElement('div');
+  sheet.className = 'key-picker';
+  sheet.innerHTML = `
+    <div class="key-picker-backdrop"></div>
+    <div class="key-picker-content">
+      <div class="key-picker-handle"></div>
+      <div class="key-picker-title">Transpose Song</div>
+      <div class="key-picker-current">Current: <strong>${esc(song.key || '—')}</strong></div>
+      <div class="key-picker-section-label">Major Keys</div>
+      <div class="key-picker-grid">
+        ${KEY_LABELS.map((k, i) => `<button class="key-picker-btn ${k.replace(/\/.*/, '').replace('#', '') === (song.key || '').replace(/[^A-Gb#]/g, '') ? 'active' : ''}" data-key="${KEYS_SHARP[i]}" data-type="major"><span class="key-name">${k}</span></button>`).join('')}
+      </div>
+      <div class="key-picker-actions">
+        <button class="key-picker-transpose-down">♭ Down 1</button>
+        <button class="key-picker-transpose-up">Up 1 ♯</button>
+      </div>
+      <div class="key-picker-close-wrap">
+        <button class="key-picker-close">Close</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(sheet);
+
+  const close = () => sheet.remove();
+  sheet.querySelector('.key-picker-backdrop').onclick = close;
+  sheet.querySelector('.key-picker-close').onclick = close;
+
+  // Key selection
+  sheet.querySelectorAll('.key-picker-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetKey = btn.dataset.key;
+      const semitones = calcSemitones(song.key || 'C', targetKey);
+      pushVersion();
+      transposeSong(song, semitones);
+      saveSingleSong(song);
+      renderEditorBody(song);
+      renderSongList();
+      close();
+      toast(`Transposed to ${targetKey}`);
+    });
+  });
+
+  // Quick transpose buttons
+  sheet.querySelector('.key-picker-transpose-down').addEventListener('click', () => {
+    pushVersion(); transposeSong(song, -1); saveSingleSong(song);
+    renderEditorBody(song); renderSongList(); close(); toast('♭');
+  });
+  sheet.querySelector('.key-picker-transpose-up').addEventListener('click', () => {
+    pushVersion(); transposeSong(song, 1); saveSingleSong(song);
+    renderEditorBody(song); renderSongList(); close(); toast('♯');
+  });
+}
+
+// Calculate semitone distance from one key to another
+function calcSemitones(fromKey, toKey) {
+  const fromRoot = fromKey ? fromKey.replace(/[^A-Gb#]/g, '').trim() : 'C';
+  const toRoot = toKey.replace(/[^A-Gb#]/g, '');
+  const fromIdx = noteToSemitone(fromRoot);
+  const toIdx = noteToSemitone(toRoot);
+  if (fromIdx === -1 || toIdx === -1) return 0;
+  return ((toIdx - fromIdx) % 12 + 12) % 12;
+}
+
 function escHtml(s) {
   return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -2822,14 +2892,7 @@ function setupEvents() {
 
       if (a === 'set-key') {
         if (!song) return;
-        showInputSheet({
-          title: 'Set Key',
-          placeholder: 'e.g. G, Am',
-          initialValue: song.key || '',
-          onConfirm: (key) => {
-            song.key = key; saveSingleSong(song); renderSongList();
-          }
-        });
+        showKeyPicker(song);
       } else if (a === 'set-bpm') {
         if (!song) return;
         showInputSheet({
