@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (metronome — BPM-based click track with visual beat, time sig, tempo presets)
+2026-06-11 by OWL (song stats — chord frequency, word count, key detection, section breakdown, progression)
 
 ## Build & Test Commands
 ```bash
@@ -55,6 +55,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Plugin system for custom export formats (template engine, 5 built-in plugins, editor UI)
 - Version diff view (LCS-based line diff between any two versions, restore from diff)
 - Metronome (BPM-based click track with visual beat indicator, time signatures, tempo presets)
+- Song statistics (chord frequency, word count, key detection with Krumhansl-Schmuckler, section breakdown, chord progression)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -66,7 +67,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 7. [x] Plugin system for custom export formats (2026-06-11)
 8. [ ] iOS build (requires macOS + Xcode)
 9. [x] Metronome (BPM-based click track) (2026-06-11)
-10. [ ] Song statistics (chord frequency, word count trends, key detection)
+10. [x] Song statistics (chord frequency, word count trends, key detection) (2026-06-11)
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~60K), CSS (styles.css ~19K), HTML (index.html)
