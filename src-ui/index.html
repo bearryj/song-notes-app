@@ -136,6 +136,10 @@
               <span class="sheet-icon">⚙</span>
               <span class="sheet-label">Export Plugins</span>
             </button>
+            <button class="toolbar-sheet-btn" data-action="metronome">
+              <span class="sheet-icon">⏱</span>
+              <span class="sheet-label">Metronome</span>
+            </button>
           </div>
         </div>
       </div>
@@ -225,6 +229,59 @@
         <button id="print-do-btn" class="nav-btn nav-btn-primary" style="font-size:15px;">Print</button>
       </div>
       <div id="setlist-print-content" class="print-content"></div>
+    </div>
+
+    <!-- Metronome Panel -->
+    <div id="metronome-panel" style="display:none;">
+      <div class="toolbar-sheet-backdrop"></div>
+      <div class="metronome-content">
+        <div class="toolbar-sheet-handle"></div>
+        <div class="metro-header">
+          <h3 class="metro-title">Metronome</h3>
+        </div>
+        <div class="metro-beat-display" id="metro-beat-display">
+          <div class="metro-beat-circle" id="metro-beat-circle"></div>
+          <div class="metro-bpm-value" id="metro-bpm-value">120</div>
+          <div class="metro-bpm-label">BPM</div>
+        </div>
+        <div class="metro-controls">
+          <button class="metro-btn metro-btn-minus" id="metro-bpm-down" title="Decrease BPM">−</button>
+          <button class="metro-btn metro-btn-play" id="metro-play-btn" title="Play">▶</button>
+          <button class="metro-btn metro-btn-plus" id="metro-bpm-up" title="Increase BPM">+</button>
+        </div>
+        <div class="metro-bpm-slider-wrap">
+          <input type="range" id="metro-bpm-slider" class="metro-bpm-slider" min="30" max="240" value="120">
+          <div class="metro-bpm-ticks">
+            <span>30</span>
+            <span>60</span>
+            <span>120</span>
+            <span>180</span>
+            <span>240</span>
+          </div>
+        </div>
+        <div class="metro-time-sig-wrap">
+          <div class="metro-time-sig-label">Time Signature</div>
+          <div class="metro-time-sig-btns">
+            <button class="metro-time-btn active" data-sig="4">4/4</button>
+            <button class="metro-time-btn" data-sig="3">3/4</button>
+            <button class="metro-time-btn" data-sig="6">6/8</button>
+            <button class="metro-time-btn" data-sig="2">2/4</button>
+          </div>
+        </div>
+        <div class="metro-preset-wrap">
+          <div class="metro-preset-label">Tempo Markings</div>
+          <div class="metro-preset-grid">
+            <button class="metro-preset-btn" data-bpm="60">Largo</button>
+            <button class="metro-preset-btn" data-bpm="72">Adagio</button>
+            <button class="metro-preset-btn" data-bpm="84">Andante</button>
+            <button class="metro-preset-btn" data-bpm="100">Moderato</button>
+            <button class="metro-preset-btn" data-bpm="120">Allegro</button>
+            <button class="metro-preset-btn" data-bpm="144">Vivace</button>
+            <button class="metro-preset-btn" data-bpm="168">Presto</button>
+            <button class="metro-preset-btn" data-bpm="200">Prestissimo</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (version diff view — LCS-based diff between song versions)
+2026-06-11 by OWL (metronome — BPM-based click track with visual beat, time sig, tempo presets)
 
 ## Build & Test Commands
 ```bash
@@ -54,6 +54,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Share song (generate share codes, native share API, clipboard, import from share code)
 - Plugin system for custom export formats (template engine, 5 built-in plugins, editor UI)
 - Version diff view (LCS-based line diff between any two versions, restore from diff)
+- Metronome (BPM-based click track with visual beat indicator, time signatures, tempo presets)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -64,7 +65,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 6. [x] Collaborative editing (share link, real-time sync) (2026-06-11)
 7. [x] Plugin system for custom export formats (2026-06-11)
 8. [ ] iOS build (requires macOS + Xcode)
-9. [ ] Metronome (BPM-based click track)
+9. [x] Metronome (BPM-based click track) (2026-06-11)
 10. [ ] Song statistics (chord frequency, word count trends, key detection)
 
 ## Architecture Quick Ref

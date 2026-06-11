@@ -20,6 +20,18 @@ let hasChanges = false;
 let setlists = [];
 let activeSetlistId = null;
 
+// ===== Metronome State =====
+let metroBpm = 120;
+let metroTimeSig = 4;
+let metroPlaying = false;
+let metroInterval = null;
+let metroBeatIndex = 0;
+let metroAudioCtx = null;
+let metroNextNoteTime = 0;
+let metroTimerID = null;
+let metroSchedulerInterval = 25; // ms
+let metroLookahead = 100; // ms
+
 // Chord definitions
 const CHROMATIC = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const CHROMATIC_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -2631,12 +2643,40 @@ function setupEvents() {
         showShareSheet();
       } else if (a === 'plugins') {
         showPluginSheet();
+      } else if (a === 'metronome') {
+        showMetronomePanel();
       }
     });
   });
 
   // Close sheet on backdrop tap
   document.querySelector('.toolbar-sheet-backdrop')?.addEventListener('click', hideToolbarSheet);
+
+  // ===== Metronome Events =====
+
+  // Play/stop
+  $('metro-play-btn')?.addEventListener('click', () => {
+    if (metroPlaying) metroStop(); else metroStart();
+  });
+
+  // BPM up/down
+  $('metro-bpm-down')?.addEventListener('click', () => metroSetBpm(metroBpm - 1));
+  $('metro-bpm-up')?.addEventListener('click', () => metroSetBpm(metroBpm + 1));
+
+  // BPM slider
+  $('metro-bpm-slider')?.addEventListener('input', e => {
+    metroSetBpm(parseInt(e.target.value));
+  });
+
+  // Time signature buttons
+  document.querySelectorAll('.metro-time-btn').forEach(btn => {
+    btn.addEventListener('click', () => metroSetTimeSig(parseInt(btn.dataset.sig)));
+  });
+
+  // Tempo preset buttons
+  document.querySelectorAll('.metro-preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => metroSetBpm(parseInt(btn.dataset.bpm)));
+  });
 
   // ===== Setlist Events =====
 
@@ -2856,6 +2896,119 @@ async function init() {
   
   renderFolders();
   setupEvents();
+}
+
+// ===== Metronome Engine =====
+
+function metroGetCtx() {
+  if (!metroAudioCtx) {
+    metroAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (metroAudioCtx.state === 'suspended') {
+    metroAudioCtx.resume();
+  }
+  return metroAudioCtx;
+}
+
+function metroPlayClick(isAccent) {
+  const ctx = metroGetCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.frequency.value = isAccent ? 1000 : 800;
+  osc.type = 'sine';
+  gain.gain.setValueAtTime(isAccent ? 0.5 : 0.35, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.08);
+}
+
+function metroScheduleNote() {
+  const ctx = metroGetCtx();
+  const secondsPerBeat = 60.0 / metroBpm;
+  while (metroNextNoteTime < ctx.currentTime + metroLookahead / 1000) {
+    const isAccent = (metroBeatIndex % metroTimeSig) === 0;
+    metroPlayClick(isAccent);
+
+    // Visual beat
+    const beatTime = metroNextNoteTime;
+    const delay = Math.max(0, (beatTime - ctx.currentTime) * 1000);
+    setTimeout(() => {
+      const circle = $('metro-beat-circle');
+      if (!circle) return;
+      circle.classList.remove('beat', 'beat-accent');
+      void circle.offsetWidth; // force reflow
+      circle.classList.add(isAccent ? 'beat-accent' : 'beat');
+      setTimeout(() => circle.classList.remove('beat', 'beat-accent'), 100);
+    }, delay);
+
+    metroNextNoteTime += secondsPerBeat;
+    metroBeatIndex++;
+  }
+}
+
+function metroStart() {
+  if (metroPlaying) return;
+  metroPlaying = true;
+  metroBeatIndex = 0;
+  const ctx = metroGetCtx();
+  metroNextNoteTime = ctx.currentTime + 0.05;
+  metroTimerID = setInterval(metroScheduleNote, metroSchedulerInterval);
+
+  const playBtn = $('metro-play-btn');
+  if (playBtn) {
+    playBtn.textContent = '■';
+    playBtn.classList.add('playing');
+  }
+}
+
+function metroStop() {
+  metroPlaying = false;
+  if (metroTimerID) {
+    clearInterval(metroTimerID);
+    metroTimerID = null;
+  }
+  const playBtn = $('metro-play-btn');
+  if (playBtn) {
+    playBtn.textContent = '▶';
+    playBtn.classList.remove('playing');
+  }
+  const circle = $('metro-beat-circle');
+  if (circle) circle.classList.remove('beat', 'beat-accent');
+}
+
+function metroSetBpm(val) {
+  metroBpm = Math.max(30, Math.min(240, val));
+  const el = $('metro-bpm-value');
+  if (el) el.textContent = metroBpm;
+  const slider = $('metro-bpm-slider');
+  if (slider) slider.value = metroBpm;
+  // Update preset active state
+  document.querySelectorAll('.metro-preset-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.bpm) === metroBpm);
+  });
+}
+
+function metroSetTimeSig(val) {
+  metroTimeSig = val;
+  document.querySelectorAll('.metro-time-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.sig) === val);
+  });
+}
+
+function showMetronomePanel() {
+  const panel = $('metronome-panel');
+  if (!panel) return;
+  panel.style.display = 'flex';
+  metroSetBpm(metroBpm);
+  metroSetTimeSig(metroTimeSig);
+
+  // Close on backdrop tap
+  panel.querySelector('.toolbar-sheet-backdrop').onclick = () => {
+    metroStop();
+    panel.style.display = 'none';
+  };
 }
 
 init();
