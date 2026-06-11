@@ -1882,47 +1882,6 @@ function setupEvents() {
     list.classList.toggle('gallery', galleryMode);
     $('view-toggle').textContent = galleryMode ? '☰' : '⊞';
   });
-
-  // ===== Setlist Event Handlers =====
-  // Setlist view navigation
-  $('back-from-setlist')?.addEventListener('click', () => {
-    popView();
-  });
-
-  // New setlist button
-  $('setlist-new-btn')?.addEventListener('click', createNewSetlist);
-
-  // Back from setlist detail to setlist list
-  $('back-from-setlist-detail')?.addEventListener('click', () => {
-    activeSetlistId = null;
-    popView();
-  });
-
-  // Add song to setlist
-  $('setlist-add-song-btn')?.addEventListener('click', () => {
-    showSongPicker();
-  });
-
-  // Print chord charts
-  $('setlist-print-btn')?.addEventListener('click', () => {
-    showSetlistPrintPreview();
-  });
-
-  // Transpose all songs in setlist
-  $('setlist-transpose-btn')?.addEventListener('click', () => {
-    showTransposeSheet();
-  });
-
-  // Print preview close
-  $('print-close-btn')?.addEventListener('click', () => {
-    const overlay = $('setlist-print-overlay');
-    if (overlay) overlay.style.display = 'none';
-  });
-
-  // Print do (trigger browser print)
-  $('print-do-btn')?.addEventListener('click', () => {
-    window.print();
-  });
 }
 
 function applyTheme(theme) {

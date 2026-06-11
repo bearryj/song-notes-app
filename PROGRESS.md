@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (setlist mode — create, manage, capo, transpose, print)
+2026-06-11 by OWL (wired up setlist mode — toolbar sheet → setlist view)
 
 ## Build & Test Commands
 ```bash
