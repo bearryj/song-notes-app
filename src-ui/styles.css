@@ -508,6 +508,125 @@ html, body {
   text-align: center;
 }
 
+/* ===== New Song Sheet ===== */
+.new-song-header {
+  padding: 4px 0 16px;
+  text-align: center;
+}
+.new-song-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+}
+.new-song-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--separator);
+  border-radius: 10px;
+  color: var(--fg);
+  font-size: 17px;
+  font-family: var(--font);
+  outline: none;
+  margin-bottom: 20px;
+  transition: border-color 0.15s;
+}
+.new-song-input:focus {
+  border-color: var(--accent);
+}
+.new-song-input::placeholder {
+  color: var(--fg-tertiary);
+}
+.new-song-templates {
+  margin-bottom: 20px;
+}
+.new-song-template-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+.new-song-template-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.new-song-template-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 14px 10px;
+  cursor: pointer;
+  font-family: var(--font);
+  color: var(--fg);
+  transition: background 0.15s, border-color 0.15s;
+  min-height: 80px;
+  justify-content: center;
+  text-align: center;
+}
+.new-song-template-btn:active {
+  background: var(--bg-tertiary);
+}
+.new-song-template-btn.active {
+  border-color: var(--accent);
+  background: rgba(10, 132, 255, 0.1);
+}
+.template-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+.template-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.template-desc {
+  font-size: 11px;
+  color: var(--fg-tertiary);
+}
+.new-song-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 4px;
+}
+.new-song-cancel-btn {
+  flex: 1;
+  padding: 14px;
+  background: var(--bg-surface);
+  border: none;
+  border-radius: 10px;
+  color: var(--fg);
+  font-size: 16px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.new-song-cancel-btn:active {
+  background: var(--bg-tertiary);
+}
+.new-song-create-btn {
+  flex: 2;
+  padding: 14px;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.new-song-create-btn:active {
+  opacity: 0.7;
+}
+
 /* ===== FAB (Floating Action Button) ===== */
 .toolbar-fab {
   position: fixed;

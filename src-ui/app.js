@@ -2129,29 +2129,63 @@ const SONG_TEMPLATES = {
 };
 
 function showNewSongMenu() {
-  const name = prompt('Song title:', '');
-  if (name === null) return;
-  
-  let templateKey = 'Blank';
-  // Ask for template after title
-  const tmplKeys = Object.keys(SONG_TEMPLATES);
-  const tmplChoice = prompt(`Choose template:\n1: ${tmplKeys[0]}\n2: ${tmplKeys[1]}\n3: ${tmplKeys[2]}\n4: ${tmplKeys[3]}`, '1');
-  
-  if (tmplChoice !== null) {
-    const idx = parseInt(tmplChoice) - 1;
-    if (idx >= 0 && idx < tmplKeys.length) templateKey = tmplKeys[idx];
-  }
-  
-  const song = createSong(name || 'Untitled');
-  const template = SONG_TEMPLATES[templateKey];
-  if (template) {
-    song.sections = template.sections.map(s => ({
-      type: s.type,
-      lines: s.lines.map(l => ({ text: l.text, chords: [] }))
-    }));
-  }
-  songs.unshift(song); saveSingleSong(song);
-  renderSongList(); currentSongId = song.id; openEditor(currentSongId); pushView('editor-view');
+  const sheet = $('new-song-sheet');
+  if (!sheet) return;
+
+  const input = $('new-song-input');
+  const createBtn = $('new-song-create-btn');
+  const cancelBtn = $('new-song-cancel-btn');
+  const backdrop = sheet.querySelector('.toolbar-sheet-backdrop');
+  const templateBtns = sheet.querySelectorAll('.new-song-template-btn');
+
+  let selectedTemplate = 'Blank';
+
+  // Reset state
+  input.value = '';
+  templateBtns.forEach(b => b.classList.toggle('active', b.dataset.template === 'Blank'));
+  sheet.style.display = 'flex';
+
+  // Focus input after animation
+  setTimeout(() => input.focus(), 100);
+
+  // Template selection
+  templateBtns.forEach(btn => {
+    btn.onclick = () => {
+      templateBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedTemplate = btn.dataset.template;
+    };
+  });
+
+  // Cancel
+  const closeSheet = () => {
+    sheet.style.display = 'none';
+  };
+
+  cancelBtn.onclick = closeSheet;
+  backdrop.onclick = closeSheet;
+
+  // Create
+  const doCreate = () => {
+    const title = input.value.trim() || 'Untitled';
+    const song = createSong(title);
+    const template = SONG_TEMPLATES[selectedTemplate];
+    if (template) {
+      song.sections = template.sections.map(s => ({
+        type: s.type,
+        lines: s.lines.map(l => ({ text: l.text, chords: [] }))
+      }));
+    }
+    closeSheet();
+    songs.unshift(song); saveSingleSong(song);
+    renderSongList(); currentSongId = song.id; openEditor(currentSongId); pushView('editor-view');
+  };
+
+  createBtn.onclick = doCreate;
+  input.onkeydown = e => {
+    if (e.key === 'Enter') { e.preventDefault(); doCreate(); }
+    if (e.key === 'Escape') { e.preventDefault(); closeSheet(); }
+  };
 }
 
 // ===== Setlist Mode =====

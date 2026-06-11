@@ -307,6 +307,47 @@
       </div>
     </div>
 
+    <!-- New Song Sheet -->
+    <div id="new-song-sheet" style="display:none;">
+      <div class="toolbar-sheet-backdrop"></div>
+      <div class="toolbar-sheet-content" style="max-height:70vh;">
+        <div class="toolbar-sheet-handle"></div>
+        <div class="new-song-header">
+          <h3 class="new-song-title">New Song</h3>
+        </div>
+        <input type="text" id="new-song-input" class="new-song-input" placeholder="Song title" autocomplete="off" spellcheck="false" />
+        <div class="new-song-templates">
+          <div class="new-song-template-label">Choose a Template</div>
+          <div class="new-song-template-grid">
+            <button class="new-song-template-btn active" data-template="Blank">
+              <span class="template-icon">📄</span>
+              <span class="template-name">Blank</span>
+              <span class="template-desc">Empty canvas</span>
+            </button>
+            <button class="new-song-template-btn" data-template="Verse-Chorus">
+              <span class="template-icon">🎵</span>
+              <span class="template-name">Verse-Chorus</span>
+              <span class="template-desc">V / C / V / C</span>
+            </button>
+            <button class="new-song-template-btn" data-template="AABA">
+              <span class="template-icon">🎶</span>
+              <span class="template-name">AABA</span>
+              <span class="template-desc">A / A / B / A</span>
+            </button>
+            <button class="new-song-template-btn" data-template="Verse Only">
+              <span class="template-icon">📃</span>
+              <span class="template-name">Verse Only</span>
+              <span class="template-desc">V / V</span>
+            </button>
+          </div>
+        </div>
+        <div class="new-song-actions">
+          <button id="new-song-cancel-btn" class="new-song-cancel-btn">Cancel</button>
+          <button id="new-song-create-btn" class="new-song-create-btn">Create</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Tag Editor Panel -->
     <div id="tag-editor-panel" style="display:none;">
       <div class="toolbar-sheet-backdrop"></div>
