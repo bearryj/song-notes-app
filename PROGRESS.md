@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (added haptic feedback for metronome beats)
+2026-06-11 by OWL (added duplicate song feature)
 
 ## Build & Test Commands
 ```bash
@@ -60,6 +60,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - New song creation sheet (title input + visual template picker, replacing raw prompt() dialogs)
 61|- Polished bottom sheets replacing all raw browser prompt()/confirm() dialogs (input sheet + confirm sheet)
 62|- Visual key picker for transposition (circle-of-fifths grid, 12 keys, quick ♭/♯ buttons)
+- Duplicate song (deep copy from toolbar sheet, auto-suffixes title with " (Copy)")
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -77,6 +78,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 13. [x] Replace remaining raw prompt()/confirm() dialogs with proper UI (folder rename/delete, setlist create/rename, set key, set BPM, import) (2026-06-11)
 14. [x] Visual key picker in toolbar (2026-06-11) — replaced by dedicated transposition key picker (item 62)
 15. [x] Haptic feedback on key/metronome taps (2026-06-11) — metroVibrate() with accent beat pattern
+16. [x] Duplicate song from toolbar sheet (2026-06-11) — deep copy with new id, title suffix, pinned reset
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~60K), CSS (styles.css ~19K), HTML (index.html)
