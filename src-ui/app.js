@@ -87,6 +87,33 @@ async function loadSongs() {
   if (isTauri) { const r = await tauriLoadSongs(); if (r && r.length) { songs = r; return; } }
   try { songs = JSON.parse(localStorage.getItem('songs_app')) || []; } catch { songs = []; }
 }
+
+// Pull-to-refresh: reload data from storage and re-render
+async function refreshSongData() {
+  // Re-load songs from source of truth
+  if (isTauri) {
+    const r = await tauriLoadSongs();
+    if (r) songs = r;
+  } else {
+    try { songs = JSON.parse(localStorage.getItem('songs_app')) || []; } catch { songs = []; }
+  }
+  // Re-load folders (Tauri + localStorage)
+  try { const s = JSON.parse(localStorage.getItem('folders_app')); if (s?.length) folders = s; } catch {}
+  if (isTauri) { const bf = await tauriLoadFolders(); if (bf?.length) folders = bf; }
+  // Re-render
+  renderFolders();
+  renderSongList($('search-input')?.value || '');
+
+  // If in editor, refresh editor body
+  if (currentSongId) {
+    const song = getSong(currentSongId);
+    if (song) {
+      renderEditorBody(song);
+      updateRecordUI();
+    }
+  }
+}
+
 async function saveSongs() {
   localStorage.setItem('songs_app', JSON.stringify(songs));
   if (isTauri) for (const s of songs) await tauriSaveSong(s);
@@ -3155,6 +3182,78 @@ function setupEvents() {
       }, 1500);
     }, { passive: true });
   }
+
+  // ===== Pull-to-Refresh on Song List =====
+  (function initPullToRefresh() {
+    const view = $('song-list-view');
+    const list = $('song-list');
+    const indicator = $('pull-indicator');
+    if (!view || !list || !indicator) return;
+
+    let pullStartY = 0;
+    let pullDistance = 0;
+    let isPulling = false;
+    let isRefreshing = false;
+    const threshold = 70; // px to trigger refresh
+    const maxPull = 100;  // max px to stretch
+
+    // Touch start
+    list.addEventListener('touchstart', e => {
+      if (list.scrollTop > 5 || isRefreshing) return; // only at top
+      pullStartY = e.touches[0].clientY;
+      isPulling = true;
+      pullDistance = 0;
+    }, { passive: true });
+
+    // Touch move
+    list.addEventListener('touchmove', e => {
+      if (!isPulling || isRefreshing) return;
+      const currentY = e.touches[0].clientY;
+      pullDistance = Math.min(maxPull, Math.max(0, currentY - pullStartY));
+
+      if (pullDistance > 0) {
+        e.preventDefault(); // stop scroll bounce while pulling
+        indicator.style.height = pullDistance + 'px';
+        indicator.style.opacity = Math.min(1, pullDistance / threshold);
+
+        if (pullDistance >= threshold) {
+          indicator.classList.add('visible');
+          indicator.classList.remove('refreshing');
+        } else {
+          indicator.classList.remove('visible', 'refreshing');
+        }
+      }
+    }, { passive: false });
+
+    // Touch end
+    list.addEventListener('touchend', () => {
+      if (!isPulling) return;
+      isPulling = false;
+
+      if (pullDistance >= threshold && !isRefreshing) {
+        // Trigger refresh
+        isRefreshing = true;
+        indicator.classList.remove('visible');
+        indicator.classList.add('refreshing');
+        indicator.style.height = '56px';
+        indicator.style.opacity = '1';
+
+        refreshSongData().then(() => {
+          isRefreshing = false;
+          indicator.classList.remove('refreshing', 'visible');
+          indicator.style.height = '0';
+          indicator.style.opacity = '0';
+          toast('Refreshed', 'success');
+        });
+      } else {
+        // Snap back
+        indicator.classList.remove('visible', 'refreshing');
+        indicator.style.height = '0';
+        indicator.style.opacity = '0';
+      }
+      pullDistance = 0;
+    }, { passive: true });
+  })();
 
   function showToolbarSheet() {
     const sheet = $('toolbar-sheet');

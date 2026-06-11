@@ -151,6 +151,39 @@ html, body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+/* ===== Pull-to-Refresh ===== */
+.pull-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 0;
+  overflow: hidden;
+  transition: height 0.2s ease, opacity 0.2s ease;
+  pointer-events: none;
+  opacity: 0;
+}
+.pull-indicator.visible { height: 56px; }
+.pull-indicator.refreshing { height: 56px; }
+.pull-arrow {
+  font-size: 24px;
+  color: var(--fg-tertiary);
+  transition: transform 0.2s ease;
+}
+.pull-indicator.visible .pull-arrow { transform: rotate(180deg); }
+.pull-indicator.refreshing .pull-arrow {
+  animation: pull-spin 0.6s linear infinite;
+  color: var(--accent);
+}
+@keyframes pull-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.pull-text {
+  font-size: 13px;
+  color: var(--fg-tertiary);
+  margin-left: 6px;
+}
 .list-section-header {
   padding: 10px 16px 4px;
   font-size: 13px;
