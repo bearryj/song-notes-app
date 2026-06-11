@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (plugin system — custom export formats with template engine)
+2026-06-11 by OWL (version diff view — LCS-based diff between song versions)
 
 ## Build & Test Commands
 ```bash
@@ -53,6 +53,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Setlist mode (create/rename/delete setlists, add/remove/reorder songs, capo per song, transpose all, chord chart print)
 - Share song (generate share codes, native share API, clipboard, import from share code)
 - Plugin system for custom export formats (template engine, 5 built-in plugins, editor UI)
+- Version diff view (LCS-based line diff between any two versions, restore from diff)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -63,6 +64,8 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 6. [x] Collaborative editing (share link, real-time sync) (2026-06-11)
 7. [x] Plugin system for custom export formats (2026-06-11)
 8. [ ] iOS build (requires macOS + Xcode)
+9. [ ] Metronome (BPM-based click track)
+10. [ ] Song statistics (chord frequency, word count trends, key detection)
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~60K), CSS (styles.css ~19K), HTML (index.html)
