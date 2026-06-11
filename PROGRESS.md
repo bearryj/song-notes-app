@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (share song — share codes, native share, clipboard, import)
+2026-06-11 by OWL (plugin system — custom export formats with template engine)
 
 ## Build & Test Commands
 ```bash
@@ -52,6 +52,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Mobile keyboard handling (avoid viewport resize issues)
 - Setlist mode (create/rename/delete setlists, add/remove/reorder songs, capo per song, transpose all, chord chart print)
 - Share song (generate share codes, native share API, clipboard, import from share code)
+- Plugin system for custom export formats (template engine, 5 built-in plugins, editor UI)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -60,7 +61,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 4. [x] Setlist mode (order songs, capo per song, chord chart print) (2026-06-11)
 5. [x] Chord diagram panel (common chord shapes, finger positions) (2026-06-11)
 6. [x] Collaborative editing (share link, real-time sync) (2026-06-11)
-7. [ ] Plugin system for custom export formats
+7. [x] Plugin system for custom export formats (2026-06-11)
 8. [ ] iOS build (requires macOS + Xcode)
 
 ## Architecture Quick Ref

@@ -140,13 +140,126 @@ function renderHistoryList() {
     el.addEventListener('click', () => {
       const v = versionHistory.find(x => x.ts === parseInt(el.dataset.ts));
       if (!v) return;
-      const song = getSong(currentSongId);
-      if (!song) return;
-      song.key = v.key; song.sections = v.sections;
-      saveSingleSong(song); openEditor(currentSongId); toast('Restored');
-      $('history-panel').style.display = 'none';
+      showVersionDiff(v);
     });
   });
+}
+
+// ===== Version Diff View =====
+function showVersionDiff(version) {
+  const song = getSong(currentSongId);
+  if (!song) return;
+
+  // Build text representations for diff
+  const oldText = sectionsToText(version.sections);
+  const newText = sectionsToText(song.sections);
+  const diff = computeDiff(oldText, newText);
+
+  const modal = document.createElement('div');
+  modal.id = 'diff-modal';
+  modal.innerHTML = `
+    <div class="diff-backdrop"></div>
+    <div class="diff-content">
+      <div class="diff-header">
+        <div class="diff-title">Version Diff</div>
+        <div class="diff-subtitle">${new Date(version.ts).toLocaleString()} → Now</div>
+        <div class="diff-key-changes">${version.key || '—'} → ${song.key || '—'}</div>
+      </div>
+      <div class="diff-body" id="diff-body">${diff}</div>
+      <div class="diff-actions">
+        <button id="diff-restore-btn" class="diff-btn diff-restore">Restore This Version</button>
+        <button id="diff-close-btn" class="diff-btn diff-close">Close</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  modal.querySelector('.diff-backdrop').onclick = () => modal.remove();
+  modal.querySelector('#diff-close-btn').onclick = () => modal.remove();
+  modal.querySelector('#diff-restore-btn').onclick = () => {
+    if (!confirm('Restore this version? Current version will be lost.')) return;
+    const song2 = getSong(currentSongId);
+    if (!song2) return;
+    song2.key = version.key;
+    song2.sections = JSON.parse(JSON.stringify(version.sections));
+    saveSingleSong(song2);
+    openEditor(currentSongId);
+    modal.remove();
+    $('history-panel').style.display = 'none';
+    toast('Version restored');
+  };
+}
+
+function sectionsToText(sections) {
+  const lines = [];
+  (sections || []).forEach(sec => {
+    lines.push(`[${sec.type}]`);
+    (sec.lines || []).forEach(l => {
+      const chordStr = (l.chords || []).sort((a, b) => a.x - b.x).map(c => `[${c.name}]`).join('');
+      lines.push(chordStr + (l.text || ''));
+    });
+    lines.push('');
+  });
+  return lines;
+}
+
+// Simple line-by-line diff algorithm
+function computeDiff(oldLines, newLines) {
+  // Flatten to line arrays
+  const oldL = Array.isArray(oldLines) ? oldLines : oldLines.split('\n');
+  const newL = Array.isArray(newLines) ? newLines : newLines.split('\n');
+
+  // Use LCS-based diff
+  const m = oldL.length, n = newL.length;
+  // For performance, limit diff size
+  if (m > 500 || n > 500) {
+    return '<div class="diff-truncated">Song too large for diff view</div>';
+  }
+
+  // LCS table
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = oldL[i - 1] === newL[j - 1]
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+
+  // Backtrack to build diff
+  const result = [];
+  let i = m, j = n;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && oldL[i - 1] === newL[j - 1]) {
+      result.unshift({ type: 'same', text: oldL[i - 1] });
+      i--; j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      result.unshift({ type: 'add', text: newL[j - 1] });
+      j--;
+    } else {
+      result.unshift({ type: 'remove', text: oldL[i - 1] });
+      i--;
+    }
+  }
+
+  // Render diff HTML
+  let html = '';
+  result.forEach(line => {
+    const escaped = esc(line.text);
+    if (line.type === 'add') {
+      html += `<div class="diff-line diff-add"><span class="diff-marker">+</span><span>${escaped}</span></div>`;
+    } else if (line.type === 'remove') {
+      html += `<div class="diff-line diff-remove"><span class="diff-marker">−</span><span>${escaped}</span></div>`;
+    } else {
+      html += `<div class="diff-line diff-same"><span class="diff-marker"> </span><span>${escaped}</span></div>`;
+    }
+  });
+
+  // Summary
+  const adds = result.filter(r => r.type === 'add').length;
+  const removes = result.filter(r => r.type === 'remove').length;
+  const summary = `<div class="diff-summary">${adds} addition${adds !== 1 ? 's' : ''}, ${removes} removal${removes !== 1 ? 's' : ''}</div>`;
+
+  return summary + html;
 }
 
 // Audio

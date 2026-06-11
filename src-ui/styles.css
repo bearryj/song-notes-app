@@ -1773,3 +1773,130 @@ body.ios-device .toolbar-sheet-content {
   color: var(--fg);
   line-height: 1.5;
 }
+
+/* ===== Version Diff ===== */
+#diff-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100020;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.diff-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+.diff-content {
+  position: relative;
+  background: var(--bg);
+  border-radius: 16px;
+  max-width: 600px;
+  width: 92vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.diff-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.diff-title {
+  font-size: 17px;
+  font-weight: 600;
+}
+.diff-subtitle {
+  font-size: 13px;
+  color: var(--fg-secondary);
+  margin-top: 4px;
+}
+.diff-key-changes {
+  font-size: 13px;
+  color: var(--fg-tertiary);
+  margin-top: 2px;
+}
+.diff-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.diff-summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-secondary);
+  padding: 4px 8px 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.diff-line {
+  display: flex;
+  gap: 8px;
+  padding: 1px 4px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.diff-line.diff-add {
+  background: rgba(48, 209, 88, 0.12);
+}
+.diff-line.diff-remove {
+  background: rgba(255, 69, 58, 0.12);
+}
+.diff-marker {
+  width: 16px;
+  flex-shrink: 0;
+  font-weight: 700;
+  text-align: center;
+}
+.diff-line.diff-add .diff-marker {
+  color: #30d158;
+}
+.diff-line.diff-remove .diff-marker {
+  color: #ff453a;
+}
+.diff-line.diff-same .diff-marker {
+  color: var(--fg-tertiary);
+}
+.diff-line.diff-same {
+  color: var(--fg-secondary);
+}
+.diff-truncated {
+  padding: 20px;
+  text-align: center;
+  color: var(--fg-tertiary);
+  font-size: 14px;
+}
+.diff-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+.diff-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.diff-restore {
+  background: var(--fg);
+  color: var(--bg);
+}
+.diff-restore:active {
+  opacity: 0.85;
+}
+.diff-close {
+  background: var(--bg-secondary);
+  color: var(--fg);
+  border: 1px solid var(--border) !important;
+}
+.diff-close:active {
+  background: var(--bg-tertiary);
+}
