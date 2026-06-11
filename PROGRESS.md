@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (debounce search input — 150ms delay to avoid excessive DOM rebuilds)
+2026-06-11 by OWL (tag management UI — add/edit/remove tags, filter by tag, display tags in song list)
 
 ## Build & Test Commands
 ```bash
@@ -56,6 +56,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Version diff view (LCS-based line diff between any two versions, restore from diff)
 - Metronome (BPM-based click track with visual beat indicator, time signatures, tempo presets)
 - Song statistics (chord frequency, word count, key detection with Krumhansl-Schmuckler, section breakdown, chord progression)
+- Tag management (add/edit/remove tags, filter songs by tag, display tags in song list)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -69,7 +70,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 9. [x] Metronome (BPM-based click track) (2026-06-11)
 10. [x] Song statistics (chord frequency, word count trends, key detection) (2026-06-11)
 11. [x] Debounce search input (2026-06-11)
-12. [ ] Tag management UI (add/edit/display/filter tags — data model supports it, search already indexes it, but no editor UI)
+12. [x] Tag management UI (add/edit/display/filter tags — data model supports it, search already indexes it, but no editor UI) (2026-06-11)
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~60K), CSS (styles.css ~19K), HTML (index.html)
