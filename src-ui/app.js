@@ -1205,23 +1205,27 @@ function setupEvents() {
     transposeSong(song, 1); saveSingleSong(song); renderEditorBody(song); toast('♯');
   });
 
-  // More menu
+  // More menu — bottom sheet
   $('toolbar-more-btn').addEventListener('click', e => {
     e.stopPropagation();
-    const menu = $('more-menu');
-    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    showToolbarSheet();
   });
 
-  $('more-menu').querySelectorAll('button').forEach(btn => {
+  // Toolbar bottom sheet actions
+  document.querySelectorAll('.toolbar-sheet-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      $('more-menu').style.display = 'none';
+      hideToolbarSheet();
       const a = btn.dataset.action;
       const song = getSong(currentSongId);
 
       if (a === 'set-key') {
         if (!song) return;
         const key = prompt('Key (e.g. G, Am):', song.key || '');
-        if (key !== null) { song.key = key.trim(); btn.textContent = song.key ? `Set Key: ${song.key}` : 'Set Key: —'; await saveSingleSong(song); renderSongList(); }
+        if (key !== null) { song.key = key.trim(); await saveSingleSong(song); renderSongList(); }
+      } else if (a === 'set-bpm') {
+        if (!song) return;
+        const bpm = prompt('BPM:', song.bpm || '');
+        if (bpm !== null) { song.bpm = parseInt(bpm) || null; await saveSingleSong(song); }
       } else if (a === 'import-txt') {
         importFiles();
       } else if (a === 'export-txt') {
@@ -1230,10 +1234,73 @@ function setupEvents() {
         if (!song) return; downloadFile(buildExportMarkdown(song), `${song.title || 'song'}.md`, 'text/markdown'); toast('Exported');
       } else if (a === 'export-clip') {
         if (!song) return; navigator.clipboard.writeText(buildExportText(song)).then(() => toast('Copied'));
+      } else if (a === 'history') {
+        const panel = $('history-panel');
+        if (panel) panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
       } else if (a === 'delete') {
         if (!song) return;
         if (confirm(`Delete "${song.title}"?`)) { await deleteSong(currentSongId); currentSongId = null; popView(); renderSongList(); toast('Deleted'); }
       }
+    });
+  });
+
+  // Close sheet on backdrop tap
+  document.querySelector('.toolbar-sheet-backdrop')?.addEventListener('click', hideToolbarSheet);
+
+  // FAB to show toolbar
+  $('toolbar-fab')?.addEventListener('click', () => {
+    const toolbar = $('mobile-toolbar');
+    if (toolbar) {
+      toolbar.classList.remove('collapsed');
+      $('toolbar-fab').classList.add('hidden');
+      setTimeout(() => { $('toolbar-fab').style.display = 'none'; $('toolbar-fab').classList.remove('hidden'); }, 300);
+    }
+  });
+
+  // Auto-collapse toolbar on scroll down, show on scroll up
+  let lastScrollTop = 0;
+  let scrollTimeout = null;
+  const editorBody = $('song-body');
+  if (editorBody) {
+    editorBody.addEventListener('scroll', () => {
+      const scrollTop = editorBody.scrollTop;
+      const toolbar = $('mobile-toolbar');
+      const fab = $('toolbar-fab');
+      if (!toolbar || !fab) return;
+
+      if (scrollTop > lastScrollTop && scrollTop > 100) {
+        // Scrolling down — collapse toolbar
+        toolbar.classList.add('collapsed');
+        fab.style.display = 'flex';
+      } else {
+        // Scrolling up — show toolbar
+        toolbar.classList.remove('collapsed');
+        fab.style.display = 'none';
+      }
+      lastScrollTop = scrollTop;
+
+      // Show toolbar briefly after scroll stops
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        toolbar.classList.remove('collapsed');
+      }, 1500);
+    }, { passive: true });
+  }
+
+  function showToolbarSheet() {
+    const sheet = $('toolbar-sheet');
+    if (sheet) sheet.style.display = 'flex';
+  }
+  function hideToolbarSheet() {
+    const sheet = $('toolbar-sheet');
+    if (sheet) sheet.style.display = 'none';
+  }
+
+  // More menu (legacy — keep for backward compat)
+  $('more-menu')?.querySelectorAll('button')?.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      $('more-menu').style.display = 'none';
+      // Handled by sheet buttons now
     });
   });
 

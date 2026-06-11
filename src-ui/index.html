@@ -50,16 +50,84 @@
       </div>
       <div id="song-body" class="editor-body"></div>
       <div id="info-bar" class="info-bar" style="display:none;"></div>
-      <div class="bottom-bar">
-        <button id="record-btn" class="bar-btn" title="Record">●</button>
-        <button id="recordings-btn" class="bar-btn" title="Recordings" style="display:none">▸</button>
-        <span class="bar-spacer"></span>
-        <button id="transpose-down-btn" class="bar-btn" title="Transpose down">♭</button>
-        <button id="transpose-up-btn" class="bar-btn" title="Transpose up">♯</button>
-        <span class="bar-spacer"></span>
-        <button id="add-section-btn" class="bar-btn" title="Add section">+ Section</button>
-        <button id="toolbar-more-btn" class="bar-btn" title="More">⋯</button>
+
+      <!-- Mobile Toolbar -->
+      <div class="mobile-toolbar" id="mobile-toolbar">
+        <!-- Primary actions row -->
+        <div class="toolbar-primary">
+          <button id="record-btn" class="toolbar-btn" title="Record">
+            <span class="toolbar-icon">●</span>
+            <span class="toolbar-label">Record</span>
+          </button>
+          <button id="recordings-btn" class="toolbar-btn" title="Recordings" style="display:none">
+            <span class="toolbar-icon">▸</span>
+            <span class="toolbar-label">Takes</span>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button id="transpose-down-btn" class="toolbar-btn toolbar-btn-sm" title="Transpose down">
+            <span class="toolbar-icon">♭</span>
+          </button>
+          <button id="transpose-up-btn" class="toolbar-btn toolbar-btn-sm" title="Transpose up">
+            <span class="toolbar-icon">♯</span>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button id="add-section-btn" class="toolbar-btn" title="Add section">
+            <span class="toolbar-icon">+</span>
+            <span class="toolbar-label">Section</span>
+          </button>
+          <button id="toolbar-more-btn" class="toolbar-btn" title="More tools">
+            <span class="toolbar-icon">⋯</span>
+            <span class="toolbar-label">More</span>
+          </button>
+        </div>
       </div>
+
+      <!-- Toolbar Bottom Sheet -->
+      <div id="toolbar-sheet" style="display:none;">
+        <div class="toolbar-sheet-backdrop"></div>
+        <div class="toolbar-sheet-content">
+          <div class="toolbar-sheet-handle"></div>
+          <div class="toolbar-sheet-grid">
+            <button class="toolbar-sheet-btn" data-action="set-key">
+              <span class="sheet-icon">🎵</span>
+              <span class="sheet-label">Set Key</span>
+            </button>
+            <button class="toolbar-sheet-btn" data-action="set-bpm">
+              <span class="sheet-icon">⏱</span>
+              <span class="sheet-label">Set BPM</span>
+            </button>
+            <button class="toolbar-sheet-btn" data-action="import-txt">
+              <span class="sheet-icon">↓</span>
+              <span class="sheet-label">Import Text</span>
+            </button>
+            <button class="toolbar-sheet-btn" data-action="export-txt">
+              <span class="sheet-icon">↑</span>
+              <span class="sheet-label">Export Text</span>
+            </button>
+            <button class="toolbar-sheet-btn" data-action="export-md">
+              <span class="sheet-icon">M↓</span>
+              <span class="sheet-label">Export MD</span>
+            </button>
+            <button class="toolbar-sheet-btn" data-action="export-clip">
+              <span class="sheet-icon">⎘</span>
+              <span class="sheet-label">Copy</span>
+            </button>
+            <button class="toolbar-sheet-btn" data-action="history">
+              <span class="sheet-icon">↶</span>
+              <span class="sheet-label">History</span>
+            </button>
+            <button class="toolbar-sheet-btn" data-action="delete">
+              <span class="sheet-icon">🗑</span>
+              <span class="sheet-label">Delete</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAB (shown when toolbar collapsed) -->
+      <button id="toolbar-fab" class="toolbar-fab" style="display:none;" title="Show tools">
+        <span class="fab-icon">⚙</span>
+      </button>
     </div>
 
     <!-- More Menu Popover -->
