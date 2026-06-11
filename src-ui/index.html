@@ -30,6 +30,7 @@
       <div class="search-bar">
         <input type="search" id="search-input" placeholder="Search" />
       </div>
+      <div id="tag-filter-bar" class="tag-filter-bar" style="display:none;"></div>
       <div id="song-list" class="list"></div>
     </div>
 
@@ -143,6 +144,10 @@
             <button class="toolbar-sheet-btn" data-action="song-stats">
               <span class="sheet-icon">📊</span>
               <span class="sheet-label">Song Stats</span>
+            </button>
+            <button class="toolbar-sheet-btn" data-action="edit-tags">
+              <span class="sheet-icon">🏷</span>
+              <span class="sheet-label">Tags</span>
             </button>
           </div>
         </div>
@@ -298,6 +303,31 @@
         </div>
         <div class="stats-body" id="stats-body">
           <div class="stats-loading">Select a song to view stats</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tag Editor Panel -->
+    <div id="tag-editor-panel" style="display:none;">
+      <div class="toolbar-sheet-backdrop"></div>
+      <div class="stats-content">
+        <div class="toolbar-sheet-handle"></div>
+        <div class="stats-header">
+          <h3 class="stats-title">Edit Tags</h3>
+        </div>
+        <div class="tag-editor-body">
+          <div id="tag-editor-current" class="tag-editor-section">
+            <div class="tag-editor-label">Current Tags</div>
+            <div id="tag-editor-chips" class="tag-chips-wrap"></div>
+          </div>
+          <div class="tag-editor-input-row">
+            <input type="text" id="tag-editor-input" placeholder="Add a tag…" autocomplete="off" spellcheck="false" />
+            <button id="tag-editor-add-btn" class="nav-btn nav-btn-primary" style="padding:6px 14px;font-size:14px;">Add</button>
+          </div>
+          <div id="tag-editor-suggestions" class="tag-editor-section">
+            <div class="tag-editor-label">All Tags</div>
+            <div id="tag-editor-all-chips" class="tag-chips-wrap"></div>
+          </div>
         </div>
       </div>
     </div>

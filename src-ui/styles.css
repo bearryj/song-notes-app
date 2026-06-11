@@ -2416,3 +2416,163 @@ body.ios-device .toolbar-sheet-content {
   margin-bottom: 8px;
   opacity: 0.5;
 }
+
+/* ===== Tag Filter Bar ===== */
+.tag-filter-bar {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--separator);
+}
+.tag-filter-bar::-webkit-scrollbar { display: none; }
+.tag-filter-list {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.tag-filter-chip {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--separator);
+  color: var(--fg-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: var(--font);
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tag-filter-chip:active { background: var(--bg-surface); }
+.tag-filter-chip.active {
+  background: rgba(48, 209, 88, 0.15);
+  border-color: var(--chord);
+  color: var(--chord);
+}
+.tag-filter-clear {
+  background: none;
+  border: none;
+  color: var(--fg-tertiary);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 6px;
+  flex-shrink: 0;
+  font-family: var(--font);
+}
+.tag-filter-clear:active { color: var(--fg-secondary); }
+
+/* ===== Tags in Song List ===== */
+.item-tags {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+  flex-shrink: 0;
+  overflow: hidden;
+  max-width: 40%;
+}
+.item-tag {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--chord);
+  background: rgba(48, 209, 88, 0.1);
+  padding: 1px 6px;
+  border-radius: 8px;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+/* ===== Tag Editor Panel ===== */
+.tag-editor-body {
+  padding: 4px 0 0;
+}
+.tag-editor-section {
+  margin-bottom: 16px;
+}
+.tag-editor-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.tag-chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 28px;
+}
+.tag-editor-empty {
+  font-size: 13px;
+  color: var(--fg-tertiary);
+  font-style: italic;
+}
+.tag-editor-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.tag-editor-input-row input {
+  flex: 1;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--separator);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--fg);
+  font-size: 14px;
+  font-family: var(--font);
+  outline: 0;
+}
+.tag-editor-input-row input:focus {
+  border-color: var(--accent);
+}
+
+/* Tag chips */
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--separator);
+  color: var(--fg-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tag-chip:active { background: var(--bg-surface); }
+.tag-chip-active {
+  background: rgba(48, 209, 88, 0.12);
+  border-color: rgba(48, 209, 88, 0.3);
+  color: var(--chord);
+}
+.tag-chip-disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.tag-chip-disabled:active { background: var(--bg-tertiary); }
+.tag-chip-remove {
+  background: none;
+  border: none;
+  color: var(--fg-tertiary);
+  font-size: 10px;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+  line-height: 1;
+  opacity: 0.6;
+  font-family: var(--font);
+}
+.tag-chip-remove:active {
+  color: var(--danger);
+  opacity: 1;
+}

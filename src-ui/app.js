@@ -449,6 +449,7 @@ async function persistFolders() {
 
 // Song context menu (long press)
 let contextSongId = null;
+let activeTagFilter = null;
 function showSongContext(songId, anchorEl) {
   contextSongId = songId;
   const song = getSong(songId);
@@ -547,6 +548,11 @@ function renderSongList(filter = '') {
     });
   }
 
+  // Tag filter
+  if (activeTagFilter) {
+    list = list.filter(s => s.tags?.includes(activeTagFilter));
+  }
+
   if (!list.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">♪</div><h2>' + (filter ? 'No Results' : 'No Songs') + '</h2><p>' + (filter ? 'Try a different search' : 'Tap + to create one') + '</p></div>';
     return;
@@ -585,9 +591,11 @@ function renderSongList(filter = '') {
     }
 
     const pinned = s.pinned ? '<span class="item-pin">★</span>' : '';
+    const tagHtml = (s.tags && s.tags.length) ? `<span class="item-tags">${s.tags.map(t => `<span class="item-tag">${esc(t)}</span>`).join('')}</span>` : '';
     html += `<div class="list-item" data-id="${s.id}">
       ${pinned}
       <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}</span>
+      ${tagHtml}
       <span class="item-meta">${fmtDate(s.updated_at)}</span>
     </div>`;
   });
@@ -639,6 +647,9 @@ function renderSongList(filter = '') {
       isDragging = false;
     }, { passive: true });
   });
+
+  // Update tag filter bar
+  renderTagFilterBar();
 }
 
 // Editor
@@ -2659,6 +2670,8 @@ function setupEvents() {
         showMetronomePanel();
       } else if (a === 'song-stats') {
         showSongStatsPanel();
+      } else if (a === 'edit-tags') {
+        showTagEditorPanel();
       }
     });
   });
@@ -2857,6 +2870,9 @@ function setupEvents() {
     list.classList.toggle('gallery', galleryMode);
     $('view-toggle').textContent = galleryMode ? '☰' : '⊞';
   });
+
+  // Tag editor events
+  setupTagEditorEvents();
 }
 
 function applyTheme(theme) {
@@ -3272,3 +3288,157 @@ function computeStatsHTML(song) {
 }
 
 init();
+
+// ===== Tag Management =====
+
+// Collect all unique tags across all songs
+function getAllTags() {
+  const tagSet = new Set();
+  songs.forEach(s => {
+    (s.tags || []).forEach(t => tagSet.add(t));
+  });
+  return [...tagSet].sort((a, b) => a.localeCompare(b));
+}
+
+// Render tag filter bar below search
+function renderTagFilterBar() {
+  const bar = $('tag-filter-bar');
+  if (!bar) return;
+  const allTags = getAllTags();
+  if (!allTags.length) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  let html = '<div class="tag-filter-list">';
+  allTags.forEach(tag => {
+    const active = activeTagFilter === tag ? ' active' : '';
+    html += `<button class="tag-filter-chip${active}" data-tag="${esc(tag)}">${esc(tag)}</button>`;
+  });
+  html += '</div>';
+  if (activeTagFilter) {
+    html += '<button class="tag-filter-clear" data-tag="">✕ Clear</button>';
+  }
+  bar.innerHTML = html;
+}
+
+// Show tag editor panel for current song
+function showTagEditorPanel() {
+  hideToolbarSheet();
+  const panel = $('tag-editor-panel');
+  if (!panel) return;
+  const song = getSong(currentSongId);
+  if (!song) { toast('No song selected'); return; }
+
+  renderTagEditorContent(song);
+  panel.style.display = 'flex';
+
+  // Close on backdrop tap
+  panel.querySelector('.toolbar-sheet-backdrop').onclick = () => {
+    panel.style.display = 'none';
+  };
+}
+
+function renderTagEditorContent(song) {
+  const currentChips = $('tag-editor-chips');
+  const allChips = $('tag-editor-all-chips');
+  const input = $('tag-editor-input');
+  if (!currentChips || !allChips) return;
+
+  const songTags = song.tags || [];
+  const allTags = getAllTags();
+
+  // Current song tags
+  if (!songTags.length) {
+    currentChips.innerHTML = '<span class="tag-editor-empty">No tags yet</span>';
+  } else {
+    currentChips.innerHTML = '';
+    songTags.forEach(tag => {
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip tag-chip-active';
+      chip.innerHTML = `${esc(tag)}<button class="tag-chip-remove" data-tag="${esc(tag)}" title="Remove">✕</button>`;
+      chip.querySelector('.tag-chip-remove').addEventListener('click', async () => {
+        song.tags = (song.tags || []).filter(t => t !== tag);
+        await saveSingleSong(song);
+        renderTagEditorContent(song);
+        renderTagFilterBar();
+        renderSongList($('search-input')?.value || '');
+        toast(`Removed "${tag}"`);
+      });
+      currentChips.appendChild(chip);
+    });
+  }
+
+  // All tags (suggestions)
+  allChips.innerHTML = '';
+  allTags.forEach(tag => {
+    const chip = document.createElement('span');
+    const hasIt = songTags.includes(tag);
+    chip.className = 'tag-chip' + (hasIt ? ' tag-chip-disabled' : '');
+    chip.textContent = esc(tag);
+    if (!hasIt) {
+      chip.addEventListener('click', async () => {
+        if (!song.tags) song.tags = [];
+        song.tags.push(tag);
+        song.tags.sort((a, b) => a.localeCompare(b));
+        await saveSingleSong(song);
+        renderTagEditorContent(song);
+        renderTagFilterBar();
+        renderSongList($('search-input')?.value || '');
+      });
+    }
+    allChips.appendChild(chip);
+  });
+
+  // Clear input
+  if (input) input.value = '';
+}
+
+// Setup tag editor events (called from setupEvents)
+function setupTagEditorEvents() {
+  const addBtn = $('tag-editor-add-btn');
+  const input = $('tag-editor-input');
+
+  if (addBtn && input) {
+    addBtn.addEventListener('click', async () => {
+      const val = input.value.trim();
+      if (!val) return;
+      const song = getSong(currentSongId);
+      if (!song) return;
+      if (!song.tags) song.tags = [];
+      if (song.tags.includes(val)) { toast('Tag already exists'); return; }
+      song.tags.push(val);
+      song.tags.sort((a, b) => a.localeCompare(b));
+      await saveSingleSong(song);
+      renderTagEditorContent(song);
+      renderTagFilterBar();
+      renderSongList($('search-input')?.value || '');
+      input.value = '';
+      input.focus();
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); }
+    });
+  }
+
+  // Tag filter bar events
+  const filterBar = $('tag-filter-bar');
+  if (filterBar) {
+    filterBar.addEventListener('click', e => {
+      const chip = e.target.closest('.tag-filter-chip');
+      const clear = e.target.closest('.tag-filter-clear');
+      if (chip) {
+        const tag = chip.dataset.tag;
+        if (activeTagFilter === tag) {
+          activeTagFilter = null;
+        } else {
+          activeTagFilter = tag;
+        }
+        renderTagFilterBar();
+        renderSongList($('search-input')?.value || '');
+      } else if (clear) {
+        activeTagFilter = null;
+        renderTagFilterBar();
+        renderSongList($('search-input')?.value || '');
+      }
+    });
+  }
+}
