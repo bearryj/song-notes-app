@@ -759,6 +759,21 @@ html, body {
   animation: pulse 1.2s infinite;
 }
 
+/* ===== Mobile Keyboard Handling ===== */
+body.keyboard-open .mobile-toolbar {
+  position: absolute;
+  bottom: auto;
+}
+body.keyboard-open .editor-body {
+  padding-bottom: 8px;
+}
+body.ios-device .chord-sheet {
+  padding-bottom: calc(16px + var(--safe-bottom) + 44px);
+}
+body.ios-device .toolbar-sheet-content {
+  padding-bottom: calc(20px + var(--safe-bottom) + 44px);
+}
+
 /* ===== Drag Over ===== */
 .song-section.drag-over {
   border: 2px dashed var(--accent);

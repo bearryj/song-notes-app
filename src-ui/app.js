@@ -943,6 +943,90 @@ function showChordEdit(song, line, chord) {
   setTimeout(() => document.addEventListener('click', closeOnOutside), 100);
 }
 
+// ===== Mobile Keyboard Handling =====
+function initMobileKeyboard() {
+  // Track keyboard visibility
+  let keyboardVisible = false;
+  let keyboardHeight = 0;
+
+  // Method 1: VisualViewport API (modern browsers)
+  if (window.visualViewport) {
+    const vv = window.visualViewport;
+    vv.addEventListener('resize', () => {
+      const windowHeight = window.innerHeight;
+      const viewportHeight = vv.height;
+      keyboardVisible = viewportHeight < windowHeight - 50;
+      keyboardHeight = keyboardVisible ? windowHeight - viewportHeight : 0;
+
+      const toolbar = $('mobile-toolbar');
+      const fab = $('toolbar-fab');
+      const sheet = $('toolbar-sheet');
+
+      if (keyboardVisible) {
+        document.body.classList.add('keyboard-open');
+        if (toolbar) toolbar.style.transform = `translateY(${keyboardHeight}px)`;
+        if (fab) fab.style.transform = `translateY(${keyboardHeight}px)`;
+        if (sheet) sheet.style.transform = `translateY(${keyboardHeight}px)`;
+      } else {
+        document.body.classList.remove('keyboard-open');
+        if (toolbar) toolbar.style.transform = '';
+        if (fab) fab.style.transform = '';
+        if (sheet) sheet.style.transform = '';
+      }
+    });
+  }
+
+  // Method 2: Focus-based detection (fallback)
+  const focusableSelector = 'input, textarea, [contenteditable="true"]';
+
+  document.addEventListener('focusin', e => {
+    if (e.target.matches(focusableSelector)) {
+      setTimeout(() => {
+        const el = e.target;
+        const rect = el.getBoundingClientRect();
+        const toolbarHeight = 60;
+        const bottomEdge = rect.bottom + toolbarHeight;
+
+        if (bottomEdge > window.innerHeight * 0.6) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        const lineEl = el.closest('.chord-line');
+        if (lineEl) {
+          lineEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    }
+  });
+
+  // Prevent zoom on double-tap for inputs
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      if (e.target.matches(focusableSelector)) {
+        e.preventDefault();
+      }
+    }
+    lastTouchEnd = now;
+  }, { passive: false });
+
+  // Handle orientation change
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      const toolbar = $('mobile-toolbar');
+      if (toolbar && keyboardVisible) {
+        toolbar.style.transform = `translateY(${keyboardHeight}px)`;
+      }
+    }, 300);
+  });
+
+  // iOS-specific: handle form assistant bar
+  if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+    document.body.classList.add('ios-device');
+  }
+}
+
 // Export
 function buildExportText(song) {
   let text = `${song.title}\n${'='.repeat(song.title.length)}\n\n`;
@@ -1319,6 +1403,9 @@ function setupEvents() {
       if (song) { pushVersion(); song.title = $('song-title').value || 'Untitled'; song.updated_at = new Date().toISOString(); saveSingleSong(song); toast('Saved'); }
     }
   });
+
+  // Mobile keyboard handling
+  initMobileKeyboard();
 
   setupFolderActions();
   
