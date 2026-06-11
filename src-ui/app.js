@@ -645,10 +645,107 @@ function renderLine(container, song, si, li, line) {
       marker.className = 'chord-marker';
       marker.textContent = ch.name;
       marker.style.left = ch.x + 'px';
+      marker.dataset.chordIdx = i;
+
+      // Tap to edit
       marker.addEventListener('click', e => {
         e.stopPropagation();
         showChordEdit(song, line, ch);
       });
+
+      // Long press to delete
+      let longPressTimer = null;
+      marker.addEventListener('touchstart', e => {
+        longPressTimer = setTimeout(() => {
+          marker.classList.add('chord-marker-deleting');
+          navigator.vibrate?.(50);
+          // Show delete confirmation
+          const confirmDel = confirm(`Delete chord "${ch.name}"?`);
+          marker.classList.remove('chord-marker-deleting');
+          if (confirmDel) {
+            line.chords = line.chords.filter(c => c !== chord);
+            saveSingleSong(song);
+            renderChordMarkers();
+          }
+        }, 600);
+      }, { passive: true });
+      marker.addEventListener('touchend', () => { clearTimeout(longPressTimer); longPressTimer = null; }, { passive: true });
+      marker.addEventListener('touchmove', () => { clearTimeout(longPressTimer); longPressTimer = null; }, { passive: true });
+
+      // Drag to move chord position
+      let dragStartX = 0;
+      let dragChordStartX = 0;
+      let isDragging = false;
+
+      marker.addEventListener('touchstart', e => {
+        const touch = e.touches[0];
+        dragStartX = touch.clientX;
+        dragChordStartX = ch.x;
+        isDragging = false;
+        marker.classList.add('chord-marker-dragging');
+      }, { passive: true });
+
+      marker.addEventListener('touchmove', e => {
+        if (!isDragging) {
+          // Only start drag if moved > 8px
+          const touch = e.touches[0];
+          if (Math.abs(touch.clientX - dragStartX) > 8) {
+            isDragging = true;
+          }
+        }
+        if (isDragging) {
+          e.preventDefault();
+          const touch = e.touches[0];
+          const rect = chordRow.getBoundingClientRect();
+          const deltaX = touch.clientX - dragStartX;
+          const newX = Math.max(0, Math.round(dragChordStartX + deltaX));
+          ch.x = newX;
+          marker.style.left = newX + 'px';
+          marker.classList.add('chord-marker-dragging');
+        }
+      }, { passive: false });
+
+      marker.addEventListener('touchend', () => {
+        marker.classList.remove('chord-marker-dragging');
+        if (isDragging) {
+          line.chords.sort((a, b) => a.x - b.x);
+          saveSingleSong(song);
+          renderChordMarkers();
+        }
+        isDragging = false;
+      }, { passive: true });
+
+      // Mouse drag support (for desktop testing)
+      marker.addEventListener('mousedown', e => {
+        e.preventDefault();
+        dragStartX = e.clientX;
+        dragChordStartX = ch.x;
+        isDragging = false;
+        marker.classList.add('chord-marker-dragging');
+
+        function onMouseMove(e) {
+          if (!isDragging && Math.abs(e.clientX - dragStartX) > 8) isDragging = true;
+          if (isDragging) {
+            const deltaX = e.clientX - dragStartX;
+            const newX = Math.max(0, Math.round(dragChordStartX + deltaX));
+            ch.x = newX;
+            marker.style.left = newX + 'px';
+          }
+        }
+        function onMouseUp() {
+          marker.classList.remove('chord-marker-dragging');
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+          if (isDragging) {
+            line.chords.sort((a, b) => a.x - b.x);
+            saveSingleSong(song);
+            renderChordMarkers();
+          }
+        }
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+
       chordRow.appendChild(marker);
     });
     // Line delete button (always at end of chord row)
@@ -664,7 +761,7 @@ function renderLine(container, song, si, li, line) {
     chordRow.appendChild(delBtn);
   }
 
-  // Click chord row anywhere to place a chord at that x position
+  // Click/tap chord row anywhere to place a chord at that x position
   chordRow.addEventListener('click', e => {
     const rect = chordRow.getBoundingClientRect();
     const x = Math.max(0, Math.round(e.clientX - rect.left));
@@ -677,6 +774,27 @@ function renderLine(container, song, si, li, line) {
     showChordEdit(song, line, chord);
   });
 
+  // Double-tap chord row to add chord at tap position (mobile-friendly)
+  let lastTapTime = 0;
+  chordRow.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTapTime < 300) {
+      // Double tap - add chord
+      const touch = e.changedTouches[0];
+      const rect = chordRow.getBoundingClientRect();
+      const x = Math.max(0, Math.round(touch.clientX - rect.left));
+      if (!line.chords.find(c => Math.abs(c.x - x) < 20)) {
+        const chord = { x, name: '' };
+        line.chords.push(chord);
+        line.chords.sort((a, b) => a.x - b.x);
+        saveSingleSong(song);
+        renderChordMarkers();
+        showChordEdit(song, line, chord);
+      }
+    }
+    lastTapTime = now;
+  }, { passive: true });
+
   lineEl.appendChild(chordRow);
   lineEl.appendChild(lyricInput);
 
@@ -686,16 +804,38 @@ function renderLine(container, song, si, li, line) {
   renderChordMarkers();
 }
 
-// Chord Popup
+// Chord Popup — Mobile Bottom Sheet
 let chordPopup = null;
 function showChordEdit(song, line, chord) {
   if (chordPopup) chordPopup.remove();
 
   chordPopup = document.createElement('div');
-  chordPopup.className = 'chord-popup';
+  chordPopup.className = 'chord-popup-sheet';
 
+  // Backdrop
+  const backdrop = document.createElement('div');
+  backdrop.className = 'chord-sheet-backdrop';
+  backdrop.addEventListener('click', () => { chordPopup.remove(); chordPopup = null; });
+
+  const sheet = document.createElement('div');
+  sheet.className = 'chord-sheet';
+
+  // Handle bar (visual indicator)
+  const handle = document.createElement('div');
+  handle.className = 'chord-sheet-handle';
+  sheet.appendChild(handle);
+
+  // Current chord display
+  const chordDisplay = document.createElement('div');
+  chordDisplay.className = 'chord-sheet-display';
+  chordDisplay.textContent = chord.name || '?';
+  sheet.appendChild(chordDisplay);
+
+  // Input
   const input = document.createElement('input');
-  input.value = chord.name; input.placeholder = 'Am'; input.autofocus = true; input.spellcheck = false;
+  input.value = chord.name; input.placeholder = 'Am'; input.spellcheck = false;
+  input.className = 'chord-sheet-input';
+  sheet.appendChild(input);
 
   // Common chord quick-select
   const roots = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -710,10 +850,12 @@ function showChordEdit(song, line, chord) {
   roots.forEach(r => {
     const btn = document.createElement('button');
     btn.textContent = r;
-    btn.className = 'chord-q-btn' + (chord.name === r ? ' active' : '');
+    btn.className = 'chord-q-btn chord-q-btn-lg' + (chord.name === r ? ' active' : '');
     btn.addEventListener('click', () => {
       input.value = r;
       chord.name = r;
+      chordDisplay.textContent = r;
+      updateQuickActive();
     });
     rootRow.appendChild(btn);
   });
@@ -722,50 +864,82 @@ function showChordEdit(song, line, chord) {
   // Suffix buttons
   const suffixRow = document.createElement('div');
   suffixRow.className = 'chord-quick-row';
+  const suffixBtns = [];
   suffixes.forEach(s => {
     const root = chord.name?.match(/^[A-G][#b]?/)?.[0] || 'C';
     const full = root + s;
     const btn = document.createElement('button');
-    btn.textContent = full;
-    btn.className = 'chord-q-btn chord-q-small' + (chord.name === full ? ' active' : '');
+    btn.textContent = s || '♮';
+    btn.className = 'chord-q-btn chord-q-btn-lg chord-q-small' + (chord.name === full ? ' active' : '');
     btn.addEventListener('click', () => {
-      input.value = full;
-      chord.name = full;
+      const currentRoot = input.value?.match(/^[A-G][#b]?/)?.[0] || root;
+      const newChord = currentRoot + s;
+      input.value = newChord;
+      chord.name = newChord;
+      chordDisplay.textContent = newChord;
+      updateQuickActive();
     });
+    suffixBtns.push(btn);
     suffixRow.appendChild(btn);
   });
   quickRow.appendChild(suffixRow);
 
-  input.addEventListener('input', () => {
-    // Update active state on quick buttons
+  function updateQuickActive() {
     rootRow.querySelectorAll('.chord-q-btn').forEach(b => b.classList.toggle('active', b.textContent === input.value));
-    suffixRow.querySelectorAll('.chord-q-btn').forEach(b => b.classList.toggle('active', b.textContent === input.value));
+    suffixBtns.forEach((b, i) => {
+      const currentRoot = input.value?.match(/^[A-G][#b]?/)?.[0] || 'C';
+      b.classList.toggle('active', input.value === currentRoot + suffixes[i]);
+    });
+  }
+
+  input.addEventListener('input', () => {
+    chord.name = input.value.trim();
+    chordDisplay.textContent = chord.name || '?';
+    updateQuickActive();
   });
+  sheet.appendChild(quickRow);
+
+  // Action buttons
+  const btnRow = document.createElement('div');
+  btnRow.className = 'chord-popup-actions';
+
   const doneBtn = document.createElement('button');
-  doneBtn.className = 'done-btn'; doneBtn.textContent = 'Done';
+  doneBtn.className = 'done-btn'; doneBtn.textContent = '✓ Done';
   doneBtn.addEventListener('click', () => {
     chord.name = input.value.trim();
     line.chords.sort((a, b) => a.x - b.x);
     saveSingleSong(song);
     chordPopup.remove(); chordPopup = null;
   });
+
   const removeBtn = document.createElement('button');
-  removeBtn.className = 'remove-btn'; removeBtn.textContent = 'Remove';
+  removeBtn.className = 'remove-btn'; removeBtn.textContent = '✕ Remove';
   removeBtn.addEventListener('click', () => {
     line.chords = line.chords.filter(c => c !== chord);
     saveSingleSong(song);
     chordPopup.remove(); chordPopup = null;
   });
-  chordPopup.appendChild(input);
-  chordPopup.appendChild(quickRow);
-  const btnRow = document.createElement('div');
-  btnRow.className = 'chord-popup-actions';
-  btnRow.appendChild(doneBtn);
+
   btnRow.appendChild(removeBtn);
-  chordPopup.appendChild(btnRow);
-  document.body.appendChild(chordPopup); input.focus();
+  btnRow.appendChild(doneBtn);
+  sheet.appendChild(btnRow);
+
+  chordPopup.appendChild(backdrop);
+  chordPopup.appendChild(sheet);
+  document.body.appendChild(chordPopup);
+
+  // Focus input after animation
+  setTimeout(() => input.focus(), 100);
   input.addEventListener('keydown', e => { if (e.key === 'Enter') doneBtn.click(); });
-  const closeOnOutside = e => { if (chordPopup && !chordPopup.contains(e.target)) { chordPopup.remove(); chordPopup = null; document.removeEventListener('click', closeOnOutside); } };
+
+  // Close on outside click
+  const closeOnOutside = e => {
+    if (chordPopup && !sheet.contains(e.target) && !backdrop.contains(e.target)) return;
+    if (chordPopup && backdrop.contains(e.target)) {
+      chordPopup.remove(); chordPopup = null;
+      document.removeEventListener('click', closeOnOutside);
+    }
+  };
   setTimeout(() => document.addEventListener('click', closeOnOutside), 100);
 }
 

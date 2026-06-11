@@ -514,74 +514,104 @@ html, body {
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-/* ===== Chord Popup ===== */
-.chord-popup {
+/* ===== Chord Popup — Mobile Bottom Sheet ===== */
+.chord-popup-sheet {
   position: fixed;
-  bottom: calc(56px + var(--safe-bottom));
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg-secondary);
-  border: 1px solid var(--separator);
-  border-radius: var(--radius);
-  padding: 12px;
-  z-index: 150;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
-.chord-popup input {
+.chord-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  animation: fade-in 0.2s ease;
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.chord-sheet {
+  position: relative;
+  background: var(--bg-secondary);
+  border-radius: 16px 16px 0 0;
+  padding: 8px 16px calc(16px + var(--safe-bottom));
+  animation: slide-up 0.25s ease;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.chord-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--separator);
+  border-radius: 2px;
+  margin: 0 auto 12px;
+}
+.chord-sheet-display {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--chord);
+  padding: 4px 0 12px;
+}
+.chord-sheet-input {
   font-size: 20px;
   font-weight: 700;
   font-family: var(--mono);
   color: var(--chord);
   background: var(--bg-surface);
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   outline: none;
   width: 100%;
-  padding: 6px 8px;
+  padding: 10px 12px;
   text-transform: uppercase;
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
-.chord-quick { margin-bottom: 8px; }
-.chord-quick-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+.chord-sheet-input:focus {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* Larger quick-select buttons for touch */
+.chord-q-btn-lg {
+  font-size: 15px;
+  padding: 10px 12px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Chord marker touch states */
+.chord-marker {
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  margin-bottom: 4px;
+  touch-action: none;
 }
-.chord-q-btn {
-  background: var(--bg-tertiary);
-  border: none;
-  color: var(--fg-secondary);
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--mono);
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
+.chord-marker-dragging {
+  background: rgba(48, 209, 88, 0.35) !important;
+  transform: scale(1.15);
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
-.chord-q-btn.active, .chord-q-btn:active {
-  background: var(--accent);
-  color: #fff;
+.chord-marker-deleting {
+  background: rgba(255, 59, 48, 0.3) !important;
+  animation: shake 0.3s ease;
 }
-.chord-q-small { font-size: 11px; padding: 3px 6px; }
-.chord-popup-actions {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
-.chord-popup-actions button {
-  padding: 6px 14px;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: var(--font);
-}
-.chord-popup-actions .done-btn { background: var(--accent); color: #fff; }
-.chord-popup-actions .remove-btn { background: var(--danger); color: #fff; }
 
 /* ===== Record Button State ===== */
 @keyframes pulse {
