@@ -47,6 +47,7 @@ Built with Tauri 2.x + Vite + vanilla JS. Targets Android (test) and iOS (ship).
 - [x] Collapsible mobile toolbar with auto-hide on scroll
 - [x] Floating action button (FAB) for quick toolbar access
 - [x] Toolbar bottom sheet with 8 tools in grid layout
+- [x] Mobile keyboard handling (viewport scroll, auto-focus, iOS support)
 
 ## Android Build Note
 Windows Developer Mode required for symlinks. Workaround: patch BuildTask.kt to skip Rust build if .so exists; copy .so to jniLibs/ then run `gradlew assembleDebug`.
