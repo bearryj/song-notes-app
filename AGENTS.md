@@ -42,6 +42,11 @@ Built with Tauri 2.x + Vite + vanilla JS. Targets Android (test) and iOS (ship).
 - [x] Sample songs on first launch (3 songs)
 - [x] Android APK builds (arm64-v8a, arm, x86, x86_64, universal)
 - [x] Rust backend compiles clean
+- [x] Touch-friendly chord editor (drag to move, long-press to delete, double-tap to add)
+- [x] Mobile bottom sheet chord popup with large touch targets
+- [x] Collapsible mobile toolbar with auto-hide on scroll
+- [x] Floating action button (FAB) for quick toolbar access
+- [x] Toolbar bottom sheet with 8 tools in grid layout
 
 ## Android Build Note
 Windows Developer Mode required for symlinks. Workaround: patch BuildTask.kt to skip Rust build if .so exists; copy .so to jniLibs/ then run `gradlew assembleDebug`.
