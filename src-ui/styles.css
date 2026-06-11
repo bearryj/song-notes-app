@@ -1566,3 +1566,210 @@ body.ios-device .toolbar-sheet-content {
 .share-qr-close:active {
   opacity: 0.85;
 }
+
+/* ===== Plugin System ===== */
+#plugin-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+.plugin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 12px;
+}
+.plugin-title {
+  font-size: 17px;
+  font-weight: 600;
+}
+.plugin-add-btn {
+  padding: 6px 14px;
+  background: var(--fg);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.plugin-add-btn:active {
+  opacity: 0.8;
+}
+.plugin-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+}
+.plugin-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 6px;
+}
+.plugin-item.disabled {
+  opacity: 0.5;
+}
+.plugin-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg);
+}
+.plugin-builtin-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--fg-tertiary);
+  background: var(--bg-tertiary);
+  padding: 1px 6px;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+.plugin-item-meta {
+  font-size: 11px;
+  color: var(--fg-tertiary);
+  margin-top: 2px;
+}
+.plugin-item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.plugin-item-actions button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.plugin-item-actions button:active {
+  background: var(--bg-tertiary);
+}
+.plugin-editor {
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.plugin-editor-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.plugin-editor-name {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 500;
+}
+.plugin-editor-name:focus {
+  outline: none;
+  border-color: var(--fg-tertiary);
+}
+.plugin-editor-meta {
+  display: flex;
+  gap: 6px;
+}
+.plugin-editor-meta input {
+  padding: 6px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--fg);
+  font-size: 12px;
+}
+.plugin-editor-meta input:focus {
+  outline: none;
+  border-color: var(--fg-tertiary);
+}
+.plugin-editor-tpl {
+  width: 100%;
+  min-height: 120px;
+  max-height: 200px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 12px;
+  padding: 10px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.plugin-editor-tpl:focus {
+  outline: none;
+  border-color: var(--fg-tertiary);
+}
+.plugin-editor-help {
+  font-size: 11px;
+  color: var(--fg-tertiary);
+  padding: 4px 0;
+  line-height: 1.5;
+}
+.plugin-editor-actions {
+  display: flex;
+  gap: 8px;
+}
+.plugin-editor-actions button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.plugin-editor-test {
+  background: var(--bg-secondary);
+  color: var(--fg);
+  border: 1px solid var(--border) !important;
+}
+.plugin-editor-test:active {
+  background: var(--bg-tertiary);
+}
+.plugin-editor-save {
+  background: var(--fg);
+  color: var(--bg);
+}
+.plugin-editor-save:active {
+  opacity: 0.85;
+}
+.plugin-editor-cancel {
+  background: var(--bg-secondary);
+  color: var(--fg);
+  border: 1px solid var(--border) !important;
+}
+.plugin-editor-cancel:active {
+  background: var(--bg-tertiary);
+}
+.plugin-test-output {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 150px;
+  overflow-y: auto;
+  color: var(--fg);
+  line-height: 1.5;
+}

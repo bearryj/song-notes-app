@@ -1550,6 +1550,319 @@ function showShareSheet() {
   sheet.style.display = 'flex';
 }
 
+// ===== Plugin System for Custom Export Formats =====
+
+// Plugin registry — each plugin: { id, name, ext, mime, template, enabled }
+// Template syntax: {{title}}, {{key}}, {{bpm}}, {{sections}}, {{chords}}, {{text}}
+// For sections: use {{#sections}}...{{/sections}} with {{type}}, {{lines}}
+// For lines: use {{#lines}}...{{/lines}} with {{text}}, {{chords}}
+// For chords: {{#chords}}...{{/chords}} with {{name}}
+
+const DEFAULT_PLUGINS = [
+  {
+    id: 'builtin-txt',
+    name: 'Plain Text',
+    ext: 'txt',
+    mime: 'text/plain',
+    enabled: true,
+    builtin: true,
+    template: `{{title}}{{#key}} [Key: {{key}}]{{/key}}\n\n{{#sections}}[{{type}}]\n{{#lines}}{{#chords}}{{name}} {{/chords}}{{text}}\n{{/lines}}\n{{/sections}}`
+  },
+  {
+    id: 'builtin-md',
+    name: 'Markdown',
+    ext: 'md',
+    mime: 'text/markdown',
+    enabled: true,
+    builtin: true,
+    template: `# {{title}}{{#key}}\n_Key: {{key}}_{{/key}}\n\n{{#sections}}## {{type}}\n\n{{#lines}}{{#chords}}  {{name}}  \n{{/chords}}{{text}}\n\n{{/lines}}{{/sections}}`
+  },
+  {
+    id: 'builtin-chordpro',
+    name: 'ChordPro',
+    ext: 'cho',
+    mime: 'text/plain',
+    enabled: true,
+    builtin: true,
+    template: `{title: {{title}}}{#key}{key: {{key}}}{{/key}}\n\n{{#sections}}{{#type}}{{{type}}}{{/type}}\n{{#lines}}{{#chords}}{{name}}{{/chords}}{{text}}\n{{/lines}}\n{{/sections}}`
+  },
+  {
+    id: 'builtin-json',
+    name: 'JSON',
+    ext: 'json',
+    mime: 'application/json',
+    enabled: true,
+    builtin: true,
+    template: `{{json}}`
+  },
+  {
+    id: 'builtin-html',
+    name: 'HTML Page',
+    ext: 'html',
+    mime: 'text/html',
+    enabled: false,
+    builtin: true,
+    template: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>{{title}}</title>
+<style>body{font-family:system-ui;max-width:700px;margin:40px auto;padding:0 20px}
+h1{font-size:28px;margin-bottom:4px}.key{color:#666;font-size:14px;margin-bottom:24px}
+h2{font-size:18px;color:#333;border-bottom:1px solid #ddd;padding-bottom:4px;margin-top:24px}
+.line{margin:6px 0}.chords{font-weight:700;color:#444;font-size:14px;letter-spacing:1px}
+.lyrics{font-size:16px;line-height:1.6}</style></head>
+<body><h1>{{title}}</h1>{{#key}}<div class="key">Key: {{key}}</div>{{/key}}
+{{#sections}}<h2>{{type}}</h2>{{#lines}}<div class="line">{{#chords}}<div class="chords">{{name}}</div>{{/chords}}<div class="lyrics">{{text}}</div></div>{{/lines}}{{/sections}}
+</body></html>`
+  }
+];
+
+function getPlugins() {
+  try {
+    const stored = localStorage.getItem('sn_export_plugins');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Merge: keep builtins, add user plugins
+      const builtinIds = DEFAULT_PLUGINS.map(p => p.id);
+      const userPlugins = parsed.filter(p => !builtinIds.includes(p.id));
+      return [...DEFAULT_PLUGINS, ...userPlugins];
+    }
+  } catch (e) {}
+  return [...DEFAULT_PLUGINS];
+}
+
+function savePlugins(plugins) {
+  try {
+    localStorage.setItem('sn_export_plugins', JSON.stringify(plugins));
+  } catch (e) {}
+}
+
+// Simple template engine
+function renderPluginTemplate(template, song) {
+  // Special: {{json}} outputs the whole song as JSON
+  if (template.includes('{{json}}')) {
+    return template.replace('{{json}}', JSON.stringify(song, null, 2));
+  }
+
+  let result = template;
+
+  // Simple replacements (no conditionals first)
+  result = result.replace(/\{\{title\}\}/g, song.title || 'Untitled');
+  result = result.replace(/\{\{bpm\}\}/g, song.bpm || '');
+
+  // Conditional blocks: {{#key}}...{{/key}}
+  result = result.replace(/\{\{#key\}\}([\s\S]*?)\{\{\/key\}\}/g, song.key ? '$1' : '');
+  result = result.replace(/\{\{key\}\}/g, song.key || '');
+
+  // Sections loop
+  result = result.replace(/\{\{#sections\}\}([\s\S]*?)\{\{\/sections\}\}/g, (match, sectionTpl) => {
+    if (!song.sections || !song.sections.length) return '';
+    return song.sections.map(section => {
+      let secResult = sectionTpl;
+      secResult = secResult.replace(/\{\{#type\}\}([\s\S]*?)\{\{\/type\}\}/g, section.type || 'Verse');
+      secResult = secResult.replace(/\{\{type\}\}/g, section.type || 'Verse');
+
+      // Lines loop
+      secResult = secResult.replace(/\{\{#lines\}\}([\s\S]*?)\{\{\/lines\}\}/g, (lMatch, lineTpl) => {
+        if (!section.lines || !section.lines.length) return '';
+        return section.lines.map(line => {
+          let lineResult = lineTpl;
+          lineResult = lineResult.replace(/\{\{text\}\}/g, line.text || '');
+
+          // Chords
+          const chordStr = (line.chords || []).sort((a, b) => a.x - b.x).map(c => c.name).join(' ');
+          lineResult = lineResult.replace(/\{\{#chords\}\}([\s\S]*?)\{\{\/chords\}\}/g, chordStr ? '$1' : '');
+          lineResult = lineResult.replace(/\{\{chords\}\}/g, chordStr);
+          lineResult = lineResult.replace(/\{\{name\}\}/g, chordStr);
+
+          return lineResult;
+        }).join('\n');
+      });
+
+      return secResult;
+    }).join('\n\n');
+  });
+
+  return result;
+}
+
+function exportWithPlugin(song, plugin) {
+  const content = renderPluginTemplate(plugin.template, song);
+  downloadFile(content, `${song.title || 'song'}.${plugin.ext}`, plugin.mime);
+}
+
+// Show plugin management sheet
+function showPluginSheet() {
+  let sheet = $('plugin-sheet');
+  if (!sheet) {
+    sheet = document.createElement('div');
+    sheet.id = 'plugin-sheet';
+    sheet.innerHTML = `
+      <div class="toolbar-sheet-backdrop"></div>
+      <div class="toolbar-sheet-content" style="max-height:85vh;">
+        <div class="toolbar-sheet-handle"></div>
+        <div class="plugin-header">
+          <h3 class="plugin-title">Export Plugins</h3>
+          <button class="plugin-add-btn" id="plugin-add-btn" title="Add custom plugin">+ New</button>
+        </div>
+        <div class="plugin-list" id="plugin-list"></div>
+        <div class="plugin-editor" id="plugin-editor" style="display:none;">
+          <div class="plugin-editor-header">
+            <input type="text" class="plugin-editor-name" id="plugin-editor-name" placeholder="Plugin name">
+            <div class="plugin-editor-meta">
+              <input type="text" class="plugin-editor-ext" id="plugin-editor-ext" placeholder="ext" style="width:60px;">
+              <input type="text" class="plugin-editor-mime" id="plugin-editor-mime" placeholder="mime type" style="flex:1;">
+            </div>
+          </div>
+          <textarea class="plugin-editor-tpl" id="plugin-editor-tpl" placeholder="Template…" spellcheck="false"></textarea>
+          <div class="plugin-editor-help">
+            Variables: {{title}} {{key}} {{bpm}} {{type}} {{text}} {{name}} {{json}}
+            Blocks: {{#sections}} {{#lines}} {{#chords}} {{#key}} ... {{/...}}
+          </div>
+          <div class="plugin-editor-actions">
+            <button class="plugin-editor-test" id="plugin-editor-test">Test</button>
+            <button class="plugin-editor-save" id="plugin-editor-save">Save</button>
+            <button class="plugin-editor-cancel" id="plugin-editor-cancel">Cancel</button>
+          </div>
+          <div class="plugin-test-output" id="plugin-test-output" style="display:none;"></div>
+        </div>
+      </div>`;
+    document.body.appendChild(sheet);
+
+    sheet.querySelector('.toolbar-sheet-backdrop').addEventListener('click', () => {
+      sheet.style.display = 'none';
+    });
+  }
+
+  renderPluginList();
+
+  $('plugin-add-btn').onclick = () => {
+    $('plugin-editor').style.display = 'flex';
+    $('plugin-editor-name').value = '';
+    $('plugin-editor-ext').value = 'txt';
+    $('plugin-editor-mime').value = 'text/plain';
+    $('plugin-editor-tpl').value = `{{title}}{{#key}} [Key: {{key}}]{{/key}}\n\n{{#sections}}[{{type}}]\n{{#lines}}{{#chords}}{{name}} {{/chords}}{{text}}\n{{/lines}}\n{{/sections}}`;
+    $('plugin-test-output').style.display = 'none';
+    editingPluginId = null;
+  };
+
+  $('plugin-editor-cancel').onclick = () => {
+    $('plugin-editor').style.display = 'none';
+  };
+
+  $('plugin-editor-save').onclick = () => {
+    const name = $('plugin-editor-name').value.trim();
+    const ext = $('plugin-editor-ext').value.trim() || 'txt';
+    const mime = $('plugin-editor-mime').value.trim() || 'text/plain';
+    const tpl = $('plugin-editor-tpl').value;
+    if (!name) { toast('Plugin name required'); return; }
+    if (!tpl) { toast('Template required'); return; }
+
+    const plugins = getPlugins();
+    if (editingPluginId) {
+      const idx = plugins.findIndex(p => p.id === editingPluginId);
+      if (idx >= 0) {
+        plugins[idx] = { ...plugins[idx], name, ext, mime, template: tpl };
+      }
+    } else {
+      plugins.push({
+        id: 'user-' + Date.now(),
+        name, ext, mime, template: tpl,
+        enabled: true,
+        builtin: false
+      });
+    }
+    savePlugins(plugins);
+    $('plugin-editor').style.display = 'none';
+    renderPluginList();
+    toast('Plugin saved');
+  };
+
+  $('plugin-editor-test').onclick = () => {
+    const song = getSong(currentSongId);
+    if (!song) { toast('Open a song first'); return; }
+    const tpl = $('plugin-editor-tpl').value;
+    const ext = $('plugin-editor-ext').value.trim() || 'txt';
+    try {
+      const result = renderPluginTemplate(tpl, song);
+      const output = $('plugin-test-output');
+      output.style.display = 'block';
+      output.textContent = result.substring(0, 2000) + (result.length > 2000 ? '\n…(truncated)' : '');
+    } catch (e) {
+      toast('Template error: ' + e.message);
+    }
+  };
+
+  sheet.style.display = 'flex';
+}
+
+let editingPluginId = null;
+
+function renderPluginList() {
+  const list = $('plugin-list');
+  const plugins = getPlugins();
+  const song = getSong(currentSongId);
+
+  list.innerHTML = plugins.map(p => `
+    <div class="plugin-item ${p.enabled ? '' : 'disabled'}" data-id="${p.id}">
+      <div class="plugin-item-info">
+        <div class="plugin-item-name">${esc(p.name)}${p.builtin ? ' <span class="plugin-builtin-badge">built-in</span>' : ''}</div>
+        <div class="plugin-item-meta">.${p.ext} · ${p.mime}</div>
+      </div>
+      <div class="plugin-item-actions">
+        ${song ? `<button class="plugin-export-btn" data-id="${p.id}" title="Export">↑</button>` : ''}
+        ${!p.builtin ? `<button class="plugin-edit-btn" data-id="${p.id}" title="Edit">✎</button>` : ''}
+        ${!p.builtin ? `<button class="plugin-del-btn" data-id="${p.id}" title="Delete">✕</button>` : ''}
+        <button class="plugin-toggle-btn" data-id="${p.id}" title="Toggle">${p.enabled ? '✓' : '○'}</button>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.plugin-export-btn').forEach(btn => {
+    btn.onclick = () => {
+      const plugin = plugins.find(p => p.id === btn.dataset.id);
+      if (plugin && song) {
+        exportWithPlugin(song, plugin);
+        toast(`Exported as ${plugin.name}`);
+      }
+    };
+  });
+
+  list.querySelectorAll('.plugin-toggle-btn').forEach(btn => {
+    btn.onclick = () => {
+      const plugin = plugins.find(p => p.id === btn.dataset.id);
+      if (plugin) {
+        plugin.enabled = !plugin.enabled;
+        savePlugins(plugins);
+        renderPluginList();
+      }
+    };
+  });
+
+  list.querySelectorAll('.plugin-edit-btn').forEach(btn => {
+    btn.onclick = () => {
+      const plugin = plugins.find(p => p.id === btn.dataset.id);
+      if (plugin) {
+        editingPluginId = plugin.id;
+        $('plugin-editor').style.display = 'flex';
+        $('plugin-editor-name').value = plugin.name;
+        $('plugin-editor-ext').value = plugin.ext;
+        $('plugin-editor-mime').value = plugin.mime;
+        $('plugin-editor-tpl').value = plugin.template;
+        $('plugin-test-output').style.display = 'none';
+      }
+    };
+  });
+
+  list.querySelectorAll('.plugin-del-btn').forEach(btn => {
+    btn.onclick = () => {
+      if (!confirm('Delete this plugin?')) return;
+      const filtered = plugins.filter(p => p.id !== btn.dataset.id);
+      savePlugins(filtered);
+      renderPluginList();
+      toast('Plugin deleted');
+    };
+  });
+}
+
 // Import
 function importFiles() {
   const inp = document.createElement('input'); inp.type = 'file'; inp.multiple = true; inp.accept = '.txt,.md,.text';
@@ -2203,6 +2516,8 @@ function setupEvents() {
         showSetlistView();
       } else if (a === 'share-song') {
         showShareSheet();
+      } else if (a === 'plugins') {
+        showPluginSheet();
       }
     });
   });
