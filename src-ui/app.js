@@ -269,6 +269,23 @@ async function deleteSong(id) {
   if (isTauri) await tauriDeleteSong(id);
 }
 
+// Duplicate the current song (deep copy with new id and title suffix)
+async function duplicateCurrentSong() {
+  const song = getSong(currentSongId);
+  if (!song) { toast('No song to duplicate'); return; }
+  hideToolbarSheet();
+  const copy = JSON.parse(JSON.stringify(song));
+  copy.id = generateId();
+  copy.title = (song.title || 'Untitled') + ' (Copy)';
+  copy.created_at = new Date().toISOString();
+  copy.updated_at = new Date().toISOString();
+  copy.pinned = false;
+  songs.unshift(copy);
+  await saveSongs();
+  renderSongList($('search-input')?.value || '');
+  toast(`Duplicated "${song.title}"`);
+}
+
 // Version History
 function pushVersion() {
   const song = getSong(currentSongId);
@@ -2936,6 +2953,8 @@ function setupEvents() {
         showSongStatsPanel();
       } else if (a === 'edit-tags') {
         showTagEditorPanel();
+      } else if (a === 'duplicate-song') {
+        duplicateCurrentSong();
       }
     });
   });
