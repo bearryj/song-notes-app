@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (wired up setlist mode — toolbar sheet → setlist view)
+2026-06-11 by OWL (chord diagram panel — 80+ chord shapes with SVG fretboard)
 
 ## Build & Test Commands
 ```bash
@@ -57,7 +57,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 2. [x] Mobile toolbar with bottom sheet (2026-06-11)
 3. [x] Mobile keyboard handling (2026-06-11)
 4. [x] Setlist mode (order songs, capo per song, chord chart print) (2026-06-11)
-5. [ ] Chord diagram panel (common chord shapes, finger positions)
+5. [x] Chord diagram panel (common chord shapes, finger positions) (2026-06-11)
 6. [ ] Collaborative editing (share link, real-time sync)
 7. [ ] Plugin system for custom export formats
 8. [ ] iOS build (requires macOS + Xcode)

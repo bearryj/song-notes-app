@@ -947,6 +947,295 @@ function showChordEdit(song, line, chord) {
   setTimeout(() => document.addEventListener('click', closeOnOutside), 100);
 }
 
+// ===== Chord Diagram Panel =====
+// Chord shape definitions: { frets: [eADGBe], fingers: [eADGBe], barres: [{fret, from, to}] }
+// frets: -1 = muted, 0 = open, 1-4 = fret number
+// fingers: 0 = none, 1-4 = finger number
+// Strings indexed 0-5: e(low), A, D, G, B, e(high)
+const CHORD_SHAPES = {
+  // Major
+  'C':  { frets: [-1, 3, 2, 0, 1, 0], fingers: [0, 3, 2, 0, 1, 0] },
+  'C#': { frets: [-1, 4, 3, 1, 2, 1], fingers: [0, 4, 3, 1, 2, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'Db': { frets: [-1, 4, 3, 1, 2, 1], fingers: [0, 4, 3, 1, 2, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'D':  { frets: [-1, -1, 0, 2, 3, 2], fingers: [0, 0, 0, 1, 3, 2] },
+  'D#': { frets: [-1, -1, 1, 3, 4, 3], fingers: [0, 0, 1, 2, 4, 3], barres: [{fret: 3, from: 4, to: 1}] },
+  'Eb': { frets: [-1, -1, 1, 3, 4, 3], fingers: [0, 0, 1, 2, 4, 3], barres: [{fret: 3, from: 4, to: 1}] },
+  'E':  { frets: [0, 2, 2, 1, 0, 0], fingers: [0, 2, 3, 1, 0, 0] },
+  'F':  { frets: [1, 3, 3, 2, 1, 1], fingers: [1, 3, 4, 2, 1, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'F#': { frets: [2, 4, 4, 3, 2, 2], fingers: [1, 3, 4, 2, 1, 1], barres: [{fret: 2, from: 5, to: 1}] },
+  'Gb': { frets: [2, 4, 4, 3, 2, 2], fingers: [1, 3, 4, 2, 1, 1], barres: [{fret: 2, from: 5, to: 1}] },
+  'G':  { frets: [3, 2, 0, 0, 0, 3], fingers: [2, 1, 0, 0, 0, 3] },
+  'G#': { frets: [4, 3, 1, 1, 1, 4], fingers: [3, 2, 1, 1, 1, 4], barres: [{fret: 1, from: 4, to: 1}] },
+  'Ab': { frets: [4, 3, 1, 1, 1, 4], fingers: [3, 2, 1, 1, 1, 4], barres: [{fret: 1, from: 4, to: 1}] },
+  'A':  { frets: [-1, 0, 2, 2, 2, 0], fingers: [0, 0, 1, 2, 3, 0] },
+  'A#': { frets: [-1, 1, 3, 3, 3, 1], fingers: [0, 1, 2, 3, 4, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'Bb': { frets: [-1, 1, 3, 3, 3, 1], fingers: [0, 1, 2, 3, 4, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'B':  { frets: [-1, 2, 4, 4, 4, 2], fingers: [0, 1, 2, 3, 4, 1], barres: [{fret: 2, from: 5, to: 1}] },
+  // Minor
+  'Cm':  { frets: [-1, 3, 1, 0, 1, 3], fingers: [0, 4, 2, 0, 1, 3], barres: [{fret: 3, from: 5, to: 1}] },
+  'C#m': { frets: [-1, 2, 4, 4, 3, 2], fingers: [0, 1, 3, 4, 2, 1], barres: [{fret: 2, from: 5, to: 1}] },
+  'Dm':  { frets: [-1, -1, 0, 2, 3, 1], fingers: [0, 0, 0, 2, 3, 1] },
+  'D#m': { frets: [-1, -1, 1, 3, 4, 2], fingers: [0, 0, 1, 3, 4, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'Em':  { frets: [0, 2, 2, 0, 0, 0], fingers: [0, 2, 3, 0, 0, 0] },
+  'Ebm': { frets: [-1, -1, 1, 3, 4, 2], fingers: [0, 0, 1, 3, 4, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'Fm':  { frets: [1, 3, 3, 1, 1, 1], fingers: [1, 3, 4, 1, 1, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'F#m': { frets: [2, 4, 4, 2, 2, 2], fingers: [1, 3, 4, 1, 1, 1], barres: [{fret: 2, from: 5, to: 1}] },
+  'Gm':  { frets: [3, 1, 3, 3, 3, 1], fingers: [2, 1, 3, 3, 3, 1], barres: [{fret: 3, from: 4, to: 1}] },
+  'G#m': { frets: [2, 4, 4, 2, 2, 2], fingers: [1, 3, 4, 1, 1, 1], barres: [{fret: 2, from: 5, to: 1}] },
+  'Am':  { frets: [-1, 0, 2, 2, 1, 0], fingers: [0, 0, 2, 3, 1, 0] },
+  'A#m': { frets: [-1, 2, 4, 4, 3, 2], fingers: [0, 1, 3, 4, 2, 1], barres: [{fret: 2, from: 5, to: 1}] },
+  'Bbm': { frets: [-1, 1, 3, 3, 2, 1], fingers: [0, 1, 3, 4, 2, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'Bm':  { frets: [-1, 2, 4, 4, 3, 2], fingers: [0, 1, 3, 4, 2, 1], barres: [{fret: 2, from: 5, to: 1}] },
+  'Abm': { frets: [2, 4, 4, 2, 2, 2], fingers: [1, 3, 4, 1, 1, 1], barres: [{fret: 2, from: 5, to: 1}] },
+  'Dbm': { frets: [-1, 2, 4, 4, 3, 2], fingers: [0, 1, 3, 4, 2, 1], barres: [{fret: 2, from: 5, to: 1}] },
+  // 7th
+  'C7':  { frets: [-1, 3, 2, 3, 1, 0], fingers: [0, 3, 2, 4, 1, 0] },
+  'D7':  { frets: [-1, -1, 0, 2, 1, 2], fingers: [0, 0, 0, 2, 1, 3] },
+  'E7':  { frets: [0, 2, 0, 1, 0, 0], fingers: [0, 2, 0, 1, 0, 0] },
+  'F7':  { frets: [1, 3, 1, 2, 1, 1], fingers: [1, 3, 1, 2, 1, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'G7':  { frets: [3, 2, 0, 0, 0, 1], fingers: [3, 2, 0, 0, 0, 1] },
+  'A7':  { frets: [-1, 0, 2, 0, 2, 0], fingers: [0, 0, 1, 0, 2, 0] },
+  'B7':  { frets: [-1, 2, 1, 2, 0, 2], fingers: [0, 2, 1, 3, 0, 4] },
+  // major 7th
+  'Cmaj7': { frets: [-1, 3, 2, 0, 0, 0], fingers: [0, 3, 2, 0, 0, 0] },
+  'Dmaj7': { frets: [-1, -1, 0, 2, 2, 2], fingers: [0, 0, 0, 1, 2, 3] },
+  'Emaj7': { frets: [0, 2, 1, 1, 0, 0], fingers: [0, 3, 1, 2, 0, 0] },
+  'Fmaj7': { frets: [1, 3, 3, 2, 1, 1], fingers: [1, 3, 4, 2, 1, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'Gmaj7': { frets: [3, 2, 0, 0, 0, 2], fingers: [3, 2, 0, 0, 0, 1] },
+  'Amaj7': { frets: [-1, 0, 2, 1, 2, 0], fingers: [0, 0, 2, 1, 3, 0] },
+  'Bmaj7': { frets: [-1, 2, 4, 3, 4, 2], fingers: [0, 1, 3, 2, 4, 1], barres: [{fret: 2, from: 5, to: 1}] },
+  // minor 7th
+  'Cm7':  { frets: [-1, 3, 1, 3, 1, 3], fingers: [0, 2, 1, 3, 1, 4], barres: [{fret: 3, from: 5, to: 1}] },
+  'Dm7':  { frets: [-1, -1, 0, 2, 1, 1], fingers: [0, 0, 0, 2, 1, 1], barres: [{fret: 1, from: 3, to: 1}] },
+  'Em7':  { frets: [0, 2, 0, 0, 0, 0], fingers: [0, 2, 0, 0, 0, 0] },
+  'Fm7':  { frets: [1, 3, 1, 1, 1, 1], fingers: [1, 3, 1, 1, 1, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'Gm7':  { frets: [3, 5, 3, 3, 3, 3], fingers: [1, 3, 1, 1, 1, 1], barres: [{fret: 3, from: 5, to: 1}] },
+  'Am7':  { frets: [-1, 0, 2, 0, 1, 0], fingers: [0, 0, 2, 0, 1, 0] },
+  'Bm7':  { frets: [-1, 2, 0, 2, 0, 2], fingers: [0, 2, 0, 3, 0, 4] },
+  // dim
+  'Cdim': { frets: [-1, 3, 1, 3, 1, -1], fingers: [0, 2, 1, 3, 1, 0] },
+  'Ddim': { frets: [-1, -1, 0, 1, 3, 1], fingers: [0, 0, 0, 1, 3, 2] },
+  'Edim': { frets: [0, 1, 2, 0, -1, -1], fingers: [0, 1, 2, 0, 0, 0] },
+  'Fdim': { frets: [1, 2, 3, 1, -1, -1], fingers: [1, 2, 3, 1, 0, 0] },
+  'Gdim': { frets: [3, 1, 3, 1, -1, -1], fingers: [3, 1, 4, 2, 0, 0] },
+  'Adim': { frets: [-1, 0, 1, 2, 1, -1], fingers: [0, 0, 1, 3, 2, 0] },
+  'Bdim': { frets: [-1, 2, 3, 4, 3, -1], fingers: [0, 1, 2, 4, 3, 0] },
+  // aug
+  'Caug': { frets: [-1, 3, 2, 1, 1, 0], fingers: [0, 4, 3, 1, 2, 0] },
+  'Daug': { frets: [-1, -1, 0, 3, 3, 2], fingers: [0, 0, 0, 2, 3, 1] },
+  'Eaug': { frets: [0, 3, 2, 1, 1, 0], fingers: [0, 4, 3, 1, 2, 0] },
+  'Faug': { frets: [1, -1, 3, 2, 2, 1], fingers: [1, 0, 4, 2, 3, 1] },
+  'Gaug': { frets: [3, -1, 1, 0, 0, 3], fingers: [2, 0, 1, 0, 0, 3] },
+  'Aaug': { frets: [-1, 0, 3, 2, 2, 1], fingers: [0, 0, 4, 2, 3, 1] },
+  'Baug': { frets: [-1, 2, 1, 0, 0, 3], fingers: [0, 2, 1, 0, 0, 3] },
+  // sus4
+  'Csus4': { frets: [-1, 3, 3, 0, 1, 1], fingers: [0, 3, 4, 0, 1, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'Dsus4': { frets: [-1, -1, 0, 2, 3, 3], fingers: [0, 0, 0, 1, 3, 4] },
+  'Esus4': { frets: [0, 2, 2, 0, 0, 0], fingers: [0, 2, 3, 0, 0, 0] },
+  'Fsus4': { frets: [1, 3, 3, 3, 1, 1], fingers: [1, 3, 4, 2, 1, 1], barres: [{fret: 1, from: 5, to: 1}] },
+  'Gsus4': { frets: [3, 3, 0, 0, 1, 3], fingers: [2, 3, 0, 0, 1, 4] },
+  'Asus4': { frets: [-1, 0, 2, 2, 3, 0], fingers: [0, 0, 1, 2, 3, 0] },
+  'Bsus4': { frets: [-1, 2, 4, 4, 5, 2], fingers: [0, 1, 2, 3, 4, 1], barres: [{fret: 2, from: 5, to: 1}] },
+  // add9
+  'Cadd9':  { frets: [-1, 3, 2, 0, 3, 3], fingers: [0, 2, 1, 0, 3, 4] },
+  'Dadd9':  { frets: [-1, -1, 0, 2, 3, 0], fingers: [0, 0, 0, 1, 3, 0] },
+  'Eadd9':  { frets: [0, 2, 2, 1, 0, 2], fingers: [0, 2, 3, 1, 0, 4] },
+  'Fadd9':  { frets: [-1, -1, 3, 2, 1, 3], fingers: [0, 0, 3, 2, 1, 4] },
+  'Gadd9':  { frets: [3, -1, 0, 2, 0, 3], fingers: [3, 0, 0, 1, 0, 4] },
+  'Aadd9':  { frets: [-1, 0, 2, 4, 2, 0], fingers: [0, 0, 1, 3, 1, 0] },
+  'Badd9':  { frets: [-1, 2, 4, 4, 2, 2], fingers: [0, 1, 3, 4, 1, 1] },
+};
+
+const ALL_CHORD_NAMES = Object.keys(CHORD_SHAPES).sort();
+
+function getChordShape(chordName) {
+  if (CHORD_SHAPES[chordName]) return { ...CHORD_SHAPES[chordName], name: chordName };
+  const m = chordName.match(/^([A-G][#b]?)(.*)$/);
+  if (!m) return null;
+  const root = m[1], suffix = m[2];
+  const candidates = Object.keys(CHORD_SHAPES).filter(k => k === root + suffix);
+  if (candidates.length) return { ...CHORD_SHAPES[candidates[0]], name: candidates[0] };
+  return null;
+}
+
+function getStartFret(frets) {
+  const played = frets.filter(f => f > 0);
+  if (!played.length) return 1;
+  const min = Math.min(...played);
+  if (min <= 2) return 1;
+  return min - 1;
+}
+
+function renderFretboard(container, chordName) {
+  const shape = getChordShape(chordName);
+  if (!shape) {
+    container.innerHTML = `<div class="cd-no-chord">No diagram for "${esc(chordName)}"<br><span style="font-size:13px;color:var(--fg-tertiary);">Try common chords like G, C, D, Am, Em, F...</span></div>`;
+    return;
+  }
+
+  const frets = shape.frets;
+  const fingers = shape.fingers || [0,0,0,0,0,0];
+  const barres = shape.barres || [];
+  const numStrings = 6;
+  const numFrets = 5;
+  const startFret = getStartFret(frets);
+
+  const w = 200, h = 260;
+  const padX = 30, padY = 30;
+  const fretW = w - padX * 2;
+  const fretH = h - padY * 2 - 30;
+  const stringSpacing = fretW / (numStrings - 1);
+  const fretSpacing = fretH / numFrets;
+  const dotRadius = 9;
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}" class="cd-fretboard" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<rect x="0" y="0" width="${w}" height="${h}" fill="transparent"/>`;
+
+  const minFret = Math.min(...frets.filter(f => f > 0));
+  const hasOpen = frets.some(f => f === 0);
+  const showNut = hasOpen || minFret <= 2;
+
+  if (!showNut && startFret > 1) {
+    svg += `<text x="${padX - 12}" y="${padY + fretSpacing * 0.7}" fill="var(--fg-tertiary)" font-size="12" font-family="var(--font)" text-anchor="middle">${startFret}fr</text>`;
+  }
+
+  // Strings
+  for (let s = 0; s < numStrings; s++) {
+    const x = padX + s * stringSpacing;
+    const strokeW = 1 + s * 0.3;
+    svg += `<line x1="${x}" y1="${padY}" x2="${x}" y2="${padY + fretH}" stroke="var(--fg-tertiary)" stroke-width="${strokeW}"/>`;
+  }
+
+  // Frets
+  for (let f = 0; f <= numFrets; f++) {
+    const y = padY + f * fretSpacing;
+    const isNut = f === 0 && showNut;
+    svg += `<line x1="${padX}" y1="${y}" x2="${padX + fretW}" y2="${y}" stroke="${isNut ? 'var(--fg)' : 'var(--fg-tertiary)'}" stroke-width="${isNut ? 3 : 1}"/>`;
+  }
+
+  // Finger positions
+  for (let s = 0; s < numStrings; s++) {
+    const x = padX + s * stringSpacing;
+    const fret = frets[s];
+    const finger = fingers[s];
+
+    if (fret === -1) {
+      const y = padY - 14;
+      svg += `<text x="${x}" y="${y}" fill="var(--fg-tertiary)" font-size="14" font-family="var(--font)" text-anchor="middle" font-weight="bold">&#10005;</text>`;
+    } else if (fret === 0) {
+      const y = padY - 14;
+      svg += `<text x="${x}" y="${y}" fill="var(--fg-secondary)" font-size="14" font-family="var(--font)" text-anchor="middle" font-weight="bold">&#9675;</text>`;
+    } else {
+      const fretPos = fret - startFret + (showNut ? 0 : 1);
+      const y = padY + fretPos * fretSpacing + fretSpacing / 2;
+      const isBarre = barres.some(b => b.fret === fret && s >= Math.min(b.from, b.to) && s <= Math.max(b.from, b.to));
+
+      if (isBarre) {
+        const barreStart = padX + Math.min(barres[0].from, barres[0].to) * stringSpacing;
+        const barreEnd = padX + Math.max(barres[0].from, barres[0].to) * stringSpacing;
+        svg += `<line x1="${barreStart}" y1="${y}" x2="${barreEnd}" y2="${y}" stroke="var(--chord)" stroke-width="${dotRadius * 1.6}" stroke-linecap="round" opacity="0.85"/>`;
+      } else {
+        svg += `<circle cx="${x}" cy="${y}" r="${dotRadius}" fill="var(--chord)" opacity="0.9"/>`;
+      }
+      if (finger > 0) {
+        svg += `<text x="${x}" y="${y + 4}" fill="var(--bg)" font-size="10" font-family="var(--font)" text-anchor="middle" font-weight="700">${finger}</text>`;
+      }
+    }
+  }
+
+  // String labels
+  const stringLabels = ['E', 'A', 'D', 'G', 'B', 'e'];
+  for (let s = 0; s < numStrings; s++) {
+    const x = padX + s * stringSpacing;
+    svg += `<text x="${x}" y="${h - 6}" fill="var(--fg-tertiary)" font-size="10" font-family="var(--font)" text-anchor="middle">${stringLabels[s]}</text>`;
+  }
+
+  svg += '</svg>';
+  container.innerHTML = svg;
+}
+
+function showChordDiagramPanel(initialChord) {
+  let panel = $('chord-diagram-panel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'chord-diagram-panel';
+    panel.innerHTML = `<div class="toolbar-sheet-backdrop"></div>`;
+    const content = document.createElement('div');
+    content.className = 'cd-panel-content';
+    content.innerHTML = `
+      <div class="toolbar-sheet-handle"></div>
+      <div class="cd-header">
+        <h3 class="cd-title">Chord Diagram</h3>
+        <div class="cd-chord-name" id="cd-chord-name">C</div>
+      </div>
+      <div class="cd-fretboard-wrap" id="cd-fretboard-wrap"></div>
+      <div class="cd-controls">
+        <div class="cd-chord-nav">
+          <button class="cd-nav-btn" id="cd-prev" title="Previous chord">‹</button>
+          <button class="cd-nav-btn" id="cd-next" title="Next chord">›</button>
+        </div>
+        <div class="cd-chord-input-wrap">
+          <input type="text" id="cd-chord-input" class="cd-chord-input" placeholder="Chord name" spellcheck="false">
+          <button id="cd-lookup-btn" class="cd-lookup-btn">Go</button>
+        </div>
+      </div>
+      <div class="cd-browse">
+        <div class="cd-browse-label">Common Chords</div>
+        <div class="cd-browse-grid" id="cd-browse-grid"></div>
+      </div>
+    `;
+    panel.appendChild(content);
+    document.body.appendChild(panel);
+
+    panel.querySelector('.toolbar-sheet-backdrop').addEventListener('click', () => {
+      panel.style.display = 'none';
+    });
+
+    $('cd-prev').addEventListener('click', () => {
+      const name = $('cd-chord-name').textContent;
+      const idx = ALL_CHORD_NAMES.indexOf(name);
+      const prev = idx > 0 ? ALL_CHORD_NAMES[idx - 1] : ALL_CHORD_NAMES[ALL_CHORD_NAMES.length - 1];
+      setDiagramChord(prev);
+    });
+    $('cd-next').addEventListener('click', () => {
+      const name = $('cd-chord-name').textContent;
+      const idx = ALL_CHORD_NAMES.indexOf(name);
+      const next = idx < ALL_CHORD_NAMES.length - 1 ? ALL_CHORD_NAMES[idx + 1] : ALL_CHORD_NAMES[0];
+      setDiagramChord(next);
+    });
+
+    $('cd-lookup-btn').addEventListener('click', () => {
+      const val = $('cd-chord-input').value.trim();
+      if (val) setDiagramChord(val);
+    });
+    $('cd-chord-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') $('cd-lookup-btn').click();
+    });
+
+    const grid = $('cd-browse-grid');
+    const commonChords = ['C','D','E','F','G','A','B','Am','Bm','Cm','Dm','Em','Fm','Gm','C7','D7','E7','G7','A7','B7','Cmaj7','Dmaj7','Fmaj7','Gmaj7','Amaj7','Em7','Am7','Bm7','Dm7','Fdim','Gdim','Adim','Bdim','Caug','Daug','Eaug','Aaug','Dsus4','Esus4','Gsus4','Asus4','Cadd9','Dadd9','Eadd9','Gadd9','Aadd9'];
+    grid.innerHTML = commonChords.map(ch => `<button class="cd-browse-btn" data-chord="${ch}">${ch}</button>`).join('');
+    grid.querySelectorAll('.cd-browse-btn').forEach(btn => {
+      btn.addEventListener('click', () => setDiagramChord(btn.dataset.chord));
+    });
+  }
+
+  panel.style.display = 'flex';
+  setDiagramChord(initialChord || 'C');
+}
+
+function setDiagramChord(name) {
+  const nameEl = $('cd-chord-name');
+  const inputEl = $('cd-chord-input');
+  const wrap = $('cd-fretboard-wrap');
+  if (nameEl) nameEl.textContent = name;
+  if (inputEl) inputEl.value = name;
+  if (wrap) renderFretboard(wrap, name);
+  document.querySelectorAll('.cd-browse-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.chord === name);
+  });
+}
+
 // ===== Mobile Keyboard Handling =====
 function initMobileKeyboard() {
   // Track keyboard visibility
@@ -1067,6 +1356,198 @@ function buildExportMarkdown(song) {
 function downloadFile(content, name, mime) {
   const blob = new Blob([content], { type: mime }); const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
+}
+
+// ===== Share / Collaborative Editing =====
+
+// Encode a song to a compact share code (base64url JSON)
+function encodeSongToShareCode(song) {
+  // Strip audio data to keep share codes small — audio doesn't need to be shared
+  const shareData = {
+    v: 1, // version
+    t: song.title || 'Untitled',
+    k: song.key || '',
+    b: song.bpm || null,
+    s: (song.sections || []).map(sec => ({
+      y: sec.type,
+      l: (sec.lines || []).map(ln => ({
+        x: ln.text || '',
+        c: (ln.chords || []).map(c => ({ p: c.x, n: c.name }))
+      }))
+    }))
+  };
+  const json = JSON.stringify(shareData);
+  // Use base64url encoding (URL-safe)
+  const base64 = btoa(unescape(encodeURIComponent(json)));
+  return 'SN:' + base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Decode a share code back to a song object (returns a new song with generated id)
+function decodeShareCodeToSong(code) {
+  if (!code || !code.startsWith('SN:')) return null;
+  try {
+    let base64 = code.slice(3).replace(/-/g, '+').replace(/_/g, '/');
+    // Pad base64
+    while (base64.length % 4) base64 += '=';
+    const json = decodeURIComponent(escape(atob(base64)));
+    const d = JSON.parse(json);
+    if (!d || d.v !== 1) return null;
+    const id = generateId();
+    const sections = (d.s || []).map(sec => ({
+      type: sec.y || 'Verse',
+      lines: (sec.l || []).map(ln => ({
+        text: ln.x || '',
+        chords: (ln.c || []).map(c => ({ x: c.p || 0, name: c.n || '' }))
+      }))
+    }));
+    if (!sections.length) sections.push({ type: 'Verse', lines: [{ text: '', chords: [] }] });
+    return {
+      id,
+      title: d.t || 'Shared Song',
+      key: d.k || '',
+      bpm: d.b || null,
+      time_sig: null,
+      tags: [],
+      folder: null,
+      sections,
+      audio: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+// Show the share sheet for the current song
+function showShareSheet() {
+  const song = getSong(currentSongId);
+  if (!song) { toast('No song to share'); return; }
+
+  let sheet = $('share-sheet');
+  if (!sheet) {
+    sheet = document.createElement('div');
+    sheet.id = 'share-sheet';
+    sheet.innerHTML = `
+      <div class="toolbar-sheet-backdrop"></div>
+      <div class="toolbar-sheet-content">
+        <div class="toolbar-sheet-handle"></div>
+        <h3 class="share-title">Share Song</h3>
+        <div class="share-song-title" id="share-song-title"></div>
+        <div class="share-options">
+          <button class="share-opt-btn" id="share-native-btn">
+            <span class="share-opt-icon">📤</span>
+            <span class="share-opt-label">Share via…</span>
+            <span class="share-opt-desc">Native share on device</span>
+          </button>
+          <button class="share-opt-btn" id="share-clip-btn">
+            <span class="share-opt-icon">⎘</span>
+            <span class="share-opt-label">Copy to Clipboard</span>
+            <span class="share-opt-desc">Share code for pasting</span>
+          </button>
+          <button class="share-opt-btn" id="share-qr-btn">
+            <span class="share-opt-icon">▣</span>
+            <span class="share-opt-label">Show QR Code</span>
+            <span class="share-opt-desc">Scan to import on another device</span>
+          </button>
+        </div>
+        <div class="share-code-section">
+          <div class="share-code-label">Share Code</div>
+          <div class="share-code-wrap">
+            <textarea class="share-code-area" id="share-code-area" readonly></textarea>
+            <button class="share-copy-code-btn" id="share-copy-code-btn">Copy</button>
+          </div>
+        </div>
+        <div class="share-divider"><span>or import a shared song</span></div>
+        <div class="share-import">
+          <textarea class="share-import-area" id="share-import-area" placeholder="Paste a share code here…" spellcheck="false"></textarea>
+          <button class="share-import-btn" id="share-import-btn">Import Shared Song</button>
+        </div>
+      </div>`;
+    document.body.appendChild(sheet);
+
+    sheet.querySelector('.toolbar-sheet-backdrop').addEventListener('click', () => {
+      sheet.style.display = 'none';
+    });
+  }
+
+  // Populate song info
+  $('share-song-title').textContent = song.title || 'Untitled';
+
+  // Generate share code
+  const code = encodeSongToShareCode(song);
+  const codeArea = $('share-code-area');
+  codeArea.value = code;
+
+  // Native share
+  const nativeBtn = $('share-native-btn');
+  nativeBtn.onclick = async () => {
+    const shareText = buildExportText(song);
+    const shareData = { title: song.title || 'Song', text: shareText };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        sheet.style.display = 'none';
+        return;
+      } catch (e) {
+        // User cancelled or not supported — fall through to clipboard
+      }
+    }
+    // Fallback: copy share code
+    navigator.clipboard.writeText(code).then(() => {
+      toast('Share code copied');
+      sheet.style.display = 'none';
+    });
+  };
+
+  // Copy to clipboard
+  $('share-clip-btn').onclick = () => {
+    navigator.clipboard.writeText(code).then(() => {
+      toast('Share code copied to clipboard');
+      sheet.style.display = 'none';
+    });
+  };
+
+  // Copy code button in the code area
+  $('share-copy-code-btn').onclick = () => {
+    navigator.clipboard.writeText(code).then(() => toast('Copied'));
+  };
+
+  // QR Code (simple: show the code in a large monospace display for scanning apps)
+  $('share-qr-btn').onclick = () => {
+    // For now, show a modal with the share code in large text
+    // (Full QR generation would need a library — we use a text-based approach)
+    const modal = document.createElement('div');
+    modal.className = 'share-qr-modal';
+    modal.innerHTML = `
+      <div class="share-qr-backdrop"></div>
+      <div class="share-qr-content">
+        <div class="share-qr-title">Share Code</div>
+        <div class="share-qr-code">${esc(code)}</div>
+        <div class="share-qr-hint">Copy this code and paste it in another device</div>
+        <button class="share-qr-close">Done</button>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.querySelector('.share-qr-backdrop').onclick = () => modal.remove();
+    modal.querySelector('.share-qr-close').onclick = () => modal.remove();
+  };
+
+  // Import shared song
+  $('share-import-btn').onclick = async () => {
+    const raw = $('share-import-area').value.trim();
+    if (!raw) { toast('Paste a share code first'); return; }
+    // Handle both raw code and SN: prefixed
+    const code2 = raw.startsWith('SN:') ? raw : 'SN:' + raw;
+    const imported = decodeShareCodeToSong(code2);
+    if (!imported) { toast('Invalid share code'); return; }
+    songs.unshift(imported);
+    await saveSongs();
+    renderSongList();
+    sheet.style.display = 'none';
+    toast(`Imported "${imported.title}"`);
+  };
+
+  sheet.style.display = 'flex';
 }
 
 // Import
@@ -1720,6 +2201,8 @@ function setupEvents() {
         if (confirm(`Delete "${song.title}"?`)) { await deleteSong(currentSongId); currentSongId = null; popView(); renderSongList(); toast('Deleted'); }
       } else if (a === 'setlist') {
         showSetlistView();
+      } else if (a === 'share-song') {
+        showShareSheet();
       }
     });
   });
@@ -1734,6 +2217,16 @@ function setupEvents() {
     btn.addEventListener('click', () => {
       hideToolbarSheet();
       showSetlistView();
+    });
+  });
+
+  // Chord Diagram button in toolbar sheet
+  document.querySelectorAll('.toolbar-sheet-btn[data-action="chord-diagram"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      hideToolbarSheet();
+      // If a chord is currently being edited, show that chord; otherwise default to C
+      const currentChordName = document.querySelector('.chord-sheet-display')?.textContent || 'C';
+      showChordDiagramPanel(currentChordName !== '?' ? currentChordName : 'C');
     });
   });
 
