@@ -90,6 +90,8 @@ async function loadSongs() {
 
 // Pull-to-refresh: reload data from storage and re-render
 async function refreshSongData() {
+  // Show skeleton while refreshing
+  showSongListSkeletonStaggered(6);
   // Re-load songs from source of truth
   if (isTauri) {
     const r = await tauriLoadSongs();
@@ -784,6 +786,51 @@ function showSongContext(songId, anchorEl) {
   menu.style.left = 'auto';
   menu.style.right = '16px';
   menu.style.display = 'block';
+}
+
+// Skeleton loading for song list
+function showSongListSkeleton(count = 6) {
+  const el = $('song-list');
+  if (!el) return;
+  let html = '<div class="skeleton-section-header"><div class="skeleton-section-label"></div></div>';
+  // Vary the widths slightly for realism
+  const titleWidths = [70, 55, 80, 45, 65, 50];
+  const metaWidths = [50, 60, 40, 55, 45, 65];
+  for (let i = 0; i < count; i++) {
+    const tw = titleWidths[i % titleWidths.length];
+    const mw = metaWidths[i % metaWidths.length];
+    const hasPin = i % 3 === 0;
+    const hasKey = i % 2 === 1;
+    html += '<div class="skeleton-item">';
+    if (hasPin) html += '<div class="skeleton-line skeleton-pin"></div>';
+    html += `<div class="skeleton-line skeleton-title" style="width:${tw}%"></div>`;
+    if (hasKey) html += '<div class="skeleton-line skeleton-key"></div>';
+    html += `<div class="skeleton-line skeleton-meta" style="width:${mw}px"></div>`;
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+// Stagger the shimmer so items don't pulse in perfect lockstep
+function showSongListSkeletonStaggered(count = 6) {
+  const el = $('song-list');
+  if (!el) return;
+  let html = '<div class="skeleton-section-header"><div class="skeleton-section-label"></div></div>';
+  const titleWidths = [70, 55, 80, 45, 65, 50];
+  const metaWidths = [50, 60, 40, 55, 45, 65];
+  for (let i = 0; i < count; i++) {
+    const tw = titleWidths[i % titleWidths.length];
+    const mw = metaWidths[i % metaWidths.length];
+    const hasPin = i % 3 === 0;
+    const hasKey = i % 2 === 1;
+    const delay = i * 0.1;
+    html += '<div class="skeleton-item">';
+    if (hasPin) html += `<div class="skeleton-line skeleton-pin" style="animation-delay:${delay}s"></div>`;
+    html += `<div class="skeleton-line skeleton-title" style="width:${tw}%;animation-delay:${delay}s"></div>`;
+    if (hasKey) html += `<div class="skeleton-line skeleton-key" style="animation-delay:${delay}s"></div>`;
+    html += `<div class="skeleton-line skeleton-meta" style="width:${mw}px;animation-delay:${delay}s"></div>`;
+    html += '</div>';
+  }
+  el.innerHTML = html;
 }
 
 // Song list
@@ -3357,6 +3404,8 @@ function updateInfoBar() {
 
 // Init
 async function init() {
+  // Show skeleton while loading data
+  showSongListSkeletonStaggered(6);
   await initTauri();
   await loadSongs();
 
