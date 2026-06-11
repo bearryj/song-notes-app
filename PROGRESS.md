@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (mobile toolbar, touch chord editor, keyboard handling)
+2026-06-11 by OWL (setlist mode — create, manage, capo, transpose, print)
 
 ## Build & Test Commands
 ```bash
@@ -50,12 +50,13 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Song templates: Blank, Verse-Chorus, AABA, Verse Only
 - Desktop-grade chord row + quick-select popup on mobile
 - Mobile keyboard handling (avoid viewport resize issues)
+- Setlist mode (create/rename/delete setlists, add/remove/reorder songs, capo per song, transpose all, chord chart print preview)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
 2. [x] Mobile toolbar with bottom sheet (2026-06-11)
 3. [x] Mobile keyboard handling (2026-06-11)
-4. [ ] Setlist mode (order songs, chord chart print, capo per song)
+4. [x] Setlist mode (order songs, capo per song, chord chart print) (2026-06-11)
 5. [ ] Chord diagram panel (common chord shapes, finger positions)
 6. [ ] Collaborative editing (share link, real-time sync)
 7. [ ] Plugin system for custom export formats

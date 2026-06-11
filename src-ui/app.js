@@ -16,6 +16,10 @@ let isRecording = false;
 let audioPlayer = new Audio();
 let hasChanges = false;
 
+// ===== Setlist State =====
+let setlists = [];
+let activeSetlistId = null;
+
 // Chord definitions
 const CHROMATIC = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const CHROMATIC_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -1213,6 +1217,396 @@ function showNewSongMenu() {
   renderSongList(); currentSongId = song.id; openEditor(currentSongId); pushView('editor-view');
 }
 
+// ===== Setlist Mode =====
+
+function loadSetlists() {
+  try { setlists = JSON.parse(localStorage.getItem('sn_setlists') || '[]'); } catch { setlists = []; }
+}
+
+function saveSetlists() {
+  localStorage.setItem('sn_setlists', JSON.stringify(setlists));
+}
+
+function getTransposedKey(key, semitones) {
+  if (!key || !semitones) return key;
+  const m = key.match(/^([A-G][#b]?)(.*)$/);
+  if (!m) return key;
+  const root = m[1], suffix = m[2];
+  const idx = noteToSemitone(root);
+  return idx === -1 ? key : semitoneToNote(idx + semitones) + suffix;
+}
+
+function transposeSetlistSongData(song, semitones) {
+  if (!song || !semitones) return;
+  song.sections.forEach(s => s.lines.forEach(l => l.chords.forEach(c => {
+    c.name = transposeChord(c.name, semitones);
+  })));
+  if (song.key) song.key = getTransposedKey(song.key, semitones);
+}
+
+// --- Setlist List View ---
+
+function showSetlistView() {
+  loadSetlists();
+  renderSetlistList();
+  pushView('setlist-view');
+}
+
+function renderSetlistList() {
+  const el = $('setlist-list');
+  if (!el) return;
+  if (!setlists.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><h2>No Setlists</h2><p>Tap + to create one</p></div>';
+    return;
+  }
+  el.innerHTML = setlists.map(sl => {
+    const count = sl.songs.length;
+    return `<div class="setlist-item" data-id="${sl.id}">
+      <span class="setlist-item-icon">📋</span>
+      <div class="setlist-item-info">
+        <div class="setlist-item-name">${esc(sl.name)}</div>
+        <div class="setlist-item-count">${count} song${count !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="setlist-item-actions">
+        <button class="setlist-delete-btn" data-id="${sl.id}" style="background:none;border:none;color:var(--danger);font-size:16px;padding:8px;cursor:pointer;">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.setlist-item').forEach(item => {
+    item.addEventListener('click', e => {
+      if (e.target.closest('.setlist-delete-btn')) return;
+      activeSetlistId = item.dataset.id;
+      showSetlistDetail(activeSetlistId);
+    });
+  });
+  el.querySelectorAll('.setlist-delete-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const sl = setlists.find(s => s.id === id);
+      if (!sl) return;
+      if (confirm(`Delete setlist "${sl.name}"?`)) {
+        setlists = setlists.filter(s => s.id !== id);
+        if (activeSetlistId === id) activeSetlistId = null;
+        saveSetlists();
+        renderSetlistList();
+      }
+    });
+  });
+}
+
+function createNewSetlist() {
+  const name = prompt('Setlist name:');
+  if (!name || !name.trim()) return;
+  const setlist = {
+    id: 'sl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    name: name.trim(),
+    songs: [],
+    created_at: new Date().toISOString()
+  };
+  setlists.push(setlist);
+  saveSetlists();
+  activeSetlistId = setlist.id;
+  renderSetlistList();
+  showSetlistDetail(setlist.id);
+}
+
+// --- Setlist Detail View ---
+
+function showSetlistDetail(id) {
+  const setlist = setlists.find(s => s.id === id);
+  if (!setlist) return;
+  activeSetlistId = id;
+  const titleEl = $('setlist-detail-title');
+  if (titleEl) titleEl.textContent = setlist.name;
+  renderSetlistSongs();
+  pushView('setlist-detail-view');
+}
+
+function renderSetlistSongs() {
+  const container = $('setlist-songs');
+  const countEl = $('setlist-song-count');
+  if (!container) return;
+
+  const setlist = setlists.find(s => s.id === activeSetlistId);
+  if (!setlist) {
+    container.innerHTML = '<div class="empty-state"><p style="color:var(--fg-tertiary);font-size:14px;">Select a setlist</p></div>';
+    if (countEl) countEl.textContent = '';
+    return;
+  }
+
+  if (countEl) countEl.textContent = `${setlist.songs.length} song${setlist.songs.length !== 1 ? 's' : ''}`;
+
+  if (!setlist.songs.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">♪</div><h2>Empty Setlist</h2><p>Tap + to add songs</p></div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  setlist.songs.forEach((entry, idx) => {
+    const song = songs.find(s => s.id === entry.songId);
+    const row = document.createElement('div');
+    row.className = 'setlist-song-item';
+    row.dataset.idx = idx;
+
+    if (!song) {
+      row.innerHTML = `
+        <span class="setlist-song-drag">⋮⋮</span>
+        <div class="setlist-song-info"><div class="setlist-song-title" style="color:var(--fg-tertiary)">Unknown song</div></div>
+        <button class="setlist-song-remove" data-idx="${idx}">✕</button>`;
+    } else {
+      const effectiveKey = getTransposedKey(song.key, entry.transpose || 0);
+      const lineCount = (song.sections||[]).reduce((a, sec) => a + sec.lines.length, 0);
+      row.innerHTML = `
+        <span class="setlist-song-drag" data-idx="${idx}">⋮⋮</span>
+        <div class="setlist-song-info">
+          <div class="setlist-song-title">${esc(song.title || 'Untitled')}</div>
+          <div class="setlist-song-meta">
+            <span class="setlist-song-key">${effectiveKey || '—'}</span>
+            ${entry.capo ? `<span class="setlist-song-capo"> · Capo ${entry.capo}</span>` : ''}
+            ${entry.transpose ? ` · ${entry.transpose > 0 ? '+' : ''}${entry.transpose}` : ''}
+            · ${lineCount} lines
+          </div>
+        </div>
+        <div class="setlist-song-controls">
+          <input type="number" class="setlist-capo-input" data-idx="${idx}" value="${entry.capo || 0}" min="0" max="11" title="Capo">
+          <button class="setlist-song-remove" data-idx="${idx}" title="Remove">✕</button>
+        </div>`;
+    }
+
+    container.appendChild(row);
+  });
+
+  // Wire up events
+  container.querySelectorAll('.setlist-capo-input').forEach(input => {
+    input.addEventListener('change', e => {
+      const idx = parseInt(e.target.dataset.idx);
+      const setlist = setlists.find(s => s.id === activeSetlistId);
+      if (!setlist || !setlist.songs[idx]) return;
+      setlist.songs[idx].capo = parseInt(e.target.value) || 0;
+      saveSetlists();
+    });
+  });
+
+  container.querySelectorAll('.setlist-song-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      const setlist = setlists.find(s => s.id === activeSetlistId);
+      if (!setlist) return;
+      const song = songs.find(s => s.id === setlist.songs[idx]?.songId);
+      if (song && !confirm(`Remove "${song.title}" from setlist?`)) return;
+      setlist.songs.splice(idx, 1);
+      saveSetlists();
+      renderSetlistSongs();
+    });
+  });
+
+  // Touch drag-to-reorder
+  let dragIdx = null;
+  let touchStartY = 0;
+  let dragClone = null;
+
+  container.querySelectorAll('.setlist-song-item').forEach(row => {
+    const dragHandle = row.querySelector('.setlist-song-drag');
+
+    // Mouse drag
+    row.draggable = true;
+    row.addEventListener('dragstart', () => {
+      dragIdx = parseInt(row.dataset.idx);
+      row.style.opacity = '0.4';
+    });
+    row.addEventListener('dragend', () => {
+      row.style.opacity = '';
+      dragIdx = null;
+    });
+    row.addEventListener('dragover', e => { e.preventDefault(); });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      const dropIdx = parseInt(row.dataset.idx);
+      const setlist = setlists.find(s => s.id === activeSetlistId);
+      if (dragIdx !== null && setlist && dragIdx !== dropIdx) {
+        const [moved] = setlist.songs.splice(dragIdx, 1);
+        setlist.songs.splice(dropIdx, 0, moved);
+        saveSetlists();
+        renderSetlistSongs();
+      }
+    });
+
+    // Touch drag via handle
+    if (dragHandle) {
+      dragHandle.addEventListener('touchstart', e => {
+        touchStartY = e.touches[0].clientY;
+        dragIdx = parseInt(row.dataset.idx);
+      }, { passive: true });
+      dragHandle.addEventListener('touchmove', e => {
+        if (dragIdx === null) return;
+        const touch = e.touches[0];
+        const containerRect = container.getBoundingClientRect();
+        const rows = container.querySelectorAll('.setlist-song-item');
+        // Find which row we're over
+        rows.forEach((r, i) => {
+          const rect = r.getBoundingClientRect();
+          if (touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+            if (i !== dragIdx) {
+              const setlist = setlists.find(s => s.id === activeSetlistId);
+              if (setlist) {
+                const [moved] = setlist.songs.splice(dragIdx, 1);
+                setlist.songs.splice(i, 0, moved);
+                saveSetlists();
+                dragIdx = i;
+                renderSetlistSongs();
+              }
+            }
+          }
+        });
+      }, { passive: false });
+      dragHandle.addEventListener('touchend', () => {
+        dragIdx = null;
+      }, { passive: true });
+    }
+  });
+}
+
+// --- Song Picker ---
+
+function showSongPicker() {
+  const setlist = setlists.find(s => s.id === activeSetlistId);
+  if (!setlist) { toast('Create a setlist first'); return; }
+  if (!songs.length) { toast('No songs available'); return; }
+
+  const sheet = $('song-picker-sheet');
+  const list = $('song-picker-list');
+  if (!sheet || !list) return;
+
+  list.innerHTML = songs.map(s => {
+    const alreadyIn = setlist.songs.some(ss => ss.songId === s.id);
+    const lineCount = (s.sections||[]).reduce((a, sec) => a + sec.lines.length, 0);
+    return `<div class="song-picker-item${alreadyIn ? ' already-in' : ''}" data-id="${s.id}">
+      <div style="flex:1;min-width:0;">
+        <div class="song-picker-title">${esc(s.title || 'Untitled')}</div>
+        <div class="song-picker-meta">${s.key || 'No key'} · ${lineCount} lines</div>
+      </div>
+      ${alreadyIn ? '<span style="color:var(--fg-tertiary);font-size:13px;">Added</span>' : ''}
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.song-picker-item:not(.already-in)').forEach(item => {
+    item.addEventListener('click', () => {
+      const songId = item.dataset.id;
+      setlist.songs.push({ songId, capo: 0, transpose: 0 });
+      saveSetlists();
+      renderSetlistSongs();
+      sheet.style.display = 'none';
+      toast('Added to setlist');
+    });
+  });
+
+  sheet.style.display = 'flex';
+  sheet.querySelector('.toolbar-sheet-backdrop').onclick = () => { sheet.style.display = 'none'; };
+}
+
+// --- Transpose All ---
+
+function showTransposeSheet() {
+  const setlist = setlists.find(s => s.id === activeSetlistId);
+  if (!setlist) return;
+
+  // Build or reuse transpose sheet
+  let sheet = $('transpose-sheet');
+  if (!sheet) {
+    sheet = document.createElement('div');
+    sheet.id = 'transpose-sheet';
+    sheet.innerHTML = `
+      <div class="toolbar-sheet-backdrop"></div>
+      <div class="toolbar-sheet-content">
+        <div class="toolbar-sheet-handle"></div>
+        <h3 style="font-size:17px;font-weight:600;padding:4px 0 12px;text-align:center;">Transpose All Songs</h3>
+        <div class="transpose-grid">
+          ${[-6,-5,-4,-3,-2,-1].map(i => `<button class="transpose-btn" data-semitones="${i}">${i > 0 ? '+' : ''}${i}</button>`).join('')}
+          <button class="transpose-btn reset" data-semitones="0">↺ Reset to Original</button>
+          ${[1,2,3,4,5,6].map(i => `<button class="transpose-btn" data-semitones="${i}">+${i}</button>`).join('')}
+        </div>
+      </div>`;
+    document.body.appendChild(sheet);
+    sheet.querySelector('.toolbar-sheet-backdrop').addEventListener('click', () => { sheet.style.display = 'none'; });
+  }
+
+  sheet.querySelectorAll('.transpose-btn').forEach(btn => {
+    btn.onclick = () => {
+      const semitones = parseInt(btn.dataset.semitones);
+      if (semitones === 0) {
+        setlist.songs.forEach(s => s.transpose = 0);
+        saveSetlists();
+        renderSetlistSongs();
+        sheet.style.display = 'none';
+        toast('Reset to original');
+      } else {
+        setlist.songs.forEach(s => s.transpose = (s.transpose || 0) + semitones);
+        saveSetlists();
+        renderSetlistSongs();
+        sheet.style.display = 'none';
+        toast(`${semitones > 0 ? '+' : ''}${semitones} semitones`);
+      }
+    };
+  });
+
+  sheet.style.display = 'flex';
+}
+
+// --- Print / Chord Chart Preview ---
+
+function showSetlistPrintPreview() {
+  const setlist = setlists.find(s => s.id === activeSetlistId);
+  if (!setlist || !setlist.songs.length) { toast('No songs in setlist'); return; }
+
+  const overlay = $('setlist-print-overlay');
+  const content = $('setlist-print-content');
+  const title = $('print-preview-title');
+  if (!overlay || !content) return;
+
+  if (title) title.textContent = `Setlist: ${setlist.name}`;
+
+  let html = `<div class="pp-title">${esc(setlist.name)}</div>`;
+  html += `<div class="pp-subtitle">${setlist.songs.length} song${setlist.songs.length !== 1 ? 's' : ''}</div>`;
+
+  setlist.songs.forEach((entry, idx) => {
+    const song = songs.find(s => s.id === entry.songId);
+    if (!song) return;
+
+    // Build transposed copy for display
+    const displaySong = JSON.parse(JSON.stringify(song));
+    if (entry.transpose) transposeSetlistSongData(displaySong, entry.transpose);
+
+    html += `<div class="pp-song-block">`;
+    html += `<div class="pp-song-title">${idx + 1}. ${esc(song.title || 'Untitled')}`;
+    if (entry.capo) html += ` <span class="pp-song-capo">(Capo ${entry.capo})</span>`;
+    if (entry.transpose) html += ` <span class="pp-song-capo">(${entry.transpose > 0 ? '+' : ''}${entry.transpose})</span>`;
+    html += `</div>`;
+
+    displaySong.sections.forEach(section => {
+      html += `<div class="pp-section-type">${esc(section.type)}</div>`;
+      section.lines.forEach(line => {
+        if (line.chords && line.chords.length) {
+          let chordLine = '';
+          let lx = 0;
+          line.chords.sort((a, b) => a.x - b.x).forEach(ch => {
+            const sp = Math.max(0, Math.floor((ch.x - lx) / 7));
+            chordLine += ' '.repeat(sp) + ch.name;
+            lx = ch.x + ch.name.length * 7;
+          });
+          if (chordLine.trim()) html += `<div class="pp-chord-line">${esc(chordLine)}</div>`;
+        }
+        if (line.text) html += `<div class="pp-lyric-line">${esc(line.text)}</div>`;
+      });
+    });
+    html += `</div>`;
+  });
+
+  content.innerHTML = html;
+  overlay.style.display = 'flex';
+}
+
 // Events
 function setupEvents() {
   $('back-to-folders').addEventListener('click', popView);
@@ -1324,12 +1718,63 @@ function setupEvents() {
       } else if (a === 'delete') {
         if (!song) return;
         if (confirm(`Delete "${song.title}"?`)) { await deleteSong(currentSongId); currentSongId = null; popView(); renderSongList(); toast('Deleted'); }
+      } else if (a === 'setlist') {
+        showSetlistView();
       }
     });
   });
 
   // Close sheet on backdrop tap
   document.querySelector('.toolbar-sheet-backdrop')?.addEventListener('click', hideToolbarSheet);
+
+  // ===== Setlist Events =====
+
+  // Setlist button in toolbar sheet
+  document.querySelectorAll('.toolbar-sheet-btn[data-action="setlist"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      hideToolbarSheet();
+      showSetlistView();
+    });
+  });
+
+  // Back from setlist view
+  $('back-from-setlist')?.addEventListener('click', popView);
+
+  // New setlist
+  $('setlist-new-btn')?.addEventListener('click', createNewSetlist);
+
+  // Back from setlist detail
+  $('back-from-setlist-detail')?.addEventListener('click', () => {
+    renderSetlistList();
+    popView();
+  });
+
+  // Add song to setlist
+  $('setlist-add-song-btn')?.addEventListener('click', () => {
+    const setlist = setlists.find(s => s.id === activeSetlistId);
+    if (!setlist) { toast('Create a setlist first'); return; }
+    showSongPicker();
+  });
+
+  // Transpose all in setlist
+  $('setlist-transpose-btn')?.addEventListener('click', () => {
+    const setlist = setlists.find(s => s.id === activeSetlistId);
+    if (!setlist) return;
+    showTransposeSheet();
+  });
+
+  // Print setlist chord charts
+  $('setlist-print-btn')?.addEventListener('click', () => {
+    showSetlistPrintPreview();
+  });
+
+  // Print preview controls
+  $('print-close-btn')?.addEventListener('click', () => {
+    $('setlist-print-overlay').style.display = 'none';
+  });
+  $('print-do-btn')?.addEventListener('click', () => {
+    window.print();
+  });
 
   // FAB to show toolbar
   $('toolbar-fab')?.addEventListener('click', () => {
@@ -1436,6 +1881,47 @@ function setupEvents() {
     const list = $('song-list');
     list.classList.toggle('gallery', galleryMode);
     $('view-toggle').textContent = galleryMode ? '☰' : '⊞';
+  });
+
+  // ===== Setlist Event Handlers =====
+  // Setlist view navigation
+  $('back-from-setlist')?.addEventListener('click', () => {
+    popView();
+  });
+
+  // New setlist button
+  $('setlist-new-btn')?.addEventListener('click', createNewSetlist);
+
+  // Back from setlist detail to setlist list
+  $('back-from-setlist-detail')?.addEventListener('click', () => {
+    activeSetlistId = null;
+    popView();
+  });
+
+  // Add song to setlist
+  $('setlist-add-song-btn')?.addEventListener('click', () => {
+    showSongPicker();
+  });
+
+  // Print chord charts
+  $('setlist-print-btn')?.addEventListener('click', () => {
+    showSetlistPrintPreview();
+  });
+
+  // Transpose all songs in setlist
+  $('setlist-transpose-btn')?.addEventListener('click', () => {
+    showTransposeSheet();
+  });
+
+  // Print preview close
+  $('print-close-btn')?.addEventListener('click', () => {
+    const overlay = $('setlist-print-overlay');
+    if (overlay) overlay.style.display = 'none';
+  });
+
+  // Print do (trigger browser print)
+  $('print-do-btn')?.addEventListener('click', () => {
+    window.print();
   });
 }
 

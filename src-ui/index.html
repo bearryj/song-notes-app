@@ -120,6 +120,10 @@
               <span class="sheet-icon">🗑</span>
               <span class="sheet-label">Delete</span>
             </button>
+            <button class="toolbar-sheet-btn" data-action="setlist">
+              <span class="sheet-icon">📋</span>
+              <span class="sheet-label">Setlists</span>
+            </button>
           </div>
         </div>
       </div>
@@ -160,6 +164,55 @@
     <div id="folder-actions" class="popover" style="display:none;">
       <button data-action="rename">Rename</button>
       <button data-action="delete-folder" class="danger">Delete</button>
+    </div>
+
+    <!-- Setlist View -->
+    <div id="setlist-view" class="view">
+      <div class="nav-bar">
+        <button id="back-from-setlist" class="nav-btn">‹</button>
+        <h1 class="nav-title">Setlists</h1>
+        <button id="setlist-new-btn" class="nav-btn nav-btn-primary">+</button>
+      </div>
+      <div id="setlist-list" class="list"></div>
+    </div>
+
+    <!-- Setlist Detail View (song list within a setlist) -->
+    <div id="setlist-detail-view" class="view">
+      <div class="nav-bar">
+        <button id="back-from-setlist-detail" class="nav-btn">‹</button>
+        <div class="nav-title-wrap">
+          <h1 id="setlist-detail-title" class="nav-title">Setlist</h1>
+        </div>
+        <div class="nav-btn-group">
+          <button id="setlist-print-btn" class="nav-btn" title="Print chord charts">🖨</button>
+          <button id="setlist-transpose-btn" class="nav-btn" title="Transpose all">♯</button>
+          <button id="setlist-add-song-btn" class="nav-btn nav-btn-primary">+</button>
+        </div>
+      </div>
+      <div class="search-bar">
+        <span id="setlist-song-count" style="font-size:13px;color:var(--fg-tertiary);padding:0 4px;">0 songs</span>
+      </div>
+      <div id="setlist-songs" class="list"></div>
+    </div>
+
+    <!-- Song Picker Sheet (for adding songs to setlist) -->
+    <div id="song-picker-sheet" style="display:none;">
+      <div class="toolbar-sheet-backdrop"></div>
+      <div class="toolbar-sheet-content" style="max-height:70vh;">
+        <div class="toolbar-sheet-handle"></div>
+        <h3 style="font-size:17px;font-weight:600;padding:4px 0 12px;text-align:center;">Add Song to Setlist</h3>
+        <div id="song-picker-list" style="overflow-y:auto;max-height:50vh;"></div>
+      </div>
+    </div>
+
+    <!-- Setlist Print Preview Overlay -->
+    <div id="setlist-print-overlay" style="display:none;">
+      <div class="print-preview-nav">
+        <button id="print-close-btn" class="nav-btn">✕</button>
+        <span id="print-preview-title" class="print-preview-title">Print Preview</span>
+        <button id="print-do-btn" class="nav-btn nav-btn-primary" style="font-size:15px;">Print</button>
+      </div>
+      <div id="setlist-print-content" class="print-content"></div>
     </div>
   </div>
 
