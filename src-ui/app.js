@@ -3218,6 +3218,12 @@ function metroPlayClick(isAccent) {
   osc.stop(ctx.currentTime + 0.08);
 }
 
+function metroVibrate(isAccent) {
+  if (navigator.vibrate) {
+    navigator.vibrate(isAccent ? [30, 20, 30] : 15);
+  }
+}
+
 function metroScheduleNote() {
   const ctx = metroGetCtx();
   const secondsPerBeat = 60.0 / metroBpm;
@@ -3234,6 +3240,7 @@ function metroScheduleNote() {
       circle.classList.remove('beat', 'beat-accent');
       void circle.offsetWidth; // force reflow
       circle.classList.add(isAccent ? 'beat-accent' : 'beat');
+      metroVibrate(isAccent);
       setTimeout(() => circle.classList.remove('beat', 'beat-accent'), 100);
     }, delay);
 

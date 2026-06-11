@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (added visual key picker for transposition)
+2026-06-11 by OWL (added haptic feedback for metronome beats)
 
 ## Build & Test Commands
 ```bash
@@ -75,8 +75,8 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 11. [x] Debounce search input (2026-06-11)
 12. [x] Tag management UI (add/edit/display/filter tags — data model supports it, search already indexes it, but no editor UI) (2026-06-11)
 13. [x] Replace remaining raw prompt()/confirm() dialogs with proper UI (folder rename/delete, setlist create/rename, set key, set BPM, import) (2026-06-11)
-14. [ ] Visual key picker in toolbar (2026-06-11)
-15. [ ] Haptic feedback on key/metronome taps (if supported)
+14. [x] Visual key picker in toolbar (2026-06-11) — replaced by dedicated transposition key picker (item 62)
+15. [x] Haptic feedback on key/metronome taps (2026-06-11) — metroVibrate() with accent beat pattern
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~60K), CSS (styles.css ~19K), HTML (index.html)
