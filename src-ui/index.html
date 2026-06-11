@@ -140,6 +140,10 @@
               <span class="sheet-icon">⏱</span>
               <span class="sheet-label">Metronome</span>
             </button>
+            <button class="toolbar-sheet-btn" data-action="song-stats">
+              <span class="sheet-icon">📊</span>
+              <span class="sheet-label">Song Stats</span>
+            </button>
           </div>
         </div>
       </div>
@@ -280,6 +284,20 @@
             <button class="metro-preset-btn" data-bpm="168">Presto</button>
             <button class="metro-preset-btn" data-bpm="200">Prestissimo</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Song Statistics Panel -->
+    <div id="song-stats-panel" style="display:none;">
+      <div class="toolbar-sheet-backdrop"></div>
+      <div class="stats-content">
+        <div class="toolbar-sheet-handle"></div>
+        <div class="stats-header">
+          <h3 class="stats-title">Song Statistics</h3>
+        </div>
+        <div class="stats-body" id="stats-body">
+          <div class="stats-loading">Select a song to view stats</div>
         </div>
       </div>
     </div>

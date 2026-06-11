@@ -2645,6 +2645,8 @@ function setupEvents() {
         showPluginSheet();
       } else if (a === 'metronome') {
         showMetronomePanel();
+      } else if (a === 'song-stats') {
+        showSongStatsPanel();
       }
     });
   });
@@ -3009,6 +3011,252 @@ function showMetronomePanel() {
     metroStop();
     panel.style.display = 'none';
   };
+}
+
+// ===== Song Statistics =====
+
+function extractAllChords(song) {
+  const chords = [];
+  if (!song || !song.sections) return chords;
+  song.sections.forEach(sec => {
+    (sec.lines || []).forEach(line => {
+      (line.chords || []).forEach(c => {
+        if (c.name && c.name.trim()) chords.push(c.name.trim());
+      });
+    });
+  });
+  return chords;
+}
+
+function countWords(song) {
+  if (!song || !song.sections) return 0;
+  let count = 0;
+  song.sections.forEach(sec => {
+    (sec.lines || []).forEach(line => {
+      const words = (line.text || '').trim().split(/\s+/).filter(w => w.length > 0);
+      count += words.length;
+    });
+  });
+  return count;
+}
+
+function getChordFrequency(song) {
+  const chords = extractAllChords(song);
+  const freq = {};
+  chords.forEach(c => { freq[c] = (freq[c] || 0) + 1; });
+  return Object.entries(freq).sort((a, b) => b[1] - a[1]);
+}
+
+function getSectionBreakdown(song) {
+  if (!song || !song.sections) return [];
+  return song.sections.map(sec => ({
+    type: sec.type || 'Unknown',
+    lines: (sec.lines || []).length,
+    chords: (sec.lines || []).reduce((a, l) => a + (l.chords || []).length, 0)
+  }));
+}
+
+function getChordProgression(song) {
+  const progression = [];
+  if (!song || !song.sections) return progression;
+  song.sections.forEach(sec => {
+    (sec.lines || []).forEach(line => {
+      (line.chords || []).sort((a, b) => a.x - b.x).forEach(c => {
+        if (c.name && c.name.trim()) progression.push(c.name.trim());
+      });
+    });
+  });
+  return progression;
+}
+
+// Key detection using Krumhansl-Schmuckler key-finding algorithm (simplified)
+const KEY_PROFILES = {
+  // Major key profiles (C, C#, D, D#, E, F, F#, G, G#, A, A#, B)
+  major: [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88],
+  minor: [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17]
+};
+
+const KEY_NAMES_MAJOR = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const KEY_NAMES_MINOR = ['Cm', 'C#m', 'Dm', 'D#m', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'A#m', 'Bm'];
+
+function detectKey(song) {
+  const chords = extractAllChords(song);
+  if (chords.length === 0) return null;
+
+  // Build a pitch class distribution from chord roots
+  const pitchClasses = new Array(12).fill(0);
+  chords.forEach(chord => {
+    const m = chord.match(/^([A-G][#b]?)/);
+    if (m) {
+      const idx = noteToSemitone(m[1]);
+      if (idx !== -1) pitchClasses[idx]++;
+    }
+  });
+
+  // Normalize
+  const total = pitchClasses.reduce((a, b) => a + b, 0);
+  if (total === 0) return null;
+  const normalized = pitchClasses.map(c => c / total);
+
+  // Correlate with key profiles
+  let bestKey = null;
+  let bestScore = -Infinity;
+  let bestMode = '';
+
+  ['major', 'minor'].forEach(mode => {
+    const profile = KEY_PROFILES[mode];
+    for (let shift = 0; shift < 12; shift++) {
+      // Rotate profile by shift
+      let score = 0;
+      for (let i = 0; i < 12; i++) {
+        score += normalized[i] * profile[(i + shift) % 12];
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestMode = mode;
+        bestKey = shift;
+      }
+    }
+  });
+
+  const keyNames = bestMode === 'major' ? KEY_NAMES_MAJOR : KEY_NAMES_MINOR;
+  const detectedKey = keyNames[bestKey];
+
+  // Calculate confidence (0-100%)
+  const confidence = Math.min(99, Math.round(bestScore * 100));
+
+  // Also check if user-set key matches
+  const userKey = song.key || null;
+
+  return { detected: detectedKey, confidence, userKey, match: userKey && userKey.toLowerCase() === detectedKey.toLowerCase() };
+}
+
+function showSongStatsPanel() {
+  const panel = $('song-stats-panel');
+  if (!panel) return;
+
+  const song = getSong(currentSongId);
+  const body = $('stats-body');
+  if (!body) return;
+
+  if (!song) {
+    body.innerHTML = '<div class="stats-empty"><div class="stats-empty-icon">📊</div><div>Select a song to view statistics</div></div>';
+  } else {
+    body.innerHTML = computeStatsHTML(song);
+  }
+
+  panel.style.display = 'flex';
+
+  // Close on backdrop tap
+  panel.querySelector('.toolbar-sheet-backdrop').onclick = () => {
+    panel.style.display = 'none';
+  };
+}
+
+function computeStatsHTML(song) {
+  const chordFreq = getChordFrequency(song);
+  const wordCount = countWords(song);
+  const sectionBreakdown = getSectionBreakdown(song);
+  const progression = getChordProgression(song);
+  const keyResult = detectKey(song);
+  const totalChords = chordFreq.reduce((a, b) => a + b[1], 0);
+  const uniqueChords = chordFreq.length;
+  const totalSections = song.sections ? song.sections.length : 0;
+  const totalLines = song.sections ? song.sections.reduce((a, s) => a + (s.lines || []).length, 0) : 0;
+
+  let html = '';
+
+  // Overview cards
+  html += '<div class="stats-section">';
+  html += '<div class="stats-section-title">Overview</div>';
+  html += '<div class="stats-overview">';
+  html += `<div class="stat-card"><div class="stat-card-value">${wordCount}</div><div class="stat-card-label">Words</div></div>`;
+  html += `<div class="stat-card"><div class="stat-card-value chord">${totalChords}</div><div class="stat-card-label">Chords</div></div>`;
+  html += `<div class="stat-card"><div class="stat-card-value section">${totalSections}</div><div class="stat-card-label">Sections</div></div>`;
+  html += `<div class="stat-card"><div class="stat-card-value">${totalLines}</div><div class="stat-card-label">Lines</div></div>`;
+  html += '</div></div>';
+
+  // Key Detection
+  html += '<div class="stats-section">';
+  html += '<div class="stats-section-title">Key Detection</div>';
+  if (keyResult) {
+    html += '<div class="stats-key-result">';
+    html += `<div class="stats-key-value">${esc(keyResult.detected)}</div>`;
+    html += '<div class="stats-key-label">Detected Key</div>';
+    html += `<div class="stats-key-confidence">Confidence: ${keyResult.confidence}%</div>`;
+    if (keyResult.userKey) {
+      html += `<div class="stats-key-alt">Song key: ${esc(keyResult.userKey)} ${keyResult.match ? '✓ matches' : '— different'}</div>`;
+    }
+    html += '</div>';
+  } else {
+    html += '<div class="stats-empty">No chords to analyze</div>';
+  }
+  html += '</div>';
+
+  // Chord Frequency
+  html += '<div class="stats-section">';
+  html += '<div class="stats-section-title">Chord Frequency</div>';
+  if (chordFreq.length > 0) {
+    const maxCount = chordFreq[0][1];
+    html += '<div class="stats-chord-list">';
+    chordFreq.forEach(([chord, count]) => {
+      const pct = Math.round((count / maxCount) * 100);
+      html += `<div class="stats-chord-row">`;
+      html += `<span class="stats-chord-name">${esc(chord)}</span>`;
+      html += `<div class="stats-chord-bar-wrap"><div class="stats-chord-bar" style="width:${pct}%"></div></div>`;
+      html += `<span class="stats-chord-count">${count}</span>`;
+      html += '</div>';
+    });
+    html += '</div>';
+    html += `<div style="font-size:11px;color:var(--fg-tertiary);margin-top:6px;">${uniqueChords} unique chord${uniqueChords !== 1 ? 's' : ''} from ${totalChords} total</div>`;
+  } else {
+    html += '<div class="stats-empty">No chords in this song</div>';
+  }
+  html += '</div>';
+
+  // Chord Progression
+  if (progression.length > 0) {
+    html += '<div class="stats-section">';
+    html += '<div class="stats-section-title">Chord Progression</div>';
+    html += '<div class="stats-progression">';
+    const rootChord = keyResult ? keyResult.detected.replace('m', '') : null;
+    progression.forEach((chord, i) => {
+      if (i > 0) html += '<span class="stats-prog-arrow">→</span>';
+      const isRoot = rootChord && chord.startsWith(rootChord) && chord === rootChord;
+      html += `<span class="stats-prog-chord${isRoot ? ' root' : ''}">${esc(chord)}</span>`;
+    });
+    html += '</div></div>';
+  }
+
+  // Section Breakdown
+  html += '<div class="stats-section">';
+  html += '<div class="stats-section-title">Section Breakdown</div>';
+  if (sectionBreakdown.length > 0) {
+    const maxLines = Math.max(...sectionBreakdown.map(s => s.lines), 1);
+    html += '<div class="stats-section-list">';
+    sectionBreakdown.forEach(sec => {
+      const pct = Math.round((sec.lines / maxLines) * 100);
+      html += '<div class="stats-section-row">';
+      html += `<span class="stats-section-type">${esc(sec.type)}</span>`;
+      html += `<span class="stats-section-detail">${sec.lines} line${sec.lines !== 1 ? 's' : ''} · ${sec.chords} chord${sec.chords !== 1 ? 's' : ''}</span>`;
+      html += `<div class="stats-section-bar-wrap"><div class="stats-section-bar" style="width:${pct}%"></div></div>`;
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // Song metadata
+  html += '<div class="stats-section">';
+  html += '<div class="stats-section-title">Details</div>';
+  html += '<div class="stats-section-list">';
+  html += `<div class="stats-section-row"><span class="stats-section-type">BPM</span><span class="stats-section-detail">${song.bpm || '—'}</span></div>`;
+  html += `<div class="stats-section-row"><span class="stats-section-type">Time Sig</span><span class="stats-section-detail">${song.time_sig || '—'}</span></div>`;
+  html += `<div class="stats-section-row"><span class="stats-section-type">Created</span><span class="stats-section-detail">${song.created_at ? new Date(song.created_at).toLocaleDateString() : '—'}</span></div>`;
+  html += `<div class="stats-section-row"><span class="stats-section-type">Modified</span><span class="stats-section-detail">${song.updated_at ? new Date(song.updated_at).toLocaleDateString() : '—'}</span></div>`;
+  html += '</div></div>';
+
+  return html;
 }
 
 init();
