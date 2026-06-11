@@ -591,6 +591,46 @@ function renderFolders() {
 }
 
 let activeFolderName = '';
+
+// ===== Undo Buffer =====
+let undoBuffer = null;
+let undoTimer = null;
+
+function showUndoToast(msg, onUndo) {
+  if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.className = 'toast toast-undo';
+  el.textContent = msg;
+  const undoBtn = document.createElement('button');
+  undoBtn.className = 'toast-undo-btn';
+  undoBtn.textContent = 'Undo';
+  el.appendChild(undoBtn);
+  document.body.appendChild(el);
+  const duration = 4000;
+
+  const dismiss = () => {
+    undoTimer = null;
+    el.classList.add('toast-exit');
+    el.addEventListener('animationend', () => el.remove(), { once: true });
+    setTimeout(() => el.remove(), 500);
+  };
+  undoBtn.addEventListener('click', () => {
+    if (undoBuffer) {
+      try { undoBuffer.restore(); } catch(e) { console.error('Undo failed:', e); }
+      undoBuffer = null;
+    }
+    dismiss();
+  });
+  undoBtn.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); });
+  undoTimer = setTimeout(() => { undoBuffer = null; dismiss(); }, duration);
+}
+function clearUndo() {
+  if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
+  undoBuffer = null;
+}
+
 function showFolderActions(name, anchor) {
   activeFolderName = name;
   const menu = $('folder-actions');
@@ -885,7 +925,22 @@ function renderEditorBody(song) {
 
     tmpl.querySelector('.delete-section').addEventListener('click', () => {
       if (song.sections.length <= 1) { toast('Need at least one section'); return; }
-      song.sections.splice(si, 1); saveSingleSong(song); renderEditorBody(song);
+      const deletedSection = song.sections[si];
+      const deletedIndex = si;
+      song.sections.splice(si, 1);
+      saveSingleSong(song); renderEditorBody(song);
+      undoBuffer = {
+        type: 'section', songId: song.id,
+        restore: () => {
+          const s = getSong(song.id);
+          if (!s) return;
+          s.sections.splice(deletedIndex, 0, JSON.parse(JSON.stringify(deletedSection)));
+          s.updated_at = new Date().toISOString();
+          saveSingleSong(s); renderEditorBody(s);
+          toast('Section restored', 'success');
+        }
+      };
+      showUndoToast('Section deleted');
     });
     typeSelect.addEventListener('change', () => { song.sections[si].type = typeSelect.value; triggerAutoSave(song); });
     tmpl.querySelector('.move-up').addEventListener('click', () => {
@@ -1101,9 +1156,23 @@ function renderLine(container, song, si, li, line) {
     delBtn.textContent = '✕';
     delBtn.addEventListener('click', e => {
       e.stopPropagation();
+      const deletedLine = song.sections[si].lines[li];
+      const deletedLineIndex = li;
       song.sections[si].lines.splice(li, 1);
-      saveSingleSong(song);
-      renderEditorBody(song);
+      saveSingleSong(song); renderEditorBody(song);
+      undoBuffer = {
+        type: 'line', songId: song.id, sectionIndex: si, lineIndex: deletedLineIndex,
+        deletedLine: JSON.parse(JSON.stringify(deletedLine)),
+        restore: () => {
+          const s = getSong(song.id);
+          if (!s || !s.sections[si]) return;
+          s.sections[si].lines.splice(deletedLineIndex, 0, JSON.parse(JSON.stringify(deletedLine)));
+          s.updated_at = new Date().toISOString();
+          saveSingleSong(s); renderEditorBody(s);
+          toast('Line restored', 'success');
+        }
+      };
+      showUndoToast('Line deleted');
     });
     chordRow.appendChild(delBtn);
   }
