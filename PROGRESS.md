@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (song stats — chord frequency, word count, key detection, section breakdown, progression)
+2026-06-11 by OWL (debounce search input — 150ms delay to avoid excessive DOM rebuilds)
 
 ## Build & Test Commands
 ```bash
@@ -68,6 +68,8 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 8. [ ] iOS build (requires macOS + Xcode)
 9. [x] Metronome (BPM-based click track) (2026-06-11)
 10. [x] Song statistics (chord frequency, word count trends, key detection) (2026-06-11)
+11. [x] Debounce search input (2026-06-11)
+12. [ ] Tag management UI (add/edit/display/filter tags — data model supports it, search already indexes it, but no editor UI)
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~60K), CSS (styles.css ~19K), HTML (index.html)

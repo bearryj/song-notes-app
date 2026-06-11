@@ -137,7 +137,7 @@ function undoVersion() {
   const song = getSong(currentSongId);
   if (!song) return;
   song.key = prev.key; song.sections = prev.sections;
-  saveSingleSong(song); openEditor(currentSongId); toast('Restored');
+  saveSingleSong(song); openEditor(currentSongId); toast('Restored', 'success');
 }
 function toggleHistory() {
   const p = $('history-panel');
@@ -2047,13 +2047,20 @@ function parseImported(title, content) {
 }
 
 // Toast
-function toast(msg) {
+function toast(msg, type = 'info') {
   const existing = document.querySelector('.toast');
   if (existing) existing.remove();
   const el = document.createElement('div');
-  el.className = 'toast'; el.textContent = msg;
+  el.className = 'toast toast-' + (type === 'error' ? 'error' : type === 'success' ? 'success' : 'info');
+  el.textContent = msg;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2000);
+  const duration = type === 'error' ? 3000 : 2000;
+  setTimeout(() => {
+    el.classList.add('toast-exit');
+    el.addEventListener('animationend', () => el.remove(), { once: true });
+    // Fallback remove in case animation doesn't fire
+    setTimeout(() => el.remove(), duration + 400);
+  }, duration);
 }
 
 // Sample songs
@@ -2551,7 +2558,12 @@ function setupEvents() {
     showNewSongMenu();
   });
 
-  $('search-input').addEventListener('input', e => renderSongList(e.target.value));
+  // Debounced search: avoid rebuilding DOM on every keystroke
+  let searchTimer = 0;
+  $('search-input').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => renderSongList(e.target.value), 150);
+  });
 
   // Save / Done button
   $('save-btn').addEventListener('click', () => {
