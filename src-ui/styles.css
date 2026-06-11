@@ -627,6 +627,181 @@ html, body {
   opacity: 0.7;
 }
 
+/* ===== Input Sheet (replaces prompt()) ===== */
+.input-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.input-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  animation: fade-in 0.2s ease;
+}
+.input-sheet-content {
+  position: relative;
+  background: var(--bg-secondary);
+  border-radius: 16px 16px 0 0;
+  padding: 8px 16px calc(20px + var(--safe-bottom));
+  animation: slide-up 0.25s ease;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.input-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--separator);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+.input-sheet-title {
+  font-size: 17px;
+  font-weight: 600;
+  text-align: center;
+  margin: 4px 0 16px;
+}
+.input-sheet-field {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--separator);
+  border-radius: 10px;
+  color: var(--fg);
+  font-size: 17px;
+  font-family: var(--font);
+  outline: none;
+  margin-bottom: 16px;
+  transition: border-color 0.15s;
+}
+.input-sheet-field:focus {
+  border-color: var(--accent);
+}
+.input-sheet-field::placeholder {
+  color: var(--fg-tertiary);
+}
+.input-sheet-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 4px;
+}
+.input-sheet-cancel {
+  flex: 1;
+  padding: 14px;
+  background: var(--bg-surface);
+  border: none;
+  border-radius: 10px;
+  color: var(--fg);
+  font-size: 16px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.input-sheet-cancel:active {
+  background: var(--bg-tertiary);
+}
+.input-sheet-confirm {
+  flex: 2;
+  padding: 14px;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.input-sheet-confirm:active {
+  opacity: 0.7;
+}
+
+/* ===== Confirm Sheet (replaces confirm()) ===== */
+.confirm-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.confirm-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  animation: fade-in 0.2s ease;
+}
+.confirm-sheet-content {
+  position: relative;
+  background: var(--bg-secondary);
+  border-radius: 16px 16px 0 0;
+  padding: 8px 16px calc(20px + var(--safe-bottom));
+  animation: slide-up 0.25s ease;
+  text-align: center;
+}
+.confirm-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--separator);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+.confirm-sheet-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 4px 0 8px;
+}
+.confirm-sheet-body {
+  font-size: 14px;
+  color: var(--fg-secondary);
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+.confirm-sheet-actions {
+  display: flex;
+  gap: 12px;
+}
+.confirm-sheet-cancel {
+  flex: 1;
+  padding: 14px;
+  background: var(--bg-surface);
+  border: none;
+  border-radius: 10px;
+  color: var(--fg);
+  font-size: 16px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.confirm-sheet-cancel:active {
+  background: var(--bg-tertiary);
+}
+.confirm-sheet-confirm {
+  flex: 1;
+  padding: 14px;
+  background: var(--danger);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.confirm-sheet-confirm:active {
+  opacity: 0.7;
+}
+.confirm-sheet-confirm.neutral {
+  background: var(--accent);
+}
+
 /* ===== FAB (Floating Action Button) ===== */
 .toolbar-fab {
   position: fixed;

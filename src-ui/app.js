@@ -113,6 +113,86 @@ function createSong(title) {
 
 function getSong(id) { return songs.find(s => s.id === id); }
 
+// ===== Input Sheet (replaces prompt()) =====
+// Usage: showInputSheet({ title, placeholder, initialValue, onConfirm(value) })
+// Returns a Promise that resolves to the entered value or null if cancelled
+function showInputSheet({ title, placeholder, initialValue = '', onConfirm }) {
+  const sheet = document.createElement('div');
+  sheet.className = 'input-sheet';
+  sheet.innerHTML = `
+    <div class="input-sheet-backdrop"></div>
+    <div class="input-sheet-content">
+      <div class="input-sheet-handle"></div>
+      <div class="input-sheet-title">${escHtml(title)}</div>
+      <input type="text" class="input-sheet-field" placeholder="${escHtml(placeholder || '')}" value="${escHtml(initialValue)}" spellcheck="false">
+      <div class="input-sheet-actions">
+        <button class="input-sheet-cancel">Cancel</button>
+        <button class="input-sheet-confirm">Done</button>
+      </div>
+    </div>`;
+  document.body.appendChild(sheet);
+
+  const input = sheet.querySelector('.input-sheet-field');
+  const confirmBtn = sheet.querySelector('.input-sheet-confirm');
+  const cancelBtn = sheet.querySelector('.input-sheet-cancel');
+  const backdrop = sheet.querySelector('.input-sheet-backdrop');
+
+  const close = () => sheet.remove();
+  sheet._close = close;
+
+  const doConfirm = () => {
+    const val = input.value.trim();
+    close();
+    if (val && onConfirm) onConfirm(val);
+  };
+
+  cancelBtn.onclick = close;
+  backdrop.onclick = close;
+  confirmBtn.onclick = doConfirm;
+  input.onkeydown = e => {
+    if (e.key === 'Enter') { e.preventDefault(); doConfirm(); }
+    if (e.key === 'Escape') { e.preventDefault(); close(); }
+  };
+
+  setTimeout(() => input.focus(), 100);
+  return sheet;
+}
+
+// ===== Confirm Sheet (replaces confirm()) =====
+// Usage: showConfirmSheet({ title, body, confirmText, confirmClass, onConfirm })
+function showConfirmSheet({ title, body, confirmText = 'Confirm', confirmClass = '', onConfirm }) {
+  const sheet = document.createElement('div');
+  sheet.className = 'confirm-sheet';
+  sheet.innerHTML = `
+    <div class="confirm-sheet-backdrop"></div>
+    <div class="confirm-sheet-content">
+      <div class="confirm-sheet-handle"></div>
+      <div class="confirm-sheet-title">${escHtml(title)}</div>
+      ${body ? `<div class="confirm-sheet-body">${escHtml(body)}</div>` : ''}
+      <div class="confirm-sheet-actions">
+        <button class="confirm-sheet-cancel">Cancel</button>
+        <button class="confirm-sheet-confirm ${confirmClass}">${escHtml(confirmText)}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(sheet);
+
+  const confirmBtn = sheet.querySelector('.confirm-sheet-confirm');
+  const cancelBtn = sheet.querySelector('.confirm-sheet-cancel');
+  const backdrop = sheet.querySelector('.confirm-sheet-backdrop');
+
+  const close = () => sheet.remove();
+  cancelBtn.onclick = close;
+  backdrop.onclick = close;
+  confirmBtn.onclick = () => { close(); if (onConfirm) onConfirm(); };
+
+  setTimeout(() => confirmBtn.focus(), 100);
+  return sheet;
+}
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 async function deleteSong(id) {
   songs = songs.filter(s => s.id !== id);
   localStorage.setItem('songs_app', JSON.stringify(songs));
@@ -188,16 +268,23 @@ function showVersionDiff(version) {
   modal.querySelector('.diff-backdrop').onclick = () => modal.remove();
   modal.querySelector('#diff-close-btn').onclick = () => modal.remove();
   modal.querySelector('#diff-restore-btn').onclick = () => {
-    if (!confirm('Restore this version? Current version will be lost.')) return;
-    const song2 = getSong(currentSongId);
-    if (!song2) return;
-    song2.key = version.key;
-    song2.sections = JSON.parse(JSON.stringify(version.sections));
-    saveSingleSong(song2);
-    openEditor(currentSongId);
-    modal.remove();
-    $('history-panel').style.display = 'none';
-    toast('Version restored');
+    showConfirmSheet({
+      title: 'Restore Version',
+      body: 'Restore this version? Current version will be lost.',
+      confirmText: 'Restore',
+      confirmClass: 'neutral',
+      onConfirm: () => {
+        const song2 = getSong(currentSongId);
+        if (!song2) return;
+        song2.key = version.key;
+        song2.sections = JSON.parse(JSON.stringify(version.sections));
+        saveSingleSong(song2);
+        openEditor(currentSongId);
+        modal.remove();
+        $('history-panel').style.display = 'none';
+        toast('Version restored');
+      }
+    });
   };
 }
 
@@ -341,9 +428,15 @@ function toggleRecordingsDropdown() {
   recList.querySelectorAll('.rec-play-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); playRecording(b.closest('.rec-item')?.dataset?.url); }));
   recList.querySelectorAll('.rec-item').forEach(item => item.addEventListener('click', () => playRecording(item.dataset.url)));
   $('delete-all-recordings').onclick = () => {
-    if (!confirm('Delete all recordings?')) return;
-    const s = getSong(currentSongId); if (s) { s.audio = []; saveSingleSong(s); }
-    dd.style.display = 'none'; updateRecordUI();
+    showConfirmSheet({
+      title: 'Delete Recordings',
+      body: 'Delete all recordings for this song?',
+      confirmText: 'Delete',
+      onConfirm: () => {
+        const s = getSong(currentSongId); if (s) { s.audio = []; saveSingleSong(s); }
+        dd.style.display = 'none'; updateRecordUI();
+      }
+    });
   };
   dd.style.display = 'block';
 }
@@ -425,18 +518,29 @@ function setupFolderActions() {
     btn.addEventListener('click', () => {
       $('folder-actions').style.display = 'none';
       if (btn.dataset.action === 'rename') {
-        const name = prompt('Folder name:', activeFolderName);
-        if (name && name.trim() && name !== activeFolderName) {
-          const idx = folders.indexOf(activeFolderName);
-          if (idx >= 0) { folders[idx] = name.trim(); songs.forEach(s => { if (s.folder === activeFolderName) s.folder = name.trim(); }); }
-          saveSongs(); persistFolders(); renderFolders();
-        }
+        showInputSheet({
+          title: 'Rename Folder',
+          placeholder: 'Folder name',
+          initialValue: activeFolderName,
+          onConfirm: (name) => {
+            if (name && name !== activeFolderName) {
+              const idx = folders.indexOf(activeFolderName);
+              if (idx >= 0) { folders[idx] = name; songs.forEach(s => { if (s.folder === activeFolderName) s.folder = name; }); }
+              saveSongs(); persistFolders(); renderFolders();
+            }
+          }
+        });
       } else if (btn.dataset.action === 'delete-folder') {
-        if (confirm(`Delete "${activeFolderName}"? Songs move to All Songs.`)) {
-          songs.forEach(s => { if (s.folder === activeFolderName) s.folder = null; });
-          folders = folders.filter(f => f !== activeFolderName);
-          saveSongs(); persistFolders(); renderFolders();
-        }
+        showConfirmSheet({
+          title: 'Delete Folder',
+          body: `Delete "${activeFolderName}"? Songs move to All Songs.`,
+          confirmText: 'Delete',
+          onConfirm: () => {
+            songs.forEach(s => { if (s.folder === activeFolderName) s.folder = null; });
+            folders = folders.filter(f => f !== activeFolderName);
+            saveSongs(); persistFolders(); renderFolders();
+          }
+        });
       }
     });
   });
@@ -499,12 +603,17 @@ function showSongContext(songId, anchorEl) {
         } else if (btn.dataset.action === 'export-md') {
           downloadFile(buildExportMarkdown(s), `${s.title}.md`, 'text/markdown');
         } else if (btn.dataset.action === 'delete') {
-          if (confirm(`Delete "${s.title}"?`)) {
-            await deleteSong(contextSongId);
-            if (currentSongId === contextSongId) { currentSongId = null; }
-            renderSongList($('search-input').value);
-            toast('Deleted');
-          }
+          showConfirmSheet({
+            title: 'Delete Song',
+            body: `Delete "${s.title}"?`,
+            confirmText: 'Delete',
+            onConfirm: async () => {
+              await deleteSong(contextSongId);
+              if (currentSongId === contextSongId) { currentSongId = null; }
+              renderSongList($('search-input').value);
+              toast('Deleted');
+            }
+          });
         }
       });
     });
@@ -636,12 +745,17 @@ function renderSongList(filter = '') {
       if (isDragging && (startX - currentX) > 60) {
         // Swipe left = show delete
         const id = item.dataset.id;
-        if (confirm(`Delete "${getSong(id)?.title || 'this song'}"?`)) {
-          deleteSong(id);
-          if (currentSongId === id) { currentSongId = null; }
-          renderSongList($('search-input').value);
-          toast('Deleted');
-        }
+        showConfirmSheet({
+          title: 'Delete Song',
+          body: `Delete "${getSong(id)?.title || 'this song'}"?`,
+          confirmText: 'Delete',
+          onConfirm: () => {
+            deleteSong(id);
+            if (currentSongId === id) { currentSongId = null; }
+            renderSongList($('search-input').value);
+            toast('Deleted');
+          }
+        });
       }
       item.style.transform = ''; item.style.transition = 'transform 0.2s ease';
       isDragging = false;
@@ -795,18 +909,24 @@ function renderLine(container, song, si, li, line) {
 
       // Long press to delete
       let longPressTimer = null;
+      let longPressChord = null;
       marker.addEventListener('touchstart', e => {
+        longPressChord = ch;
         longPressTimer = setTimeout(() => {
           marker.classList.add('chord-marker-deleting');
           navigator.vibrate?.(50);
-          // Show delete confirmation
-          const confirmDel = confirm(`Delete chord "${ch.name}"?`);
+          showConfirmSheet({
+            title: 'Delete Chord',
+            body: `Delete chord "${ch.name}"?`,
+            confirmText: 'Delete',
+            onConfirm: () => {
+              line.chords = line.chords.filter(c => c !== longPressChord);
+              saveSingleSong(song);
+              renderChordMarkers();
+            }
+          });
           marker.classList.remove('chord-marker-deleting');
-          if (confirmDel) {
-            line.chords = line.chords.filter(c => c !== chord);
-            saveSingleSong(song);
-            renderChordMarkers();
-          }
+          longPressTimer = null;
         }, 600);
       }, { passive: true });
       marker.addEventListener('touchend', () => { clearTimeout(longPressTimer); longPressTimer = null; }, { passive: true });
@@ -1990,11 +2110,17 @@ function renderPluginList() {
 
   list.querySelectorAll('.plugin-del-btn').forEach(btn => {
     btn.onclick = () => {
-      if (!confirm('Delete this plugin?')) return;
-      const filtered = plugins.filter(p => p.id !== btn.dataset.id);
-      savePlugins(filtered);
-      renderPluginList();
-      toast('Plugin deleted');
+      showConfirmSheet({
+        title: 'Delete Plugin',
+        body: 'Delete this plugin?',
+        confirmText: 'Delete',
+        onConfirm: () => {
+          const filtered = plugins.filter(p => p.id !== btn.dataset.id);
+          savePlugins(filtered);
+          renderPluginList();
+          toast('Plugin deleted');
+        }
+      });
     };
   });
 }
@@ -2257,30 +2383,39 @@ function renderSetlistList() {
       const id = btn.dataset.id;
       const sl = setlists.find(s => s.id === id);
       if (!sl) return;
-      if (confirm(`Delete setlist "${sl.name}"?`)) {
-        setlists = setlists.filter(s => s.id !== id);
-        if (activeSetlistId === id) activeSetlistId = null;
-        saveSetlists();
-        renderSetlistList();
-      }
+      showConfirmSheet({
+        title: 'Delete Setlist',
+        body: `Delete setlist "${sl.name}"?`,
+        confirmText: 'Delete',
+        onConfirm: () => {
+          setlists = setlists.filter(s => s.id !== id);
+          if (activeSetlistId === id) activeSetlistId = null;
+          saveSetlists();
+          renderSetlistList();
+        }
+      });
     });
   });
 }
 
 function createNewSetlist() {
-  const name = prompt('Setlist name:');
-  if (!name || !name.trim()) return;
-  const setlist = {
-    id: 'sl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
-    name: name.trim(),
-    songs: [],
-    created_at: new Date().toISOString()
-  };
-  setlists.push(setlist);
-  saveSetlists();
-  activeSetlistId = setlist.id;
-  renderSetlistList();
-  showSetlistDetail(setlist.id);
+  showInputSheet({
+    title: 'New Setlist',
+    placeholder: 'Setlist name',
+    onConfirm: (name) => {
+      const setlist = {
+        id: 'sl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+        name: name.trim(),
+        songs: [],
+        created_at: new Date().toISOString()
+      };
+      setlists.push(setlist);
+      saveSetlists();
+      activeSetlistId = setlist.id;
+      renderSetlistList();
+      showSetlistDetail(setlist.id);
+    }
+  });
 }
 
 // --- Setlist Detail View ---
@@ -2366,10 +2501,18 @@ function renderSetlistSongs() {
       const setlist = setlists.find(s => s.id === activeSetlistId);
       if (!setlist) return;
       const song = songs.find(s => s.id === setlist.songs[idx]?.songId);
-      if (song && !confirm(`Remove "${song.title}" from setlist?`)) return;
-      setlist.songs.splice(idx, 1);
-      saveSetlists();
-      renderSetlistSongs();
+      if (!song) return;
+      showConfirmSheet({
+        title: 'Remove Song',
+        body: `Remove "${song.title}" from setlist?`,
+        confirmText: 'Remove',
+        confirmClass: 'neutral',
+        onConfirm: () => {
+          setlist.songs.splice(idx, 1);
+          saveSetlists();
+          renderSetlistSongs();
+        }
+      });
     });
   });
 
@@ -2595,8 +2738,13 @@ function setupEvents() {
   }
 
   $('new-folder-btn').addEventListener('click', () => {
-    const name = prompt('Folder name:');
-    if (name && name.trim()) { folders.push(name.trim()); persistFolders(); renderFolders(); }
+    showInputSheet({
+      title: 'New Folder',
+      placeholder: 'Folder name',
+      onConfirm: (name) => {
+        folders.push(name); persistFolders(); renderFolders();
+      }
+    });
   });
 
   $('new-song-btn').addEventListener('click', () => {
@@ -2674,12 +2822,24 @@ function setupEvents() {
 
       if (a === 'set-key') {
         if (!song) return;
-        const key = prompt('Key (e.g. G, Am):', song.key || '');
-        if (key !== null) { song.key = key.trim(); await saveSingleSong(song); renderSongList(); }
+        showInputSheet({
+          title: 'Set Key',
+          placeholder: 'e.g. G, Am',
+          initialValue: song.key || '',
+          onConfirm: (key) => {
+            song.key = key; saveSingleSong(song); renderSongList();
+          }
+        });
       } else if (a === 'set-bpm') {
         if (!song) return;
-        const bpm = prompt('BPM:', song.bpm || '');
-        if (bpm !== null) { song.bpm = parseInt(bpm) || null; await saveSingleSong(song); }
+        showInputSheet({
+          title: 'Set BPM',
+          placeholder: 'e.g. 120',
+          initialValue: song.bpm ? String(song.bpm) : '',
+          onConfirm: (bpm) => {
+            song.bpm = parseInt(bpm) || null; saveSingleSong(song);
+          }
+        });
       } else if (a === 'import-txt') {
         importFiles();
       } else if (a === 'export-txt') {
@@ -2693,7 +2853,14 @@ function setupEvents() {
         if (panel) panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
       } else if (a === 'delete') {
         if (!song) return;
-        if (confirm(`Delete "${song.title}"?`)) { await deleteSong(currentSongId); currentSongId = null; popView(); renderSongList(); toast('Deleted'); }
+        showConfirmSheet({
+          title: 'Delete Song',
+          body: `Delete "${song.title}"?`,
+          confirmText: 'Delete',
+          onConfirm: async () => {
+            await deleteSong(currentSongId); currentSongId = null; popView(); renderSongList(); toast('Deleted');
+          }
+        });
       } else if (a === 'setlist') {
         showSetlistView();
       } else if (a === 'share-song') {
