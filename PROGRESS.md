@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (swipe gesture to switch songs in editor)
+2026-06-12 by OWL (song content preview line in list view)
 
 ## Build & Test Commands
 ```bash
@@ -72,6 +72,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Pagehide save handler (reliable save on mobile app kill/swipe-away where beforeunload doesn't fire, extracted emergencySave())
 - Auto-save timer flush on song switch + back navigation (prevents stale debounced writes from corrupting state when quick-switching songs or going back)
 - Swipe gesture to switch songs in editor (swipe left → next, swipe right → prev, with haptic feedback)
+- Song content preview in list view (chord chips + first lyric line snippet under each title)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -112,6 +113,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Drag-and-drop import now supports ChordPro files (.cho/.crd/.chopro) matching file picker (2026-06-12) — fixed filter regex, updated error toast message
 - [x] Optimized esc() helper — replaced DOM-based escaping with regex replace (2026-06-12) — eliminates 33+ unnecessary createElement calls, many in hot render loops
 - [x] Auto-save timer flush on song switch + back navigation (2026-06-12) — clearTimeout + reset hasChanges + updateSaveDot in switchToSong() and saveCurrentSongAndGoBack() to prevent stale debounced writes from corrupting state
+- [x] Song content preview in list view (2026-06-12) — chord chips + first lyric line snippet under each title, two-line layout with .list-item-main wrapper, scoped to .swipe-content.list-item to avoid affecting folder items
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~170K), CSS (styles.css ~72K), HTML (index.html)
