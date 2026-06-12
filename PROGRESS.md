@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (auto-save song title on input)
+2026-06-11 by OWL (add song writing session timer)
 
 ## Build & Test Commands
 ```bash
@@ -63,6 +63,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Duplicate song (deep copy from toolbar sheet, auto-suffixes title with " (Copy)")
 - Song list sort (4 modes: recent, A→Z, Z→A, Key — pinned always first, persisted)
 - Swipe-to-action on song list (swipe left to reveal pin ★ and delete ✕ buttons, snap animation, tap-outside-to-close)
+- Song writing session timer (tracks editing time per song, persists across sessions, displays in editor nav bar)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -92,6 +93,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Chord progression ribbon in editor (2026-06-11) — horizontal strip showing unique chords per section, tap to highlight + scroll to first occurrence in body
 - [x] Swipe-to-action on song list items (2026-06-11) — swipe left to reveal pin (★) and delete (✕) action buttons, snap-open/close with smooth animation, tap-outside-to-close
 - [x] Auto-save song title on input (2026-06-11) — title input triggers auto-save with 1200ms debounce, syncs title into song object before save
+- [x] Song writing session timer (2026-06-11) — elapsed editing time shown in editor nav, persists session_ms to song data, accumulates across sessions
 
 
 ## Architecture Quick Ref
