@@ -106,10 +106,10 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 
 ## Next Up (2026-06-12 — OWL review)
 ### Bugs / Reliability
-- [ ] Metronome AudioContext never closed — `metroAudioCtx` is created on first use but `.close()` is never called; on mobile this can hit the browser limit of 6 AudioContexts. Add cleanup on metro stop/panel close.
-- [ ] `metroTimerID` not cleared on page navigation away from editor — if metronome is playing and user navigates back, the interval keeps running in the background. Add cleanup in the back-navigation handler.
-- [ ] `sessionTimerInterval` not cleared on song list re-render — if `startSessionTimer` is called multiple times (e.g. re-opening editor), the old interval leaks. Guard with existing check at line 1014 but verify it's hit in all re-entry paths.
-- [ ] `undoTimer` (line 1129) not cleared on song switch — stale undo buffer from a previous song could restore wrong data. Clear on `switchToSong()`.
+- [x] Metronome AudioContext never closed — `metroAudioCtx` is created on first use but `.close()` is never called; on mobile this can hit the browser limit of 6 AudioContexts. Add cleanup on metro stop/panel close. (2026-06-12) — metroStop() now closes AudioCtx + nulls reference
+- [x] `metroTimerID` not cleared on page navigation away from editor — if metronome is playing and user navigates back, the interval keeps running in the background. Add cleanup in the back-navigation handler. (2026-06-12) — metroStop() called in switchToSong() + saveCurrentSongAndGoBack()
+- [x] `sessionTimerInterval` not cleared on song list re-render — if `startSessionTimer` is called multiple times (e.g. re-opening editor), the old interval leaks. Guard with existing check at line 1014 but verify it's hit in all re-entry paths. (2026-06-12) — already guarded: startSessionTimer() calls stopSessionTimer() first
+- [x] `undoTimer` (line 1129) not cleared on song switch — stale undo buffer from a previous song could restore wrong data. Clear on `switchToSong()`. (2026-06-12) — clearUndo() called in switchToSong()
 
 ### Performance / Code Health
 - [ ] `app.js` is 5,698 lines / ~170KB — extract modules (e.g. `metro.js`, `editor.js`, `songlist.js`, `export.js`) to reduce main file and improve maintainability. Vite handles bundling.

@@ -1859,6 +1859,10 @@ function switchToSong(targetId, direction) {
     updateSaveDot('saved');
   }
   stopSessionTimer();
+  // Stop metronome if playing to avoid background interval after navigation
+  if (metroPlaying) metroStop();
+  // Clear undo buffer from previous song to prevent stale restores
+  clearUndo();
   // Apply slide transition on the editor view
   const editorView = $('editor-view');
   const isForward = direction === 'forward';
@@ -4369,6 +4373,7 @@ function setupEvents() {
       updateSaveDot('saved');
     }
     stopSessionTimer();
+    if (metroPlaying) metroStop();
     popView(); renderSongList();
   }
 
@@ -5094,6 +5099,11 @@ function metroStop() {
   if (metroTimerID) {
     clearInterval(metroTimerID);
     metroTimerID = null;
+  }
+  // Close AudioContext to avoid hitting browser limit (6 on mobile)
+  if (metroAudioCtx) {
+    try { metroAudioCtx.close(); } catch(e) { /* ignore if already closed */ }
+    metroAudioCtx = null;
   }
   const playBtn = $('metro-play-btn');
   if (playBtn) {
