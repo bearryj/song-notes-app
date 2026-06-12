@@ -486,6 +486,41 @@ html, body {
 .chord-ribbon:empty { display: none; }
 .chord-ribbon::-webkit-scrollbar { display: none; }
 
+/* Chord ribbon collapse toggle */
+.chord-ribbon {
+  position: relative;
+}
+.chord-ribbon-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--separator);
+  color: var(--fg-secondary);
+  font-size: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.chord-ribbon-toggle:active {
+  background: var(--bg-secondary);
+}
+.chord-ribbon.collapsed {
+  min-height: 0;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+  border-bottom: none;
+}
+
 .chord-ribbon-item {
   flex-shrink: 0;
   display: flex;
@@ -741,6 +776,8 @@ html, body {
   border-radius: 16px 16px 0 0;
   padding: 8px 16px calc(20px + var(--safe-bottom));
   animation: slide-up 0.25s ease;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 .toolbar-sheet-handle {
   width: 36px;
@@ -749,11 +786,32 @@ html, body {
   border-radius: 2px;
   margin: 0 auto 16px;
 }
-.toolbar-sheet-grid {
+
+/* Sectioned toolbar layout */
+.toolbar-sheet-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.sheet-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sheet-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 0 2px;
+}
+.sheet-section-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
+
 .toolbar-sheet-btn {
   display: flex;
   flex-direction: column;
@@ -774,6 +832,9 @@ html, body {
   background: var(--bg-surface);
 }
 .toolbar-sheet-btn[data-action="delete"] {
+  color: var(--danger);
+}
+.toolbar-sheet-btn.sheet-danger {
   color: var(--danger);
 }
 .sheet-icon {
@@ -1173,6 +1234,12 @@ html, body {
 
 /* Active sort button in nav */
 .nav-btn-active { color: var(--accent); font-weight: 700; }
+.sort-btn-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  opacity: 0.7;
+}
 
 /* ===== Side Panel (History) ===== */
 .side-panel {
@@ -1372,6 +1439,25 @@ html, body {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
+
+/* ===== Drag to Dismiss ===== */
+@keyframes slide-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+.sheet-drag-dismiss {
+  animation: slide-down 0.25s ease forwards !important;
+}
+.sheet-drag-dismiss .toolbar-sheet-backdrop,
+.sheet-drag-dismiss .chord-sheet-backdrop,
+.sheet-drag-dismiss .input-sheet-backdrop,
+.sheet-drag-dismiss .confirm-sheet-backdrop {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.sheet-dragging {
+  transition: none !important;
+}
 .chord-sheet-handle {
   width: 36px;
   height: 4px;
@@ -1488,9 +1574,9 @@ body.ios-device .toolbar-sheet-content {
 
 /* ===== Info Bar (word count, metadata) ===== */
 .info-bar {
-  padding: 6px 16px;
-  padding-bottom: calc(6px + var(--safe-bottom));
-  font-size: 11px;
+  padding: 10px 16px;
+  padding-bottom: calc(10px + var(--safe-bottom));
+  font-size: 13px;
   color: var(--fg-tertiary);
   background: var(--bg-surface);
   border-top: 1px solid var(--separator);

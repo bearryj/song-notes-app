@@ -13,7 +13,7 @@
     <div id="folder-view" class="view active" role="region" aria-label="Folders">
       <div class="nav-bar">
         <h1 class="nav-title">Folders</h1>
-        <button id="new-folder-btn" class="nav-btn nav-btn-primary" aria-label="New folder">+</button>
+        <button id="new-folder-btn" class="nav-btn nav-btn-primary" aria-label="New folder"><span class="nav-btn-text">+</span></button>
       </div>
       <div id="folder-list" class="list" role="listbox" aria-label="Folder list" tabindex="0"></div>
     </div>
@@ -25,6 +25,7 @@
         <h1 id="folder-title" class="nav-title">All Songs</h1>
         <button id="sort-btn" class="nav-btn" title="Sort songs" aria-label="Sort songs">↕</button>
         <button id="view-toggle" class="nav-btn" title="Toggle view" aria-label="Toggle view">⊞</button>
+        <button id="setlist-nav-btn" class="nav-btn" aria-label="Setlists">≡</button>
         <button id="import-btn" class="nav-btn" aria-label="Import song">↓</button>
         <button id="new-song-btn" class="nav-btn nav-btn-primary" aria-label="New song">+</button>
       </div>
@@ -47,12 +48,8 @@
           <span id="session-timer" class="session-timer" aria-label="Session time"></span>
           <input type="text" id="song-title" class="nav-title-input" placeholder="Untitled" aria-label="Song title" />
         </div>
-        <div class="nav-btn-group">
-          <button id="theme-toggle" class="nav-btn" title="Toggle theme" aria-label="Toggle theme">☀️</button>
-          <button id="info-btn" class="nav-btn" title="Info" aria-label="Song info">ℹ</button>
-          <button id="undo-btn" class="nav-btn" aria-label="Undo" disabled>↶</button>
-          <button id="save-btn" class="nav-btn nav-btn-primary" aria-label="Save" disabled>Done</button>
-        </div>
+        <button id="undo-btn" class="nav-btn" aria-label="Undo" disabled>↶</button>
+        <button id="save-btn" class="nav-btn nav-btn-primary" aria-label="Save" disabled>Done</button>
       </div>
       <div id="chord-ribbon" class="chord-ribbon" role="navigation" aria-label="Chord progression"></div>
       <div id="song-body" class="editor-body" role="main" tabindex="0" aria-label="Song content"></div>
@@ -94,71 +91,108 @@
         <div class="toolbar-sheet-backdrop"></div>
         <div class="toolbar-sheet-content">
           <div class="toolbar-sheet-handle"></div>
-          <div class="toolbar-sheet-grid">
-            <button class="toolbar-sheet-btn" data-action="set-key" aria-label="Set key">
-              <span class="sheet-icon">🎵</span>
-              <span class="sheet-label">Set Key</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="set-bpm" aria-label="Set BPM">
-              <span class="sheet-icon">⏱</span>
-              <span class="sheet-label">Set BPM</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="import-txt" aria-label="Import text">
-              <span class="sheet-icon">↓</span>
-              <span class="sheet-label">Import Text</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="export-txt" aria-label="Export text">
-              <span class="sheet-icon">↑</span>
-              <span class="sheet-label">Export Text</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="export-md" aria-label="Export markdown">
-              <span class="sheet-icon">M↓</span>
-              <span class="sheet-label">Export MD</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="export-clip" aria-label="Copy to clipboard">
-              <span class="sheet-icon">⎘</span>
-              <span class="sheet-label">Copy</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="history" aria-label="Version history">
-              <span class="sheet-icon">↶</span>
-              <span class="sheet-label">History</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="delete" aria-label="Delete song">
-              <span class="sheet-icon">🗑</span>
-              <span class="sheet-label">Delete</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="setlist" aria-label="Setlists">
-              <span class="sheet-icon">📋</span>
-              <span class="sheet-label">Setlists</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="chord-diagram" aria-label="Chord diagram">
-              <span class="sheet-icon">🎸</span>
-              <span class="sheet-label">Chord Diagram</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="share-song" aria-label="Share song">
-              <span class="sheet-icon">↗</span>
-              <span class="sheet-label">Share</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="plugins" aria-label="Export plugins">
-              <span class="sheet-icon">⚙</span>
-              <span class="sheet-label">Export Plugins</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="metronome" aria-label="Metronome">
-              <span class="sheet-icon">⏱</span>
-              <span class="sheet-label">Metronome</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="song-stats" aria-label="Song statistics">
-              <span class="sheet-icon">📊</span>
-              <span class="sheet-label">Song Stats</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="edit-tags" aria-label="Edit tags">
-              <span class="sheet-icon">🏷</span>
-              <span class="sheet-label">Tags</span>
-            </button>
-            <button class="toolbar-sheet-btn" data-action="duplicate-song" aria-label="Duplicate song">
-              <span class="sheet-icon">⧉</span>
-              <span class="sheet-label">Duplicate</span>
-            </button>
+          <div class="toolbar-sheet-sections">
+            <div class="sheet-section">
+              <div class="sheet-section-label">Song</div>
+              <div class="sheet-section-grid">
+                <button class="toolbar-sheet-btn" data-action="set-key" aria-label="Set key">
+                  <span class="sheet-icon">♫</span>
+                  <span class="sheet-label">Key</span>
+                </button>
+                <button class="toolbar-sheet-btn" data-action="set-bpm" aria-label="Set BPM">
+                  <span class="sheet-icon">⌖</span>
+                  <span class="sheet-label">BPM</span>
+                </button>
+                <button class="toolbar-sheet-btn" data-action="transpose" aria-label="Transpose">
+                  <span class="sheet-icon">♯</span>
+                  <span class="sheet-label">Transpose</span>
+                </button>
+                <button class="toolbar-sheet-btn" data-action="duplicate-song" aria-label="Duplicate song">
+                  <span class="sheet-icon">⧉</span>
+                  <span class="sheet-label">Duplicate</span>
+                </button>
+              </div>
+            </div>
+            <div class="sheet-section">
+              <div class="sheet-section-label">Export</div>
+              <div class="sheet-section-grid">
+                <button class="toolbar-sheet-btn" data-action="export-txt" aria-label="Export text">
+                  <span class="sheet-icon">↑</span>
+                  <span class="sheet-label">Text</span>
+                </button>
+                <button class="toolbar-sheet-btn" data-action="export-md" aria-label="Export markdown">
+                  <span class="sheet-icon">M↑</span>
+                  <span class="sheet-label">Markdown</span>
+                </button>
+                <button class="toolbar-sheet-btn" data-action="export-clip" aria-label="Copy to clipboard">
+                  <span class="sheet-icon">⎘</span>
+                  <span class="sheet-label">Copy</span>
+                </button>
+                <button class="toolbar-sheet-btn" data-action="share-song" aria-label="Share song">
+                  <span class="sheet-icon">↗</span>
+                  <span class="sheet-label">Share</span>
+                </button>
+              </div>
+            </div>
+            <div class="sheet-section">
+              <div class="sheet-section-label">Tools</div>
+              <div class="sheet-section-grid">
+                <button class="toolbar-sheet-btn" data-action="history" aria-label="Version history">
+                  <span class="sheet-icon">↶</span>
+                  <span class="sheet-label">History</span>
+                </button>
+                <button class="toolbar-sheet-btn" data-action="chord-diagram" aria-label="Chord diagram">
+                  <span class="sheet-icon">♫</span>
+                  <span class="sheet-label">Chords</span>
+                </button>
+                <button class="toolbar-sheet-btn" data-action="metronome" aria-label="Metronome">
+                  <span class="sheet-icon">⌖</span>
+                  <span class="sheet-label">Metronome</span>
+                </button>
+                <button class="toolbar-sheet-btn" data-action="song-stats" aria-label="Song statistics">
+                  <span class="sheet-icon">▤</span>
+                  <span class="sheet-label">Stats</span>
+                </button>
+              </div>
+            </div>
+            <div class="sheet-section">
+              <div class="sheet-section-label">Organize</div>
+              <div class="sheet-section-grid">
+                <button class="toolbar-sheet-btn" data-action="setlist" aria-label="Setlists">
+                  <span class="sheet-icon">≡</span>
+                  <span class="sheet-label">Setlists</span>
+                </button>
+                <button class="toolbar-sheet-btn" data-action="edit-tags" aria-label="Edit tags">
+                  <span class="sheet-icon">#</span>
+                  <span class="sheet-label">Tags</span>
+                </button>
+                <button class="toolbar-sheet-btn" data-action="import-txt" aria-label="Import text">
+                  <span class="sheet-icon">↓</span>
+                  <span class="sheet-label">Import</span>
+                </button>
+                <button class="toolbar-sheet-btn" data-action="plugins" aria-label="Export plugins">
+                  <span class="sheet-icon">⚙</span>
+                  <span class="sheet-label">Plugins</span>
+                </button>
+              </div>
+            </div>
+            <div class="sheet-section">
+              <div class="sheet-section-label">View</div>
+              <div class="sheet-section-grid">
+                <button class="toolbar-sheet-btn" data-action="theme-toggle" aria-label="Toggle theme">
+                  <span class="sheet-icon">○</span>
+                  <span class="sheet-label">Theme</span>
+                </button>
+                <button class="toolbar-sheet-btn" data-action="info" aria-label="Song info">
+                  <span class="sheet-icon">ℹ</span>
+                  <span class="sheet-label">Info</span>
+                </button>
+                <button class="toolbar-sheet-btn sheet-danger" data-action="delete" aria-label="Delete song">
+                  <span class="sheet-icon">✕</span>
+                  <span class="sheet-label">Delete</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -219,7 +253,7 @@
           <h1 id="setlist-detail-title" class="nav-title">Setlist</h1>
         </div>
         <div class="nav-btn-group">
-          <button id="setlist-print-btn" class="nav-btn" title="Print chord charts" aria-label="Print chord charts">🖨</button>
+          <button id="setlist-print-btn" class="nav-btn" title="Print chord charts" aria-label="Print chord charts">⎙</button>
           <button id="setlist-transpose-btn" class="nav-btn" title="Transpose all" aria-label="Transpose all">♯</button>
           <button id="setlist-add-song-btn" class="nav-btn nav-btn-primary" aria-label="Add song">+</button>
         </div>
@@ -330,22 +364,22 @@
           <div class="new-song-template-label">Choose a Template</div>
           <div class="new-song-template-grid" role="radiogroup" aria-label="Song template">
             <button class="new-song-template-btn active" data-template="Blank" role="radio" aria-checked="true">
-              <span class="template-icon">📄</span>
+              <span class="template-icon">□</span>
               <span class="template-name">Blank</span>
               <span class="template-desc">Empty canvas</span>
             </button>
             <button class="new-song-template-btn" data-template="Verse-Chorus" role="radio" aria-checked="false">
-              <span class="template-icon">🎵</span>
+              <span class="template-icon">♫</span>
               <span class="template-name">Verse-Chorus</span>
               <span class="template-desc">V / C / V / C</span>
             </button>
             <button class="new-song-template-btn" data-template="AABA" role="radio" aria-checked="false">
-              <span class="template-icon">🎶</span>
+              <span class="template-icon">♫</span>
               <span class="template-name">AABA</span>
               <span class="template-desc">A / A / B / A</span>
             </button>
             <button class="new-song-template-btn" data-template="Verse Only" role="radio" aria-checked="false">
-              <span class="template-icon">📃</span>
+              <span class="template-icon">▭</span>
               <span class="template-name">Verse Only</span>
               <span class="template-desc">V / V</span>
             </button>

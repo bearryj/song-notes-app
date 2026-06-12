@@ -25,6 +25,9 @@ let sessionTotalMs = 0; // accumulated ms from previous sessions (from song.sess
 let setlists = [];
 let activeSetlistId = null;
 
+// ===== Chord Ribbon Collapse State =====
+let chordRibbonCollapsed = false;
+
 // ===== Metronome State =====
 let metroBpm = 120;
 let metroTimeSig = 4;
@@ -234,6 +237,7 @@ function showInputSheet({ title, placeholder, initialValue = '', onConfirm }) {
       </div>
     </div>`;
   document.body.appendChild(sheet);
+  enableDragToDismiss(sheet, { contentSelector: '.input-sheet-content', backdropSelector: '.input-sheet-backdrop', onDismiss: () => { sheet._close = null; } });
 
   const input = sheet.querySelector('.input-sheet-field');
   const confirmBtn = sheet.querySelector('.input-sheet-confirm');
@@ -278,6 +282,7 @@ function showConfirmSheet({ title, body, confirmText = 'Confirm', confirmClass =
       </div>
     </div>`;
   document.body.appendChild(sheet);
+  enableDragToDismiss(sheet, { contentSelector: '.confirm-sheet-content', backdropSelector: '.confirm-sheet-backdrop' });
 
   const confirmBtn = sheet.querySelector('.confirm-sheet-confirm');
   const cancelBtn = sheet.querySelector('.confirm-sheet-cancel');
@@ -321,6 +326,7 @@ function showKeyPicker(song) {
     </div>`;
 
   document.body.appendChild(sheet);
+  enableDragToDismiss(sheet, { contentSelector: '.key-picker-content', backdropSelector: '.key-picker-backdrop' });
 
   const close = () => sheet.remove();
   sheet.querySelector('.key-picker-backdrop').onclick = close;
@@ -364,6 +370,112 @@ function calcSemitones(fromKey, toKey) {
 
 function escHtml(s) {
   return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===== Drag to Dismiss for Bottom Sheets =====
+// Adds touch drag-to-dismiss behavior to a sheet element.
+// The sheet slides down and fades out when dragged downward past a threshold.
+// Options:
+//   contentSelector  — selector for the draggable content container (first child found)
+//   backdropSelector — selector for the backdrop element (fades out during drag)
+//   threshold        — px of downward drag before snap-dismiss (default 80)
+//   onDismiss        — callback after dismiss animation completes
+function enableDragToDismiss(sheet, { contentSelector = null, backdropSelector = null, threshold = 80, onDismiss = null } = {}) {
+  const content = contentSelector ? sheet.querySelector(contentSelector) : sheet.children[0];
+  const backdrop = backdropSelector ? sheet.querySelector(backdropSelector) : null;
+  if (!content) return;
+
+  let startY = 0, startX = 0, currentY = 0, isDragging = false, isDragDismiss = false;
+  const DRAG_THRESHOLD = 6; // px before we decide it's a drag vs tap
+
+  const onTouchStart = (e) => {
+    // Only start drag from the handle area (top 40px of content) or if scrolling at top
+    const touch = e.touches[0];
+    startY = touch.clientY;
+    startX = touch.clientX;
+    currentY = touch.clientY;
+    isDragging = false;
+    isDragDismiss = false;
+  };
+
+  const onTouchMove = (e) => {
+    const touch = e.touches[0];
+    const diffY = touch.clientY - startY;
+    const diffX = Math.abs(touch.clientX - startX);
+
+    // Only engage vertical drag if clearly vertical and downward
+    if (!isDragging && diffY > DRAG_THRESHOLD && diffY > diffX * 0.7) {
+      isDragging = true;
+      isDragDismiss = true;
+      content.classList.add('sheet-dragging');
+      if (backdrop) backdrop.style.transition = 'opacity 0.1s ease';
+    }
+
+    if (!isDragDismiss) return;
+
+    // Prevent other gestures while dragging to dismiss
+    if (diffY > 0) e.preventDefault();
+
+    const offset = Math.max(0, touch.clientY - startY);
+    currentY = touch.clientY;
+    content.style.transform = `translateY(${offset}px)`;
+    content.style.animation = 'none';
+
+    // Fade backdrop proportionally
+    if (backdrop) {
+      const backdropOpacity = Math.max(0, 1 - offset / (threshold * 2));
+      backdrop.style.opacity = backdropOpacity;
+    }
+  };
+
+  const onTouchEnd = () => {
+    if (!isDragDismiss) {
+      isDragging = false;
+      return;
+    }
+
+    const diffY = currentY - startY;
+    content.classList.remove('sheet-dragging');
+
+    if (diffY > threshold) {
+      // Dismiss: slide down + fade backdrop
+      content.classList.add('sheet-drag-dismiss');
+      if (backdrop) {
+        backdrop.style.transition = 'opacity 0.25s ease';
+        backdrop.style.opacity = '0';
+      }
+      content.addEventListener('animationend', () => {
+        sheet.remove();
+        if (onDismiss) onDismiss();
+      }, { once: true });
+      // Fallback in case animationend doesn't fire
+      setTimeout(() => {
+        if (sheet.parentNode) {
+          sheet.remove();
+          if (onDismiss) onDismiss();
+        }
+      }, 350);
+    } else {
+      // Snap back
+      content.style.transition = 'transform 0.2s ease';
+      content.style.transform = 'translateY(0)';
+      if (backdrop) {
+        backdrop.style.transition = 'opacity 0.2s ease';
+        backdrop.style.opacity = '';
+      }
+      setTimeout(() => {
+        content.style.transition = '';
+        content.style.transform = '';
+      }, 200);
+    }
+    isDragging = false;
+    isDragDismiss = false;
+  };
+
+  // Attach to content's touch events
+  content.addEventListener('touchstart', onTouchStart, { passive: true });
+  content.addEventListener('touchmove', onTouchMove, { passive: false });
+  content.addEventListener('touchend', onTouchEnd, { passive: true });
 }
 
 async function deleteSong(id) {
@@ -726,7 +838,7 @@ function renderFolders() {
                   }).length :
                   songs.filter(s => s.folder === f).length;
     const cls = f === currentFolder ? 'list-item active' : 'list-item';
-    const icon = f === 'All Songs' ? '♫' : f === 'Recently Edited' ? '⏱' : '♪';
+    const icon = f === 'All Songs' ? '♫' : f === 'Recently Edited' ? '↻' : '♪';
     return `<div class="${cls}" data-folder="${esc(f)}"><span class="item-icon">${icon}</span><span class="item-title">${esc(f === 'Recently Edited' ? 'Recently Edited' : f)}</span><span class="item-meta">${count}</span>${!smartFolders.includes(f) ? '<span class="folder-dots">⋯</span>' : ''}</div>`;
   }).join('');
   el.querySelectorAll('.list-item[data-folder]').forEach(item => {
@@ -791,10 +903,10 @@ function showSortPopover(anchorEl) {
   popover.id = 'sort-popover';
   popover.className = 'popover sort-popover';
   const modes = [
-    { id: 'recent', label: 'Recent', icon: '🕐' },
+    { id: 'recent', label: 'Recent', icon: '↻' },
     { id: 'title-az', label: 'A → Z', icon: 'A' },
     { id: 'title-za', label: 'Z → A', icon: 'Z' },
-    { id: 'key', label: 'Key', icon: '🎵' },
+    { id: 'key', label: 'Key', icon: '♫' },
   ];
   popover.innerHTML = modes.map(m =>
     `<button class="sort-opt${activeSortMode === m.id ? ' active' : ''}" data-mode="${m.id}"><span class="sort-opt-icon">${m.icon}</span>${m.label}</button>`
@@ -829,6 +941,9 @@ function updateSortBtn() {
   const btn = $('sort-btn');
   if (!btn) return;
   btn.classList.toggle('nav-btn-active', activeSortMode !== 'recent');
+  const SORT_LABELS = { 'title-az': 'A-Z', 'title-za': 'Z-A', 'key': 'Key' };
+  const label = SORT_LABELS[activeSortMode] || '';
+  btn.textContent = label ? `↕ ${label}` : '↕';
 }
 
 function showFolderActions(name, anchor) {
@@ -1367,9 +1482,31 @@ function renderChordRibbon(song) {
 
   if (!items.length) { ribbon.innerHTML = ''; return; }
 
-  ribbon.innerHTML = items.map(item =>
+  // Collapse toggle button
+  const toggle = document.createElement('button');
+  toggle.className = 'chord-ribbon-toggle';
+  toggle.textContent = chordRibbonCollapsed ? '▸' : '▾';
+  toggle.setAttribute('aria-label', chordRibbonCollapsed ? 'Expand chord ribbon' : 'Collapse chord ribbon');
+  toggle.addEventListener('click', () => {
+    chordRibbonCollapsed = !chordRibbonCollapsed;
+    toggle.textContent = chordRibbonCollapsed ? '▸' : '▾';
+    toggle.setAttribute('aria-label', chordRibbonCollapsed ? 'Expand chord ribbon' : 'Collapse chord ribbon');
+    ribbon.classList.toggle('collapsed', chordRibbonCollapsed);
+  });
+
+  const content = document.createElement('div');
+  content.style.display = 'flex';
+  content.style.alignItems = 'center';
+  content.style.gap = 'inherit';
+  content.style.width = '100%';
+  content.innerHTML = items.map(item =>
     `<div class="chord-ribbon-item" data-chord="${esc(item.name)}"><span class="chord-name">${esc(item.name)}</span><span class="chord-section">${esc(item.section)}</span></div>`
   ).join('');
+
+  ribbon.innerHTML = '';
+  ribbon.appendChild(content);
+  ribbon.appendChild(toggle);
+  ribbon.classList.toggle('collapsed', chordRibbonCollapsed);
 
   // Tap to highlight & scroll to first occurrence
   ribbon.querySelectorAll('.chord-ribbon-item').forEach(el => {
@@ -1747,6 +1884,7 @@ function showChordEdit(song, line, chord) {
   chordPopup.appendChild(backdrop);
   chordPopup.appendChild(sheet);
   document.body.appendChild(chordPopup);
+  enableDragToDismiss(chordPopup, { contentSelector: '.chord-sheet', backdropSelector: '.chord-sheet-backdrop', onDismiss: () => { chordPopup = null; } });
 
   // Focus input after animation
   setTimeout(() => input.focus(), 100);
@@ -2252,7 +2390,7 @@ function showShareSheet() {
         <div class="share-song-title" id="share-song-title"></div>
         <div class="share-options">
           <button class="share-opt-btn" id="share-native-btn">
-            <span class="share-opt-icon">📤</span>
+            <span class="share-opt-icon">↗</span>
             <span class="share-opt-label">Share via…</span>
             <span class="share-opt-desc">Native share on device</span>
           </button>
@@ -2919,13 +3057,13 @@ function renderSetlistList() {
   const el = $('setlist-list');
   if (!el) return;
   if (!setlists.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><h2>No Setlists</h2><p>Tap + to create one</p></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">≡</div><h2>No Setlists</h2><p>Tap + to create one</p></div>';
     return;
   }
   el.innerHTML = setlists.map(sl => {
     const count = sl.songs.length;
     return `<div class="setlist-item" data-id="${sl.id}">
-      <span class="setlist-item-icon">📋</span>
+      <span class="setlist-item-icon">≡</span>
       <div class="setlist-item-info">
         <div class="setlist-item-name">${esc(sl.name)}</div>
         <div class="setlist-item-count">${count} song${count !== 1 ? 's' : ''}</div>
@@ -3337,6 +3475,11 @@ function setupEvents() {
     showSortPopover(e.currentTarget);
   });
 
+  // Setlist nav button
+  $('setlist-nav-btn')?.addEventListener('click', () => {
+    showSetlistView();
+  });
+
   // Save / Done button
   $('save-btn').addEventListener('click', () => {
     const song = getSong(currentSongId);
@@ -3448,6 +3591,19 @@ function setupEvents() {
         showTagEditorPanel();
       } else if (a === 'duplicate-song') {
         duplicateCurrentSong();
+      } else if (a === 'theme-toggle') {
+        const current = document.documentElement.getAttribute('data-theme') || 'dark';
+        const next = current === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        localStorage.setItem('sn_app_theme', next);
+      } else if (a === 'info') {
+        const bar = $('info-bar');
+        if (bar.style.display === 'none' || !bar.style.display) {
+          updateInfoBar();
+          bar.style.display = 'flex';
+        } else {
+          bar.style.display = 'none';
+        }
       }
     });
   });
@@ -3690,25 +3846,30 @@ function setupEvents() {
 
   setupFolderActions();
   
-  // Theme toggle
-  $('theme-toggle')?.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme') || 'dark';
-    const next = current === 'dark' ? 'light' : 'dark';
-    applyTheme(next);
-    localStorage.setItem('sn_app_theme', next);
-    $('theme-toggle').textContent = next === 'dark' ? '☀️' : '🌙';
-  });
+  // Theme toggle (now in toolbar sheet — this handler is for backward compat)
+  const oldThemeBtn = $('theme-toggle');
+  if (oldThemeBtn) {
+    oldThemeBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      localStorage.setItem('sn_app_theme', next);
+    });
+  }
   
-  // Info panel toggle
-  $('info-btn')?.addEventListener('click', () => {
-    const bar = $('info-bar');
-    if (bar.style.display === 'none' || !bar.style.display) {
-      updateInfoBar();
-      bar.style.display = 'flex';
-    } else {
-      bar.style.display = 'none';
-    }
-  });
+  // Info panel toggle (now in toolbar sheet — this handler is for backward compat)
+  const oldInfoBtn = $('info-btn');
+  if (oldInfoBtn) {
+    oldInfoBtn.addEventListener('click', () => {
+      const bar = $('info-bar');
+      if (bar.style.display === 'none' || !bar.style.display) {
+        updateInfoBar();
+        bar.style.display = 'flex';
+      } else {
+        bar.style.display = 'none';
+      }
+    });
+  }
   
   // View toggle (list / gallery)
   let galleryMode = false;
@@ -3725,8 +3886,6 @@ function setupEvents() {
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  const btn = $('theme-toggle');
-  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#000000' : '#f2f2f7');
 }
 
@@ -4071,7 +4230,7 @@ function showSongStatsPanel() {
   if (!body) return;
 
   if (!song) {
-    body.innerHTML = '<div class="stats-empty"><div class="stats-empty-icon">📊</div><div>Select a song to view statistics</div></div>';
+    body.innerHTML = '<div class="stats-empty"><div class="stats-empty-icon">▤</div><div>Select a song to view statistics</div></div>';
   } else {
     body.innerHTML = computeStatsHTML(song);
   }
