@@ -23,7 +23,41 @@
   --bar-height: 44px;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
+
+/* ===== Focus Visible — Accessibility ===== */
+:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Larger focus ring for interactive elements */
+button:focus-visible,
+.nav-btn:focus-visible,
+.fab:focus-visible,
+.toolbar-btn:focus-visible,
+.sheet-item:focus-visible,
+.icon-btn:focus-visible {
+  outline: 2.5px solid var(--accent) !important;
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+/* Subtle focus for list items and song rows */
+.list-item:focus-visible,
+.song-row:focus-visible,
+.setlist-song:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: -2px;
+  border-radius: var(--radius);
+}
+/* Input focus glow */
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 0;
+  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.2);
+}
+
 html, body {
   height: 100%;
   overflow: hidden;

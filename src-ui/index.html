@@ -8,80 +8,80 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div id="app">
+  <div id="app" role="application" aria-label="Song Notes">
     <!-- Folder View -->
-    <div id="folder-view" class="view active">
+    <div id="folder-view" class="view active" role="region" aria-label="Folders">
       <div class="nav-bar">
         <h1 class="nav-title">Folders</h1>
-        <button id="new-folder-btn" class="nav-btn nav-btn-primary">+</button>
+        <button id="new-folder-btn" class="nav-btn nav-btn-primary" aria-label="New folder">+</button>
       </div>
-      <div id="folder-list" class="list"></div>
+      <div id="folder-list" class="list" role="listbox" aria-label="Folder list" tabindex="0"></div>
     </div>
 
     <!-- Song List View -->
-    <div id="song-list-view" class="view">
+    <div id="song-list-view" class="view" role="region" aria-label="Song list">
       <div class="nav-bar">
-        <button id="back-to-folders" class="nav-btn">‹</button>
+        <button id="back-to-folders" class="nav-btn" aria-label="Back to folders">‹</button>
         <h1 id="folder-title" class="nav-title">All Songs</h1>
-        <button id="sort-btn" class="nav-btn" title="Sort songs">↕</button>
-        <button id="view-toggle" class="nav-btn" title="Toggle view">⊞</button>
-        <button id="import-btn" class="nav-btn">↓</button>
-        <button id="new-song-btn" class="nav-btn nav-btn-primary">+</button>
+        <button id="sort-btn" class="nav-btn" title="Sort songs" aria-label="Sort songs">↕</button>
+        <button id="view-toggle" class="nav-btn" title="Toggle view" aria-label="Toggle view">⊞</button>
+        <button id="import-btn" class="nav-btn" aria-label="Import song">↓</button>
+        <button id="new-song-btn" class="nav-btn nav-btn-primary" aria-label="New song">+</button>
       </div>
       <div class="search-bar">
-        <input type="search" id="search-input" placeholder="Search" />
+        <input type="search" id="search-input" placeholder="Search" aria-label="Search songs" />
       </div>
       <div id="tag-filter-bar" class="tag-filter-bar" style="display:none;"></div>
-      <div id="pull-indicator" class="pull-indicator">
+      <div id="pull-indicator" class="pull-indicator" aria-hidden="true">
         <div class="pull-arrow">↓</div>
       </div>
-      <div id="song-list" class="list"></div>
+      <div id="song-list" class="list" role="listbox" aria-label="Songs" tabindex="0"></div>
     </div>
 
     <!-- Editor View -->
-    <div id="editor-view" class="view">
+    <div id="editor-view" class="view" role="region" aria-label="Song editor">
       <div class="nav-bar editor-nav">
-        <button id="back-to-songs" class="nav-btn">‹</button>
+        <button id="back-to-songs" class="nav-btn" aria-label="Back to songs">‹</button>
         <div class="nav-title-wrap">
-          <span id="auto-save-dot" class="save-dot"></span>
-          <input type="text" id="song-title" class="nav-title-input" placeholder="Untitled" />
+          <span id="auto-save-dot" class="save-dot" aria-label="Save status"></span>
+          <input type="text" id="song-title" class="nav-title-input" placeholder="Untitled" aria-label="Song title" />
         </div>
         <div class="nav-btn-group">
-          <button id="theme-toggle" class="nav-btn" title="Toggle theme">☀️</button>
-          <button id="info-btn" class="nav-btn" title="Info">ℹ</button>
-          <button id="undo-btn" class="nav-btn" disabled>↶</button>
-          <button id="save-btn" class="nav-btn nav-btn-primary" disabled>Done</button>
+          <button id="theme-toggle" class="nav-btn" title="Toggle theme" aria-label="Toggle theme">☀️</button>
+          <button id="info-btn" class="nav-btn" title="Info" aria-label="Song info">ℹ</button>
+          <button id="undo-btn" class="nav-btn" aria-label="Undo" disabled>↶</button>
+          <button id="save-btn" class="nav-btn nav-btn-primary" aria-label="Save" disabled>Done</button>
         </div>
       </div>
-      <div id="chord-ribbon" class="chord-ribbon"></div>
-      <div id="song-body" class="editor-body"></div>
+      <div id="chord-ribbon" class="chord-ribbon" role="navigation" aria-label="Chord progression"></div>
+      <div id="song-body" class="editor-body" role="main" tabindex="0" aria-label="Song content"></div>
       <div id="info-bar" class="info-bar" style="display:none;"></div>
 
       <!-- Mobile Toolbar -->
-      <div class="mobile-toolbar" id="mobile-toolbar">
+      <div class="mobile-toolbar" id="mobile-toolbar" role="toolbar" aria-label="Editor tools">
         <!-- Primary actions row -->
         <div class="toolbar-primary">
-          <button id="record-btn" class="toolbar-btn" title="Record">
+          <button id="record-btn" class="toolbar-btn" title="Record" aria-label="Record audio">
             <span class="toolbar-icon">●</span>
             <span class="toolbar-label">Record</span>
           </button>
-          <button id="recordings-btn" class="toolbar-btn" title="Recordings" style="display:none">
+          <button id="recordings-btn" class="toolbar-btn" title="Recordings" aria-label="View recordings" style="display:none">
             <span class="toolbar-icon">▸</span>
             <span class="toolbar-label">Takes</span>
           </button>
           <div class="toolbar-divider"></div>
-          <button id="transpose-down-btn" class="toolbar-btn toolbar-btn-sm" title="Transpose down">
+          <button id="transpose-down-btn" class="toolbar-btn toolbar-btn-sm" title="Transpose down" aria-label="Transpose down">
             <span class="toolbar-icon">♭</span>
           </button>
-          <button id="transpose-up-btn" class="toolbar-btn toolbar-btn-sm" title="Transpose up">
+          <button id="transpose-up-btn" class="toolbar-btn toolbar-btn-sm" title="Transpose up" aria-label="Transpose up">
             <span class="toolbar-icon">♯</span>
           </button>
           <div class="toolbar-divider"></div>
-          <button id="add-section-btn" class="toolbar-btn" title="Add section">
+          <button id="add-section-btn" class="toolbar-btn" title="Add section" aria-label="Add section">
             <span class="toolbar-icon">+</span>
             <span class="toolbar-label">Section</span>
           </button>
-          <button id="toolbar-more-btn" class="toolbar-btn" title="More tools">
+          <button id="toolbar-more-btn" class="toolbar-btn" title="More tools" aria-label="More tools">
             <span class="toolbar-icon">⋯</span>
             <span class="toolbar-label">More</span>
           </button>
@@ -89,72 +89,72 @@
       </div>
 
       <!-- Toolbar Bottom Sheet -->
-      <div id="toolbar-sheet" style="display:none;">
+      <div id="toolbar-sheet" style="display:none;" role="dialog" aria-label="Tools menu">
         <div class="toolbar-sheet-backdrop"></div>
         <div class="toolbar-sheet-content">
           <div class="toolbar-sheet-handle"></div>
           <div class="toolbar-sheet-grid">
-            <button class="toolbar-sheet-btn" data-action="set-key">
+            <button class="toolbar-sheet-btn" data-action="set-key" aria-label="Set key">
               <span class="sheet-icon">🎵</span>
               <span class="sheet-label">Set Key</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="set-bpm">
+            <button class="toolbar-sheet-btn" data-action="set-bpm" aria-label="Set BPM">
               <span class="sheet-icon">⏱</span>
               <span class="sheet-label">Set BPM</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="import-txt">
+            <button class="toolbar-sheet-btn" data-action="import-txt" aria-label="Import text">
               <span class="sheet-icon">↓</span>
               <span class="sheet-label">Import Text</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="export-txt">
+            <button class="toolbar-sheet-btn" data-action="export-txt" aria-label="Export text">
               <span class="sheet-icon">↑</span>
               <span class="sheet-label">Export Text</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="export-md">
+            <button class="toolbar-sheet-btn" data-action="export-md" aria-label="Export markdown">
               <span class="sheet-icon">M↓</span>
               <span class="sheet-label">Export MD</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="export-clip">
+            <button class="toolbar-sheet-btn" data-action="export-clip" aria-label="Copy to clipboard">
               <span class="sheet-icon">⎘</span>
               <span class="sheet-label">Copy</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="history">
+            <button class="toolbar-sheet-btn" data-action="history" aria-label="Version history">
               <span class="sheet-icon">↶</span>
               <span class="sheet-label">History</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="delete">
+            <button class="toolbar-sheet-btn" data-action="delete" aria-label="Delete song">
               <span class="sheet-icon">🗑</span>
               <span class="sheet-label">Delete</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="setlist">
+            <button class="toolbar-sheet-btn" data-action="setlist" aria-label="Setlists">
               <span class="sheet-icon">📋</span>
               <span class="sheet-label">Setlists</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="chord-diagram">
+            <button class="toolbar-sheet-btn" data-action="chord-diagram" aria-label="Chord diagram">
               <span class="sheet-icon">🎸</span>
               <span class="sheet-label">Chord Diagram</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="share-song">
+            <button class="toolbar-sheet-btn" data-action="share-song" aria-label="Share song">
               <span class="sheet-icon">↗</span>
               <span class="sheet-label">Share</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="plugins">
+            <button class="toolbar-sheet-btn" data-action="plugins" aria-label="Export plugins">
               <span class="sheet-icon">⚙</span>
               <span class="sheet-label">Export Plugins</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="metronome">
+            <button class="toolbar-sheet-btn" data-action="metronome" aria-label="Metronome">
               <span class="sheet-icon">⏱</span>
               <span class="sheet-label">Metronome</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="song-stats">
+            <button class="toolbar-sheet-btn" data-action="song-stats" aria-label="Song statistics">
               <span class="sheet-icon">📊</span>
               <span class="sheet-label">Song Stats</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="edit-tags">
+            <button class="toolbar-sheet-btn" data-action="edit-tags" aria-label="Edit tags">
               <span class="sheet-icon">🏷</span>
               <span class="sheet-label">Tags</span>
             </button>
-            <button class="toolbar-sheet-btn" data-action="duplicate-song">
+            <button class="toolbar-sheet-btn" data-action="duplicate-song" aria-label="Duplicate song">
               <span class="sheet-icon">⧉</span>
               <span class="sheet-label">Duplicate</span>
             </button>
@@ -163,112 +163,112 @@
       </div>
 
       <!-- FAB (shown when toolbar collapsed) -->
-      <button id="toolbar-fab" class="toolbar-fab" style="display:none;" title="Show tools">
+      <button id="toolbar-fab" class="toolbar-fab" style="display:none;" title="Show tools" aria-label="Show tools">
         <span class="fab-icon">⚙</span>
       </button>
     </div>
 
     <!-- More Menu Popover -->
-    <div id="more-menu" class="popover" style="display:none;">
-      <button data-action="set-key">Set Key: —</button>
-      <button data-action="import-txt">Import Text</button>
-      <button data-action="export-txt">Export Text</button>
-      <button data-action="export-md">Export Markdown</button>
-      <button data-action="export-clip">Copy to Clipboard</button>
-      <button data-action="delete" class="danger">Delete Song</button>
+    <div id="more-menu" class="popover" style="display:none;" role="menu" aria-label="More actions">
+      <button data-action="set-key" role="menuitem">Set Key: —</button>
+      <button data-action="import-txt" role="menuitem">Import Text</button>
+      <button data-action="export-txt" role="menuitem">Export Text</button>
+      <button data-action="export-md" role="menuitem">Export Markdown</button>
+      <button data-action="export-clip" role="menuitem">Copy to Clipboard</button>
+      <button data-action="delete" class="danger" role="menuitem">Delete Song</button>
     </div>
 
     <!-- History Panel -->
-    <div id="history-panel" class="side-panel" style="display:none;">
+    <div id="history-panel" class="side-panel" style="display:none;" role="dialog" aria-label="Version history">
       <div class="side-panel-header">
         <span>History</span>
-        <button id="close-hist" class="nav-btn">✕</button>
+        <button id="close-hist" class="nav-btn" aria-label="Close history">✕</button>
       </div>
-      <div id="hist-list" class="side-panel-body"></div>
+      <div id="hist-list" class="side-panel-body" role="listbox"></div>
     </div>
 
     <!-- Recordings Popover -->
-    <div id="recordings-dropdown" class="popover" style="display:none;">
+    <div id="recordings-dropdown" class="popover" style="display:none;" role="dialog" aria-label="Recordings">
       <div class="rec-dropdown-header">Recordings</div>
       <div id="rec-list"></div>
-      <button id="delete-all-recordings" class="danger" style="display:block;width:100%;text-align:left;">Delete All</button>
+      <button id="delete-all-recordings" class="danger" style="display:block;width:100%;text-align:left;" aria-label="Delete all recordings">Delete All</button>
     </div>
 
     <!-- Folder Actions Popover -->
-    <div id="folder-actions" class="popover" style="display:none;">
-      <button data-action="rename">Rename</button>
-      <button data-action="delete-folder" class="danger">Delete</button>
+    <div id="folder-actions" class="popover" style="display:none;" role="menu" aria-label="Folder actions">
+      <button data-action="rename" role="menuitem">Rename</button>
+      <button data-action="delete-folder" class="danger" role="menuitem">Delete</button>
     </div>
 
     <!-- Setlist View -->
-    <div id="setlist-view" class="view">
+    <div id="setlist-view" class="view" role="region" aria-label="Setlists">
       <div class="nav-bar">
-        <button id="back-from-setlist" class="nav-btn">‹</button>
+        <button id="back-from-setlist" class="nav-btn" aria-label="Back">‹</button>
         <h1 class="nav-title">Setlists</h1>
-        <button id="setlist-new-btn" class="nav-btn nav-btn-primary">+</button>
+        <button id="setlist-new-btn" class="nav-btn nav-btn-primary" aria-label="New setlist">+</button>
       </div>
-      <div id="setlist-list" class="list"></div>
+      <div id="setlist-list" class="list" role="listbox"></div>
     </div>
 
     <!-- Setlist Detail View (song list within a setlist) -->
-    <div id="setlist-detail-view" class="view">
+    <div id="setlist-detail-view" class="view" role="region" aria-label="Setlist detail">
       <div class="nav-bar">
-        <button id="back-from-setlist-detail" class="nav-btn">‹</button>
+        <button id="back-from-setlist-detail" class="nav-btn" aria-label="Back">‹</button>
         <div class="nav-title-wrap">
           <h1 id="setlist-detail-title" class="nav-title">Setlist</h1>
         </div>
         <div class="nav-btn-group">
-          <button id="setlist-print-btn" class="nav-btn" title="Print chord charts">🖨</button>
-          <button id="setlist-transpose-btn" class="nav-btn" title="Transpose all">♯</button>
-          <button id="setlist-add-song-btn" class="nav-btn nav-btn-primary">+</button>
+          <button id="setlist-print-btn" class="nav-btn" title="Print chord charts" aria-label="Print chord charts">🖨</button>
+          <button id="setlist-transpose-btn" class="nav-btn" title="Transpose all" aria-label="Transpose all">♯</button>
+          <button id="setlist-add-song-btn" class="nav-btn nav-btn-primary" aria-label="Add song">+</button>
         </div>
       </div>
       <div class="search-bar">
-        <span id="setlist-song-count" style="font-size:13px;color:var(--fg-tertiary);padding:0 4px;">0 songs</span>
+        <span id="setlist-song-count" style="font-size:13px;color:var(--fg-tertiary);padding:0 4px;" aria-live="polite">0 songs</span>
       </div>
-      <div id="setlist-songs" class="list"></div>
+      <div id="setlist-songs" class="list" role="listbox"></div>
     </div>
 
     <!-- Song Picker Sheet (for adding songs to setlist) -->
-    <div id="song-picker-sheet" style="display:none;">
+    <div id="song-picker-sheet" style="display:none;" role="dialog" aria-label="Song picker">
       <div class="toolbar-sheet-backdrop"></div>
       <div class="toolbar-sheet-content" style="max-height:70vh;">
         <div class="toolbar-sheet-handle"></div>
         <h3 style="font-size:17px;font-weight:600;padding:4px 0 12px;text-align:center;">Add Song to Setlist</h3>
-        <div id="song-picker-list" style="overflow-y:auto;max-height:50vh;"></div>
+        <div id="song-picker-list" style="overflow-y:auto;max-height:50vh;" role="listbox"></div>
       </div>
     </div>
 
     <!-- Setlist Print Preview Overlay -->
-    <div id="setlist-print-overlay" style="display:none;">
+    <div id="setlist-print-overlay" style="display:none;" role="dialog" aria-label="Print preview">
       <div class="print-preview-nav">
-        <button id="print-close-btn" class="nav-btn">✕</button>
+        <button id="print-close-btn" class="nav-btn" aria-label="Close preview">✕</button>
         <span id="print-preview-title" class="print-preview-title">Print Preview</span>
-        <button id="print-do-btn" class="nav-btn nav-btn-primary" style="font-size:15px;">Print</button>
+        <button id="print-do-btn" class="nav-btn nav-btn-primary" style="font-size:15px;" aria-label="Print">Print</button>
       </div>
       <div id="setlist-print-content" class="print-content"></div>
     </div>
 
     <!-- Metronome Panel -->
-    <div id="metronome-panel" style="display:none;">
+    <div id="metronome-panel" style="display:none;" role="dialog" aria-label="Metronome">
       <div class="toolbar-sheet-backdrop"></div>
       <div class="metronome-content">
         <div class="toolbar-sheet-handle"></div>
         <div class="metro-header">
           <h3 class="metro-title">Metronome</h3>
         </div>
-        <div class="metro-beat-display" id="metro-beat-display">
+        <div class="metro-beat-display" id="metro-beat-display" aria-live="polite">
           <div class="metro-beat-circle" id="metro-beat-circle"></div>
           <div class="metro-bpm-value" id="metro-bpm-value">120</div>
           <div class="metro-bpm-label">BPM</div>
         </div>
         <div class="metro-controls">
-          <button class="metro-btn metro-btn-minus" id="metro-bpm-down" title="Decrease BPM">−</button>
-          <button class="metro-btn metro-btn-play" id="metro-play-btn" title="Play">▶</button>
-          <button class="metro-btn metro-btn-plus" id="metro-bpm-up" title="Increase BPM">+</button>
+          <button class="metro-btn metro-btn-minus" id="metro-bpm-down" title="Decrease BPM" aria-label="Decrease BPM">−</button>
+          <button class="metro-btn metro-btn-play" id="metro-play-btn" title="Play" aria-label="Play metronome">▶</button>
+          <button class="metro-btn metro-btn-plus" id="metro-bpm-up" title="Increase BPM" aria-label="Increase BPM">+</button>
         </div>
         <div class="metro-bpm-slider-wrap">
-          <input type="range" id="metro-bpm-slider" class="metro-bpm-slider" min="30" max="240" value="120">
+          <input type="range" id="metro-bpm-slider" class="metro-bpm-slider" min="30" max="240" value="120" aria-label="BPM slider">
           <div class="metro-bpm-ticks">
             <span>30</span>
             <span>60</span>
@@ -279,11 +279,11 @@
         </div>
         <div class="metro-time-sig-wrap">
           <div class="metro-time-sig-label">Time Signature</div>
-          <div class="metro-time-sig-btns">
-            <button class="metro-time-btn active" data-sig="4">4/4</button>
-            <button class="metro-time-btn" data-sig="3">3/4</button>
-            <button class="metro-time-btn" data-sig="6">6/8</button>
-            <button class="metro-time-btn" data-sig="2">2/4</button>
+          <div class="metro-time-sig-btns" role="radiogroup" aria-label="Time signature">
+            <button class="metro-time-btn active" data-sig="4" role="radio" aria-checked="true">4/4</button>
+            <button class="metro-time-btn" data-sig="3" role="radio" aria-checked="false">3/4</button>
+            <button class="metro-time-btn" data-sig="6" role="radio" aria-checked="false">6/8</button>
+            <button class="metro-time-btn" data-sig="2" role="radio" aria-checked="false">2/4</button>
           </div>
         </div>
         <div class="metro-preset-wrap">
@@ -303,7 +303,7 @@
     </div>
 
     <!-- Song Statistics Panel -->
-    <div id="song-stats-panel" style="display:none;">
+    <div id="song-stats-panel" style="display:none;" role="dialog" aria-label="Song statistics">
       <div class="toolbar-sheet-backdrop"></div>
       <div class="stats-content">
         <div class="toolbar-sheet-handle"></div>
@@ -317,33 +317,33 @@
     </div>
 
     <!-- New Song Sheet -->
-    <div id="new-song-sheet" style="display:none;">
+    <div id="new-song-sheet" style="display:none;" role="dialog" aria-label="New song">
       <div class="toolbar-sheet-backdrop"></div>
       <div class="toolbar-sheet-content" style="max-height:70vh;">
         <div class="toolbar-sheet-handle"></div>
         <div class="new-song-header">
           <h3 class="new-song-title">New Song</h3>
         </div>
-        <input type="text" id="new-song-input" class="new-song-input" placeholder="Song title" autocomplete="off" spellcheck="false" />
+        <input type="text" id="new-song-input" class="new-song-input" placeholder="Song title" autocomplete="off" spellcheck="false" aria-label="Song title" />
         <div class="new-song-templates">
           <div class="new-song-template-label">Choose a Template</div>
-          <div class="new-song-template-grid">
-            <button class="new-song-template-btn active" data-template="Blank">
+          <div class="new-song-template-grid" role="radiogroup" aria-label="Song template">
+            <button class="new-song-template-btn active" data-template="Blank" role="radio" aria-checked="true">
               <span class="template-icon">📄</span>
               <span class="template-name">Blank</span>
               <span class="template-desc">Empty canvas</span>
             </button>
-            <button class="new-song-template-btn" data-template="Verse-Chorus">
+            <button class="new-song-template-btn" data-template="Verse-Chorus" role="radio" aria-checked="false">
               <span class="template-icon">🎵</span>
               <span class="template-name">Verse-Chorus</span>
               <span class="template-desc">V / C / V / C</span>
             </button>
-            <button class="new-song-template-btn" data-template="AABA">
+            <button class="new-song-template-btn" data-template="AABA" role="radio" aria-checked="false">
               <span class="template-icon">🎶</span>
               <span class="template-name">AABA</span>
               <span class="template-desc">A / A / B / A</span>
             </button>
-            <button class="new-song-template-btn" data-template="Verse Only">
+            <button class="new-song-template-btn" data-template="Verse Only" role="radio" aria-checked="false">
               <span class="template-icon">📃</span>
               <span class="template-name">Verse Only</span>
               <span class="template-desc">V / V</span>
@@ -358,7 +358,7 @@
     </div>
 
     <!-- Tag Editor Panel -->
-    <div id="tag-editor-panel" style="display:none;">
+    <div id="tag-editor-panel" style="display:none;" role="dialog" aria-label="Tag editor">
       <div class="toolbar-sheet-backdrop"></div>
       <div class="stats-content">
         <div class="toolbar-sheet-handle"></div>
@@ -371,7 +371,7 @@
             <div id="tag-editor-chips" class="tag-chips-wrap"></div>
           </div>
           <div class="tag-editor-input-row">
-            <input type="text" id="tag-editor-input" placeholder="Add a tag…" autocomplete="off" spellcheck="false" />
+            <input type="text" id="tag-editor-input" placeholder="Add a tag…" autocomplete="off" spellcheck="false" aria-label="Add tag" />
             <button id="tag-editor-add-btn" class="nav-btn nav-btn-primary" style="padding:6px 14px;font-size:14px;">Add</button>
           </div>
           <div id="tag-editor-suggestions" class="tag-editor-section">
