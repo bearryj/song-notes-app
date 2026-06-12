@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (song content preview line in list view)
+2026-06-12 by OWL (tap tempo in metronome panel)
 
 ## Build & Test Commands
 ```bash
@@ -73,6 +73,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Auto-save timer flush on song switch + back navigation (prevents stale debounced writes from corrupting state when quick-switching songs or going back)
 - Swipe gesture to switch songs in editor (swipe left → next, swipe right → prev, with haptic feedback)
 - Song content preview in list view (chord chips + first lyric line snippet under each title)
+- Tap tempo (tap-to-detect BPM with outlier filtering, auto-applies to metronome, 2s auto-reset)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)

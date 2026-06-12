@@ -3192,6 +3192,72 @@ body.ios-device .toolbar-sheet-content {
   color: #fff;
 }
 
+/* Tap Tempo */
+.metro-tap-wrap {
+  padding: 12px 0 4px;
+  text-align: center;
+}
+.metro-tap-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+.metro-tap-btn {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  background: var(--bg-surface);
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--font);
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: transform 0.06s ease, background 0.1s ease, box-shadow 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.metro-tap-btn:active {
+  transform: scale(0.9);
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 20px rgba(10, 132, 255, 0.3);
+}
+.metro-tap-btn.tap-flash {
+  animation: tap-pulse 0.15s ease;
+}
+@keyframes tap-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.88); background: var(--accent); color: #fff; }
+  100% { transform: scale(1); }
+}
+.metro-tap-result {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--fg);
+  line-height: 1;
+  margin-bottom: 2px;
+  min-height: 34px;
+  transition: color 0.2s ease;
+}
+.metro-tap-result.active {
+  color: var(--accent);
+}
+.metro-tap-hint {
+  font-size: 11px;
+  color: var(--fg-tertiary);
+  margin-top: 4px;
+}
+
 /* ===== Song Statistics Panel ===== */
 #song-stats-panel {
   position: fixed;

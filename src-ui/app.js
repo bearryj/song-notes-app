@@ -4491,6 +4491,13 @@ function setupEvents() {
     btn.addEventListener('click', () => metroSetBpm(parseInt(btn.dataset.bpm)));
   });
 
+  // Tap tempo button
+  const tapBtn = $('metro-tap-btn');
+  if (tapBtn) {
+    tapBtn.addEventListener('click', handleTapTempo);
+    tapBtn.addEventListener('touchend', e => { e.preventDefault(); handleTapTempo(); });
+  }
+
   // ===== Setlist Events =====
 
   // Setlist button in toolbar sheet
@@ -5025,12 +5032,97 @@ function showMetronomePanel() {
   panel.style.display = 'flex';
   metroSetBpm(metroBpm);
   metroSetTimeSig(metroTimeSig);
+  resetTapTempo();
 
   // Close on backdrop tap
   panel.querySelector('.toolbar-sheet-backdrop').onclick = () => {
     metroStop();
     panel.style.display = 'none';
   };
+}
+
+// ===== Tap Tempo =====
+let tapTimes = [];
+let tapResetTimer = null;
+const TAP_MAX_SAMPLES = 8;
+const TAP_TIMEOUT = 2000; // ms to reset tap sequence
+const TAP_MIN_BPM = 30;
+const TAP_MAX_BPM = 240;
+
+function resetTapTempo() {
+  tapTimes = [];
+  if (tapResetTimer) { clearTimeout(tapResetTimer); tapResetTimer = null; }
+  const result = $('metro-tap-result');
+  if (result) { result.textContent = '—'; result.classList.remove('active'); }
+}
+
+function handleTapTempo() {
+  const now = performance.now();
+  const result = $('metro-tap-result');
+  const btn = $('metro-tap-btn');
+  if (!result) return;
+
+  // Visual feedback
+  if (btn) {
+    btn.classList.remove('tap-flash');
+    void btn.offsetWidth; // force reflow
+    btn.classList.add('tap-flash');
+  }
+
+  // Reset if too long since last tap
+  if (tapTimes.length > 0 && now - tapTimes[tapTimes.length - 1] > TAP_TIMEOUT) {
+    tapTimes = [];
+  }
+
+  tapTimes.push(now);
+
+  // Keep only last N samples
+  if (tapTimes.length > TAP_MAX_SAMPLES) {
+    tapTimes = tapTimes.slice(-TAP_MAX_SAMPLES);
+  }
+
+  // Need at least 2 taps to calculate
+  if (tapTimes.length < 2) {
+    result.textContent = 'tap…';
+    result.classList.remove('active');
+    // Start reset timer
+    if (tapResetTimer) clearTimeout(tapResetTimer);
+    tapResetTimer = setTimeout(resetTapTempo, TAP_TIMEOUT);
+    return;
+  }
+
+  // Calculate intervals
+  const intervals = [];
+  for (let i = 1; i < tapTimes.length; i++) {
+    intervals.push(tapTimes[i] - tapTimes[i - 1]);
+  }
+
+  // Filter out outliers (intervals that are >2x or <0.5x the median)
+  const sorted = [...intervals].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  const filtered = intervals.filter(iv => iv >= median * 0.4 && iv <= median * 2.5);
+
+  if (filtered.length === 0) {
+    result.textContent = 'tap…';
+    result.classList.remove('active');
+    if (tapResetTimer) clearTimeout(tapResetTimer);
+    tapResetTimer = setTimeout(resetTapTempo, TAP_TIMEOUT);
+    return;
+  }
+
+  const avgInterval = filtered.reduce((a, b) => a + b, 0) / filtered.length;
+  let bpm = Math.round(60000 / avgInterval);
+  bpm = Math.max(TAP_MIN_BPM, Math.min(TAP_MAX_BPM, bpm));
+
+  result.textContent = `${bpm} BPM`;
+  result.classList.add('active');
+
+  // Auto-apply to metronome
+  metroSetBpm(bpm);
+
+  // Reset timer
+  if (tapResetTimer) clearTimeout(tapResetTimer);
+  tapResetTimer = setTimeout(resetTapTempo, TAP_TIMEOUT);
 }
 
 // ===== Song Statistics =====
