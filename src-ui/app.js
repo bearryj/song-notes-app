@@ -4467,6 +4467,17 @@ function setupEvents() {
       e.preventDefault(); const song = getSong(currentSongId);
       if (song) { pushVersion(); song.title = $('song-title').value || 'Untitled'; song.updated_at = new Date().toISOString(); saveSingleSong(song); toast('Saved'); }
     }
+    if ((e.ctrlKey || e.metaKey) && e.key === '/') { e.preventDefault(); showShortcuts(); }
+    if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      // Only trigger ? when not focused on an input/textarea
+      const tag = document.activeElement?.tagName;
+      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+        e.preventDefault(); showShortcuts();
+      }
+    }
+    if (e.key === 'Escape' && $('shortcuts-overlay').style.display !== 'none') {
+      hideShortcuts();
+    }
   });
 
   // Mobile keyboard handling
@@ -5241,3 +5252,29 @@ function initDragDrop() {
     }
   });
 }
+
+// ===== Keyboard Shortcuts Overlay =====
+function showShortcuts() {
+  const overlay = $('shortcuts-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+  // Focus the close button for accessibility
+  const closeBtn = overlay.querySelector('.shortcuts-close');
+  if (closeBtn) closeBtn.focus();
+}
+
+function hideShortcuts() {
+  const overlay = $('shortcuts-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+}
+
+// Wire up shortcuts overlay close
+document.addEventListener('DOMContentLoaded', () => {
+  const overlay = $('shortcuts-overlay');
+  if (!overlay) return;
+  const closeBtn = overlay.querySelector('.shortcuts-close');
+  const backdrop = overlay.querySelector('.shortcuts-backdrop');
+  if (closeBtn) closeBtn.addEventListener('click', hideShortcuts);
+  if (backdrop) backdrop.addEventListener('click', hideShortcuts);
+});

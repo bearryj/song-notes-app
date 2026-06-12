@@ -408,6 +408,35 @@
     </div>
   </template>
 
+  <!-- Keyboard Shortcuts Overlay -->
+  <div id="shortcuts-overlay" style="display:none;" role="dialog" aria-label="Keyboard shortcuts" aria-modal="true">
+    <div class="shortcuts-backdrop"></div>
+    <div class="shortcuts-content">
+      <div class="shortcuts-header">
+        <h2>Keyboard Shortcuts</h2>
+        <button class="shortcuts-close" aria-label="Close shortcuts">✕</button>
+      </div>
+      <div class="shortcuts-body">
+        <div class="shortcuts-group">
+          <div class="shortcuts-group-label">Editor</div>
+          <div class="shortcut-row"><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>S</kbd></span><span class="shortcut-desc">Save song</span></div>
+          <div class="shortcut-row"><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>Z</kbd></span><span class="shortcut-desc">Undo last change</span></div>
+          <div class="shortcut-row"><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>/</kbd></span><span class="shortcut-desc">Show shortcuts</span></div>
+        </div>
+        <div class="shortcuts-group">
+          <div class="shortcuts-group-label">Navigation</div>
+          <div class="shortcut-row"><span class="shortcut-keys"><kbd>?</kbd></span><span class="shortcut-desc">Show shortcuts</span></div>
+          <div class="shortcut-row"><span class="shortcut-keys"><kbd>Esc</kbd></span><span class="shortcut-desc">Close sheet / Go back</span></div>
+        </div>
+        <div class="shortcuts-group">
+          <div class="shortcuts-group-label">Text Editing</div>
+          <div class="shortcut-row"><span class="shortcut-keys"><kbd>Enter</kbd></span><span class="shortcut-desc">Split line / Submit input</span></div>
+          <div class="shortcut-row"><span class="shortcut-keys"><kbd>Shift</kbd>+<kbd>Enter</kbd></span><span class="shortcut-desc">New line in lyric editor</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="./app.js"></script>
 </body>
 </html>
