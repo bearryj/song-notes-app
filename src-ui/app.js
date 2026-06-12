@@ -1170,7 +1170,94 @@ function renderSongList(filter = '') {
     return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
   });
 
-  // Build date-based sections
+  // Gallery mode: flat card grid (no date sections)
+  if (galleryMode) {
+    let html = '';
+    sorted.forEach((s, i) => {
+      const pinned = s.pinned ? '<span class="card-pin">★</span>' : '';
+      const keyBadge = s.key ? `<span class="card-key">${esc(s.key)}</span>` : '';
+      const secCount = s.sections?.length || 0;
+      const secLabel = secCount === 1 ? 'section' : 'sections';
+      // Extract unique chords for preview (up to 6)
+      const chordSet = [];
+      if (s.sections) {
+        for (const sec of s.sections) {
+          if (sec.lines) for (const l of sec.lines) {
+            if (l.chords) for (const c of l.chords) {
+              if (c.name && !chordSet.includes(c.name)) chordSet.push(c.name);
+              if (chordSet.length >= 6) break;
+            }
+            if (chordSet.length >= 6) break;
+          }
+          if (chordSet.length >= 6) break;
+        }
+      }
+      const chordPreview = chordSet.length ? `<div class="card-chords">${chordSet.map(c => `<span class="card-chord-chip">${esc(c)}</span>`).join('')}</div>` : '';
+      const tagHtml = (s.tags && s.tags.length) ? `<div class="card-tags">${s.tags.slice(0, 3).map(t => `<span class="card-tag">${esc(t)}</span>`).join('')}${s.tags.length > 3 ? `<span class="card-tag-more">+${s.tags.length - 3}</span>` : ''}</div>` : '';
+      const pinLabel = s.pinned ? '☆' : '★';
+      html += `<div class="gallery-card" data-id="${s.id}" style="animation-delay:${i * 30}ms">
+        <div class="gallery-card-top">
+          ${pinned}
+          <span class="card-title">${esc(s.title || 'Untitled')}</span>
+          ${keyBadge}
+        </div>
+        ${chordPreview}
+        <div class="gallery-card-bottom">
+          <span class="card-meta">${secCount} ${secLabel}</span>
+          <span class="card-date">${fmtDate(s.updated_at)}</span>
+        </div>
+        ${tagHtml}
+        <div class="gallery-card-actions">
+          <button class="gallery-card-pin" data-action="pin" aria-label="${s.pinned ? 'Unpin' : 'Pin'}">${pinLabel}</button>
+          <button class="gallery-card-delete" data-action="delete" aria-label="Delete">✕</button>
+        </div>
+      </div>`;
+    });
+    el.innerHTML = html;
+
+    // Gallery card events: click to open, long-press context, tap action buttons
+    el.querySelectorAll('.gallery-card').forEach(card => {
+      const songId = card.dataset.id;
+      let longPressTimer = null;
+
+      // Click to open (unless tapping action buttons)
+      card.addEventListener('click', e => {
+        if (e.target.closest('.gallery-card-actions')) return;
+        currentSongId = songId;
+        localStorage.setItem('songs_app_last', currentSongId);
+        openEditor(currentSongId);
+        pushView('editor-view');
+      });
+
+      // Long press for context menu
+      card.addEventListener('touchstart', e => {
+        longPressTimer = setTimeout(() => { longPressTimer = null; showSongContext(songId, card); }, 500);
+      }, { passive: true });
+      card.addEventListener('touchend', () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }, { passive: true });
+      card.addEventListener('touchmove', () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }, { passive: true });
+
+      // Action buttons
+      const pinBtn = card.querySelector('.gallery-card-pin');
+      const delBtn = card.querySelector('.gallery-card-delete');
+      if (pinBtn) pinBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const s = getSong(songId);
+        if (s) { s.pinned = !s.pinned; saveSingleSong(s); renderSongList(filter); toast(s.pinned ? '★ Pinned' : '☆ Unpinned'); }
+      });
+      if (delBtn) delBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        showConfirmSheet({ title: 'Delete Song', body: 'This cannot be undone.', confirmText: 'Delete', confirmClass: 'sheet-danger', onConfirm: async () => {
+          await deleteSong(songId);
+          if (currentSongId === songId) currentSongId = null;
+          renderSongList(filter);
+          toast('Deleted');
+        }});
+      });
+    });
+    return;
+  }
+
+  // List mode: build date-based sections
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today.getTime() - 86400000);
@@ -3973,12 +4060,21 @@ function setupEvents() {
   }
   
   // View toggle (list / gallery)
-  let galleryMode = false;
-  $('view-toggle')?.addEventListener('click', () => {
+  let galleryMode = localStorage.getItem('sn_gallery_mode') === 'true';
+  const songListEl = $('song-list');
+  const viewToggleEl = $('view-toggle');
+  if (songListEl && galleryMode) {
+    songListEl.classList.add('gallery');
+    if (viewToggleEl) viewToggleEl.textContent = '☰';
+  }
+  viewToggleEl?.addEventListener('click', () => {
     galleryMode = !galleryMode;
     const list = $('song-list');
     list.classList.toggle('gallery', galleryMode);
-    $('view-toggle').textContent = galleryMode ? '☰' : '⊞';
+    viewToggleEl.textContent = galleryMode ? '☰' : '⊞';
+    localStorage.setItem('sn_gallery_mode', galleryMode);
+    // Re-render so gallery cards get proper markup
+    renderSongList($('search-input')?.value || '');
   });
 
   // Tag editor events
