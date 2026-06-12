@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (add song writing session timer)
+2026-06-11 by OWL (directional view transitions)
 
 ## Build & Test Commands
 ```bash
@@ -64,6 +64,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Song list sort (4 modes: recent, A→Z, Z→A, Key — pinned always first, persisted)
 - Swipe-to-action on song list (swipe left to reveal pin ★ and delete ✕ buttons, snap animation, tap-outside-to-close)
 - Song writing session timer (tracks editing time per song, persists across sessions, displays in editor nav bar)
+- Directional view transitions (forward nav slides right→left, back nav slides left→right with nav bar parallax)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
