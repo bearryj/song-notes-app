@@ -3711,3 +3711,50 @@ body.ios-device .toolbar-sheet-content {
 .offline-queue:not(:empty)::before {
   content: '· ';
 }
+
+/* ===== Focus Mode ===== */
+#editor-view.focus-mode .mobile-toolbar,
+#editor-view.focus-mode .toolbar-fab,
+#editor-view.focus-mode #chord-ribbon {
+  display: none !important;
+}
+#editor-view.focus-mode .editor-body {
+  background: var(--bg);
+  padding-top: 8px;
+  padding-bottom: 48px;
+}
+#editor-view.focus-mode .editor-nav {
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+#editor-view.focus-mode .editor-nav .nav-title-input {
+  font-weight: 500;
+}
+#focus-btn.active {
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(10, 132, 255, 0.5);
+}
+/* Subtle vignette on edges when in focus mode */
+#editor-view.focus-mode .editor-body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: linear-gradient(to bottom, var(--bg), transparent);
+  pointer-events: none;
+  z-index: 5;
+}
+#editor-view.focus-mode .editor-body::after {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: linear-gradient(to top, var(--bg), transparent);
+  pointer-events: none;
+  z-index: 5;
+}

@@ -33,6 +33,9 @@ let activeSetlistId = null;
 // ===== Chord Ribbon Collapse State =====
 let chordRibbonCollapsed = localStorage.getItem('chordRibbonCollapsed') === 'true';
 
+// ===== Focus Mode State =====
+let focusMode = localStorage.getItem('sn_focusMode') === 'true';
+
 // ===== Metronome State =====
 let metroBpm = 120;
 let metroTimeSig = 4;
@@ -151,6 +154,12 @@ function popView() {
     viewStack.pop();
     showView(viewStack[viewStack.length - 1], 'back');
     if (pushCallback) { pushCallback(); pushCallback = null; }
+  }
+  // Exit focus mode when leaving editor
+  if (focusMode) {
+    focusMode = false;
+    localStorage.setItem('sn_focusMode', 'false');
+    applyFocusMode();
   }
 }
 
@@ -970,6 +979,31 @@ function updateSessionTimerDisplay() {
   if (!el || !sessionStartTime) return;
   const elapsed = sessionTotalMs + (Date.now() - sessionStartTime);
   el.textContent = formatSessionTime(elapsed);
+}
+
+// ===== Focus Mode =====
+function toggleFocusMode() {
+  focusMode = !focusMode;
+  localStorage.setItem('sn_focusMode', focusMode ? 'true' : 'false');
+  applyFocusMode();
+}
+
+function applyFocusMode() {
+  const editor = $('editor-view');
+  if (!editor) return;
+  editor.classList.toggle('focus-mode', focusMode);
+  const focusBtn = $('focus-btn');
+  if (focusBtn) {
+    focusBtn.classList.toggle('active', focusMode);
+    focusBtn.title = focusMode ? 'Exit focus' : 'Focus mode';
+  }
+  // Hide/show toolbar and chord ribbon
+  const toolbar = $('mobile-toolbar');
+  const fab = $('toolbar-fab');
+  const ribbon = $('chord-ribbon');
+  if (toolbar) toolbar.style.display = focusMode ? 'none' : '';
+  if (fab) fab.style.display = focusMode ? 'none' : '';
+  if (ribbon) ribbon.style.display = focusMode ? 'none' : '';
 }
 
 // Folders
@@ -4073,6 +4107,20 @@ function setupEvents() {
   // Undo button
   $('undo-btn').addEventListener('click', undoVersion);
 
+  // Focus mode button
+  $('focus-btn')?.addEventListener('click', () => {
+    toggleFocusMode();
+    // Re-apply toolbar visibility state after toolbar auto-hide logic
+    setTimeout(() => {
+      if (focusMode) {
+        const toolbar = $('mobile-toolbar');
+        const fab = $('toolbar-fab');
+        if (toolbar) toolbar.style.display = 'none';
+        if (fab) fab.style.display = 'none';
+      }
+    }, 50);
+  });
+
   // Recording
   $('record-btn').addEventListener('click', async () => {
     if (isRecording) { stopRecording(); return; }
@@ -4538,6 +4586,9 @@ async function init() {
   renderFolders();
   setupEvents();
   initDragDrop();
+
+  // Restore focus mode
+  applyFocusMode();
 
   // Offline/online detection
   loadSyncQueueMeta();

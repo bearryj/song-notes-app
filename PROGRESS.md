@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (drag-and-drop ChordPro support + esc() optimization)
+2026-06-12 by OWL (Focus Mode for editor)
 
 ## Build & Test Commands
 ```bash
@@ -66,7 +66,8 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Song writing session timer (tracks editing time per song, persists across sessions, displays in editor nav bar)
 - Directional view transitions (forward nav slides right→left, back nav slides left→right with nav bar parallax)
 - Move song to folder (from song context menu, folder picker sheet with current folder checkmark, drag-to-dismiss)
-- Unsaved changes protection (beforeunload warning when edits pending, visibilitychange auto-save on mobile background/tab switch)
+|- Unsaved changes protection (beforeunload warning when edits pending, visibilitychange auto-save on mobile background/tab switch)
+|- Focus Mode (distraction-free editor toggle, hides toolbar/ribbon/FAB, blurred nav bar, vignette edges, persists to localStorage)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
