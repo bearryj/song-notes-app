@@ -1122,6 +1122,54 @@ function renderEditorBody(song) {
     editorDiv.appendChild(addLineBtn);
     el.appendChild(sectionEl);
   });
+  renderChordRibbon(song);
+}
+
+function renderChordRibbon(song) {
+  const ribbon = $('chord-ribbon');
+  if (!ribbon) return;
+
+  // Collect all unique chords in order with section labels
+  const seen = new Set();
+  const items = [];
+  song.sections.forEach(sec => {
+    sec.lines.forEach(line => {
+      line.chords.forEach(ch => {
+        if (!ch.name || seen.has(ch.name)) return;
+        seen.add(ch.name);
+        items.push({ name: ch.name, section: sec.type });
+      });
+    });
+  });
+
+  if (!items.length) { ribbon.innerHTML = ''; return; }
+
+  ribbon.innerHTML = items.map(item =>
+    `<div class="chord-ribbon-item" data-chord="${esc(item.name)}"><span class="chord-name">${esc(item.name)}</span><span class="chord-section">${esc(item.section)}</span></div>`
+  ).join('');
+
+  // Tap to highlight & scroll to first occurrence
+  ribbon.querySelectorAll('.chord-ribbon-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const chordName = el.dataset.chord;
+      // Highlight matching chord markers in the editor
+      document.querySelectorAll('.chord-marker').forEach(m => {
+        m.classList.toggle('chord-highlight', m.textContent === chordName);
+      });
+      // Scroll to first matching occurrence
+      const markers = document.querySelectorAll('.chord-marker');
+      for (const m of markers) {
+        if (m.textContent === chordName) {
+          m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          break;
+        }
+      }
+      // Remove highlight after 2s
+      setTimeout(() => {
+        document.querySelectorAll('.chord-marker.chord-highlight').forEach(m => m.classList.remove('chord-highlight'));
+      }, 2000);
+    });
+  });
 }
 
 function renderLine(container, song, si, li, line) {
@@ -1174,6 +1222,7 @@ function renderLine(container, song, si, li, line) {
       marker.textContent = ch.name;
       marker.style.left = ch.x + 'px';
       marker.dataset.chordIdx = i;
+      marker.dataset.chordName = ch.name;
 
       // Tap to edit
       marker.addEventListener('click', e => {

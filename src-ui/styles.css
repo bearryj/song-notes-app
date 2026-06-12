@@ -321,6 +321,52 @@ html, body {
 .editor-nav {
   border-bottom: 1px solid var(--separator);
 }
+/* ===== Chord Progression Ribbon ===== */
+.chord-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--separator);
+  min-height: 36px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  transition: opacity 0.2s ease;
+}
+.chord-ribbon:empty { display: none; }
+.chord-ribbon::-webkit-scrollbar { display: none; }
+
+.chord-ribbon-item {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+  min-width: 32px;
+}
+.chord-ribbon-item:hover { background: var(--bg-secondary); }
+.chord-ribbon-item:active { transform: scale(0.92); }
+.chord-ribbon-item .chord-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--chord);
+  font-family: var(--mono);
+}
+.chord-ribbon-item .chord-section {
+  font-size: 9px;
+  color: var(--fg-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
 .editor-body {
   flex: 1;
   overflow-y: auto;
@@ -1244,6 +1290,17 @@ html, body {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-4px); }
   75% { transform: translateX(4px); }
+}
+.chord-marker.chord-highlight {
+  background: rgba(48, 209, 88, 0.5) !important;
+  box-shadow: 0 0 12px rgba(48, 209, 88, 0.5), 0 0 24px rgba(48, 209, 88, 0.2);
+  animation: chord-pulse 0.4s ease;
+  z-index: 10;
+}
+@keyframes chord-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
 }
 
 /* ===== Record Button State ===== */
