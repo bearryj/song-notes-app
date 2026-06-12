@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (directional view transitions)
+2026-06-12 by OWL (error recovery UI)
 
 ## Build & Test Commands
 ```bash
@@ -95,6 +95,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Swipe-to-action on song list items (2026-06-11) — swipe left to reveal pin (★) and delete (✕) action buttons, snap-open/close with smooth animation, tap-outside-to-close
 - [x] Auto-save song title on input (2026-06-11) — title input triggers auto-save with 1200ms debounce, syncs title into song object before save
 - [x] Song writing session timer (2026-06-11) — elapsed editing time shown in editor nav, persists session_ms to song data, accumulates across sessions
+- [x] Error recovery UI — init error state with retry button + global unhandledrejection/error handlers (2026-06-12) — try/catch around init(), shows error-state with Try Again button, window listeners for uncaught errors surface toast notifications
 
 
 ## Architecture Quick Ref
