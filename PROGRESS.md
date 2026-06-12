@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (error recovery UI)
+2026-06-12 by OWL (UI overhaul: emoji→glyphs, nav cleanup, grouped toolbar, setlist nav button)
 
 ## Build & Test Commands
 ```bash
@@ -45,7 +45,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Mobile bottom sheet chord popup with large touch targets
 - Collapsible mobile toolbar with auto-hide on scroll
 - Floating action button (FAB) for quick toolbar access
-- Toolbar bottom sheet with 8 tools in grid layout
+- Toolbar bottom sheet with grouped sections (Song, Export, Tools, Organize, View)
 - Apple Notes-level UX: theme, info panel, gallery view, smart folders, save indicator
 - Song templates: Blank, Verse-Chorus, AABA, Verse Only
 - Desktop-grade chord row + quick-select popup on mobile
@@ -86,6 +86,9 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 17. [x] Undo for section and line deletion (2026-06-11) — undoBuffer with snackbar toast, 4s dismiss timer, restores exact position
 18. [x] Pull-to-refresh on song list (2026-06-11) — touch gesture to reload data from storage, animated indicator
 19. [x] Accessibility: ARIA roles/labels + :focus-visible keyboard nav (2026-06-11) — role/aria-label on all interactive elements, focus ring styles, radiogroup/radio roles, aria-live regions
+20. [x] UI overhaul — emoji→text glyphs, editor nav cleanup, grouped toolbar sections, setlist nav button, info bar readability (2026-06-12)
+21. [ ] Quick song switcher in editor (prev/next or swipe between songs in current folder)
+22. [ ] Chord ribbon — make collapsible
 
 ## Newly Discovered TODOs
 - [x] Add loading spinner/skeleton screens for song list (2026-06-11) — shimmer skeleton with staggered animation on init + refresh
@@ -99,7 +102,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 
 
 ## Architecture Quick Ref
-- **Frontend:** Vanilla JS (src-ui/app.js ~60K), CSS (styles.css ~19K), HTML (index.html)
+- **Frontend:** Vanilla JS (src-ui/app.js ~170K), CSS (styles.css ~72K), HTML (index.html)
 - **Backend:** Rust/Tauri (src-tauri/src/lib.rs) — song CRUD, folder management, file read for import
 - **Data:** JSON files via Tauri file I/O, localStorage fallback for web preview
 - **Chord position:** `{x: <pixel>, name: "G"}` — pixel-based x offset

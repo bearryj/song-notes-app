@@ -189,6 +189,18 @@ html, body {
   font-size: 22px;
   font-weight: 400;
 }
+/* Song switcher buttons — compact, subtle */
+.song-switcher-btn {
+  font-size: 16px;
+  font-weight: 400;
+  padding: 4px 2px;
+  min-width: 28px;
+  color: var(--fg-secondary);
+  opacity: 0.6;
+  transition: opacity 0.15s, color 0.15s;
+}
+.song-switcher-btn:active { opacity: 1; color: var(--accent); }
+.song-switcher-btn:disabled { opacity: 0.15; cursor: default; }
 .nav-btn-group {
   display: flex;
   gap: 2px;
@@ -838,13 +850,16 @@ html, body {
   color: var(--danger);
 }
 .sheet-icon {
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1;
 }
 .sheet-label {
   font-size: 10px;
   font-weight: 500;
   text-align: center;
+}
+.sheet-placeholder {
+  min-height: 72px;
 }
 
 /* ===== New Song Sheet ===== */
@@ -1574,8 +1589,8 @@ body.ios-device .toolbar-sheet-content {
 
 /* ===== Info Bar (word count, metadata) ===== */
 .info-bar {
-  padding: 10px 16px;
-  padding-bottom: calc(10px + var(--safe-bottom));
+  padding: 8px 16px;
+  padding-bottom: calc(8px + var(--safe-bottom));
   font-size: 13px;
   color: var(--fg-tertiary);
   background: var(--bg-surface);

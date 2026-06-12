@@ -1362,6 +1362,100 @@ function renderSongList(filter = '') {
 }
 
 // Editor
+
+// Get the sorted list of songs currently shown in the song list (mirrors renderSongList logic)
+function getCurrentSongList() {
+  let list = songs;
+  if (currentFolder === 'Recently Edited') {
+    list = list.filter(s => {
+      const d = new Date(s.updated_at || s.created_at || 0);
+      return Date.now() - d.getTime() < 7 * 86400000;
+    });
+  } else if (currentFolder !== 'All Songs') {
+    list = list.filter(s => s.folder === currentFolder);
+  }
+  // Note: does NOT apply search filter — switcher navigates the full folder list
+  if (activeTagFilter) {
+    list = list.filter(s => s.tags?.includes(activeTagFilter));
+  }
+  const sorted = [...list].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    if (activeSortMode === 'title-az') return (a.title || '').localeCompare(b.title || '');
+    if (activeSortMode === 'title-za') return (b.title || '').localeCompare(a.title || '');
+    if (activeSortMode === 'key') {
+      const ka = (a.key || 'ZZZ').toLowerCase(), kb = (b.key || 'ZZZ').toLowerCase();
+      return ka.localeCompare(kb);
+    }
+    return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+  });
+  return sorted;
+}
+
+function switchToSong(targetId, direction) {
+  const song = getSong(targetId);
+  if (!song || targetId === currentSongId) return;
+  // Save current song title
+  const currentSong = getSong(currentSongId);
+  if (currentSong) {
+    currentSong.title = $('song-title').value || 'Untitled';
+    currentSong.updated_at = new Date().toISOString();
+    saveSingleSong(currentSong);
+  }
+  stopSessionTimer();
+  // Apply slide transition on the editor view
+  const editorView = $('editor-view');
+  const isForward = direction === 'forward';
+  editorView.classList.add(isForward ? 'slide-in-right' : 'slide-in-left');
+  void editorView.offsetWidth;
+  editorView.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease';
+  editorView.style.opacity = '0.6';
+  editorView.style.transform = isForward ? 'translateX(-30%)' : 'translateX(30%)';
+  requestAnimationFrame(() => {
+    editorView.style.transform = 'translateX(0)';
+    editorView.style.opacity = '1';
+  });
+  const onEnd = () => {
+    editorView.removeEventListener('transitionend', onEnd);
+    editorView.style.transition = '';
+    editorView.style.opacity = '';
+    editorView.style.transform = '';
+    editorView.classList.remove('slide-in-left', 'slide-in-right');
+  };
+  editorView.addEventListener('transitionend', onEnd);
+  setTimeout(onEnd, 380);
+  // Now load the new song
+  currentSongId = targetId;
+  localStorage.setItem('songs_app_last', currentSongId);
+  openEditor(targetId);
+  updateSwitcherButtons();
+}
+
+function prevSong() {
+  const list = getCurrentSongList();
+  if (!list.length) return;
+  const idx = list.findIndex(s => s.id === currentSongId);
+  const prevIdx = idx <= 0 ? list.length - 1 : idx - 1;
+  switchToSong(list[prevIdx].id, 'back');
+}
+
+function nextSong() {
+  const list = getCurrentSongList();
+  if (!list.length) return;
+  const idx = list.findIndex(s => s.id === currentSongId);
+  const nextIdx = idx >= list.length - 1 ? 0 : idx + 1;
+  switchToSong(list[nextIdx].id, 'forward');
+}
+
+function updateSwitcherButtons() {
+  const list = getCurrentSongList();
+  const hasMultiple = list.length > 1;
+  const prevBtn = $('prev-song-btn');
+  const nextBtn = $('next-song-btn');
+  if (prevBtn) prevBtn.disabled = !hasMultiple;
+  if (nextBtn) nextBtn.disabled = !hasMultiple;
+}
+
 function openEditor(id) {
   const song = getSong(id);
   if (!song) return;
@@ -1381,6 +1475,8 @@ function openEditor(id) {
   if (keyBtn) keyBtn.textContent = song.key ? `Set Key: ${song.key}` : 'Set Key: —';
   // Start session timer
   startSessionTimer();
+  // Update switcher button state
+  updateSwitcherButtons();
 }
 
 function renderEditorBody(song) {
@@ -3430,6 +3526,10 @@ function setupEvents() {
   $('back-to-folders').addEventListener('click', popView);
   $('back-to-songs').addEventListener('click', () => saveCurrentSongAndGoBack());
 
+  // Quick song switcher
+  $('prev-song-btn')?.addEventListener('click', prevSong);
+  $('next-song-btn')?.addEventListener('click', nextSong);
+
   function saveCurrentSongAndGoBack() {
     const song = getSong(currentSongId);
     if (song) {
@@ -3577,6 +3677,9 @@ function setupEvents() {
             await deleteSong(currentSongId); currentSongId = null; popView(); renderSongList(); toast('Deleted');
           }
         });
+      } else if (a === 'transpose') {
+        const song = getSong(currentSongId);
+        if (song) showKeyPicker(song);
       } else if (a === 'setlist') {
         showSetlistView();
       } else if (a === 'share-song') {
