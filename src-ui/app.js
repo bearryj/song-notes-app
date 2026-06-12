@@ -2319,7 +2319,32 @@ function renderLine(container, song, si, li, line) {
 
       chordRow.appendChild(marker);
     });
-    // Line delete button (always at end of chord row)
+    // Line action buttons (always at end of chord row)
+    // Duplicate line button
+    const dupBtn = document.createElement('button');
+    dupBtn.className = 'line-dup-btn';
+    dupBtn.textContent = '⧉';
+    dupBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const copy = JSON.parse(JSON.stringify(line));
+      song.sections[si].lines.splice(li + 1, 0, copy);
+      saveSingleSong(song); renderEditorBody(song);
+      undoBuffer = {
+        type: 'line-dup', songId: song.id, sectionIndex: si, lineIndex: li + 1,
+        restore: () => {
+          const s = getSong(song.id);
+          if (!s || !s.sections[si]) return;
+          s.sections[si].lines.splice(li + 1, 1);
+          s.updated_at = new Date().toISOString();
+          saveSingleSong(s); renderEditorBody(s);
+          toast('Line duplication undone', 'success');
+        }
+      };
+      showUndoToast('Line duplicated');
+    });
+    chordRow.appendChild(dupBtn);
+
+    // Delete line button
     const delBtn = document.createElement('button');
     delBtn.className = 'line-delete-btn';
     delBtn.textContent = '✕';

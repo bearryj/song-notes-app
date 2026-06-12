@@ -783,13 +783,33 @@ html, body {
   opacity: 0;
   transition: opacity 0.15s;
 }
+.chord-row .line-dup-btn {
+  position: absolute;
+  right: 12px;
+  top: 0;
+  background: none;
+  border: none;
+  color: var(--fg-tertiary);
+  font-size: 10px;
+  cursor: pointer;
+  padding: 2px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
 .chord-row:hover .line-delete-btn,
-.chord-row:active .line-delete-btn {
+.chord-row:active .line-delete-btn,
+.chord-row:hover .line-dup-btn,
+.chord-row:active .line-dup-btn {
   opacity: 0.6;
 }
 .chord-row .line-delete-btn:active {
   opacity: 1;
   color: var(--danger);
+}
+.chord-row .line-dup-btn:active {
+  opacity: 1;
+  color: var(--accent);
 }
 .chord-line .lyric-text {
   font-size: 17px;
