@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (accessibility — ARIA + focus-visible)
+2026-06-11 by OWL (swipe-to-action on song list items)
 
 ## Build & Test Commands
 ```bash
@@ -62,6 +62,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 62|- Visual key picker for transposition (circle-of-fifths grid, 12 keys, quick ♭/♯ buttons)
 - Duplicate song (deep copy from toolbar sheet, auto-suffixes title with " (Copy)")
 - Song list sort (4 modes: recent, A→Z, Z→A, Key — pinned always first, persisted)
+- Swipe-to-action on song list (swipe left to reveal pin ★ and delete ✕ buttons, snap animation, tap-outside-to-close)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -89,6 +90,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Song list sort options (recent, A-Z, Z-A, key) (2026-06-11) — sort button in nav bar, popover with 4 modes, pinned always first, persisted to localStorage
 - [x] Support drag files into app for import (desktop) (2026-06-11) — drag-and-drop overlay on #app container, filters .txt/.md, reuses importFiles(), bounce animation
 - [x] Chord progression ribbon in editor (2026-06-11) — horizontal strip showing unique chords per section, tap to highlight + scroll to first occurrence in body
+- [x] Swipe-to-action on song list items (2026-06-11) — swipe left to reveal pin (★) and delete (✕) action buttons, snap-open/close with smooth animation, tap-outside-to-close
 
 
 ## Architecture Quick Ref
