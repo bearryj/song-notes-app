@@ -755,7 +755,7 @@ function toggleRecordingsDropdown() {
 }
 
 // Render helpers
-function esc(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+function esc(text) { return (text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDate(iso) {
   if (!iso) return '';
   const diff = Date.now() - new Date(iso).getTime();
@@ -5180,12 +5180,12 @@ function initDragDrop() {
     overlay.classList.remove('active');
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
-      // Filter to .txt and .md files
-      const valid = Array.from(files).filter(f => /\.(txt|md|text)$/i.test(f.name));
+      // Filter to supported file types (matches file input accept list)
+      const valid = Array.from(files).filter(f => /\.(txt|md|text|cho|crd|chopro)$/i.test(f.name));
       if (valid.length > 0) {
         importFiles(valid);
       } else {
-        toast('Drop .txt or .md files to import', 'error');
+        toast('Drop .txt, .md, or ChordPro (.cho/.crd/.chopro) files to import', 'error');
       }
     }
   });
