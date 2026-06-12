@@ -1102,6 +1102,51 @@ html, body {
   to { opacity: 0; transform: translateX(-50%) translateY(-8px); }
 }
 
+/* ===== Drag-and-Drop Overlay ===== */
+.drag-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(10, 132, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.drag-overlay.active {
+  display: flex;
+}
+.drag-overlay-content {
+  text-align: center;
+  border: 2px dashed var(--accent);
+  border-radius: 20px;
+  padding: 40px 48px;
+  background: rgba(10, 132, 255, 0.08);
+}
+.drag-icon {
+  font-size: 48px;
+  line-height: 1;
+  color: var(--accent);
+  margin-bottom: 12px;
+  animation: drag-bounce 1.2s ease-in-out infinite;
+}
+.drag-text {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 6px;
+}
+.drag-hint {
+  font-size: 14px;
+  color: var(--fg-secondary);
+}
+@keyframes drag-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
 /* ===== Chord Popup — Mobile Bottom Sheet ===== */
 .chord-popup-sheet {
   position: fixed;

@@ -2414,11 +2414,17 @@ function renderPluginList() {
 }
 
 // Import
-function importFiles() {
-  const inp = document.createElement('input'); inp.type = 'file'; inp.multiple = true; inp.accept = '.txt,.md,.text';
-  inp.onchange = async e => {
+function importFiles(fileList) {
+  const files = fileList || (() => {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.multiple = true; inp.accept = '.txt,.md,.text';
+    inp.onchange = async e => { if (e.target.files.length) importFiles(e.target.files); };
+    inp.click();
+    return null;
+  })();
+  if (!files) return;
+  (async () => {
     let n = 0;
-    for (const file of e.target.files) {
+    for (const file of files) {
       try {
         const content = await file.text();
         const name = file.name.replace(/\.[^.]+$/, '');
@@ -2426,9 +2432,9 @@ function importFiles() {
       } catch (err) {}
     }
     await saveSongs(); renderSongList(); toast(`Imported ${n} song${n !== 1 ? 's' : ''}`);
-  };
-  inp.click();
+  })();
 }
+
 
 function parseImported(title, content) {
   const id = generateId();
@@ -3497,6 +3503,7 @@ async function init() {
   
   renderFolders();
   setupEvents();
+  initDragDrop();
 }
 
 // ===== Metronome Engine =====
@@ -4019,4 +4026,51 @@ function setupTagEditorEvents() {
       }
     });
   }
+}
+
+
+// ===== Drag-and-Drop File Import =====
+function initDragDrop() {
+  const overlay = $('drag-overlay');
+  if (!overlay) return;
+  let dragCounter = 0;
+
+  document.addEventListener('dragenter', e => {
+    e.preventDefault();
+    // Only show overlay for file drags
+    if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+      dragCounter++;
+      overlay.classList.add('active');
+    }
+  });
+
+  document.addEventListener('dragleave', e => {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0) {
+      dragCounter = 0;
+      overlay.classList.remove('active');
+    }
+  });
+
+  document.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    dragCounter = 0;
+    overlay.classList.remove('active');
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      // Filter to .txt and .md files
+      const valid = Array.from(files).filter(f => /\.(txt|md|text)$/i.test(f.name));
+      if (valid.length > 0) {
+        importFiles(valid);
+      } else {
+        toast('Drop .txt or .md files to import', 'error');
+      }
+    }
+  });
 }
