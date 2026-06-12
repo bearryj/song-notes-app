@@ -1163,6 +1163,60 @@ html, body {
   background: var(--accent);
 }
 
+/* ===== Folder Picker (Move to Folder) ===== */
+.folder-picker-list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: 40vh;
+  padding: 4px 0;
+}
+.folder-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  color: var(--fg);
+  font-size: 16px;
+  font-family: var(--font);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.folder-picker-item:active {
+  background: var(--bg-tertiary);
+}
+.folder-picker-item.selected {
+  color: var(--accent);
+}
+.folder-picker-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.folder-picker-name {
+  flex: 1;
+  font-weight: 500;
+}
+.folder-picker-check {
+  font-size: 16px;
+  color: var(--accent);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.folder-picker-empty {
+  padding: 20px 16px;
+  text-align: center;
+  color: var(--fg-tertiary);
+  font-size: 14px;
+}
+
 /* ===== FAB (Floating Action Button) ===== */
 .toolbar-fab {
   position: fixed;

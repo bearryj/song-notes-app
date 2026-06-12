@@ -1012,6 +1012,7 @@ function showSongContext(songId, anchorEl) {
     menu.innerHTML = `
       <button data-action="pin">★ Pin</button>
       <button data-action="duplicate">⧉ Duplicate</button>
+      <button data-action="move-folder">◎ Move to Folder</button>
       <button data-action="export-txt">Export Text</button>
       <button data-action="export-md">Export MD</button>
       <button data-action="delete" class="danger">Delete</button>
@@ -1040,6 +1041,8 @@ function showSongContext(songId, anchorEl) {
           await saveSongs();
           renderSongList($('search-input').value);
           toast('Duplicated');
+        } else if (btn.dataset.action === 'move-folder') {
+          showMoveToFolderSheet(s);
         } else if (btn.dataset.action === 'export-txt') {
           downloadFile(buildExportText(s), `${s.title}.txt`, 'text/plain');
         } else if (btn.dataset.action === 'export-md') {
@@ -1072,6 +1075,79 @@ function showSongContext(songId, anchorEl) {
   menu.style.left = 'auto';
   menu.style.right = '16px';
   menu.style.display = 'block';
+}
+
+// ===== Move to Folder Sheet =====
+function showMoveToFolderSheet(song) {
+  const sheet = document.createElement('div');
+  sheet.className = 'confirm-sheet';
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-label', 'Move to folder');
+
+  const customFolders = folders.filter(f => f !== 'All Songs' && f !== 'Recently Edited');
+  const currentFolderName = song.folder || null;
+
+  let folderListHtml = '';
+  // "No folder" / All Songs option
+  const isAllSongs = !currentFolderName;
+  folderListHtml += `<button class="folder-picker-item${isAllSongs ? ' selected' : ''}" data-folder="">
+    <span class="folder-picker-icon">♫</span>
+    <span class="folder-picker-name">All Songs</span>
+    ${isAllSongs ? '<span class="folder-picker-check">✓</span>' : ''}
+  </button>`;
+
+  // Custom folders
+  customFolders.forEach(f => {
+    const isCurrent = currentFolderName === f;
+    folderListHtml += `<button class="folder-picker-item${isCurrent ? ' selected' : ''}" data-folder="${escHtml(f)}">
+      <span class="folder-picker-icon">♪</span>
+      <span class="folder-picker-name">${escHtml(f)}</span>
+      ${isCurrent ? '<span class="folder-picker-check">✓</span>' : ''}
+    </button>`;
+  });
+
+  if (!customFolders.length) {
+    folderListHtml += `<div class="folder-picker-empty">No custom folders yet</div>`;
+  }
+
+  sheet.innerHTML = `
+    <div class="confirm-sheet-backdrop"></div>
+    <div class="confirm-sheet-content" style="max-height:60vh;">
+      <div class="confirm-sheet-handle"></div>
+      <div class="confirm-sheet-title">Move to Folder</div>
+      <div class="folder-picker-list">
+        ${folderListHtml}
+      </div>
+      <div class="confirm-sheet-actions">
+        <button class="confirm-sheet-cancel">Cancel</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(sheet);
+
+  const close = () => sheet.remove();
+  sheet.querySelector('.confirm-sheet-backdrop').onclick = close;
+  sheet.querySelector('.confirm-sheet-cancel').onclick = close;
+
+  enableDragToDismiss(sheet, {
+    contentSelector: '.confirm-sheet-content',
+    backdropSelector: '.confirm-sheet-backdrop',
+    onDismiss: close
+  });
+
+  sheet.querySelectorAll('.folder-picker-item').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const targetFolder = btn.dataset.folder || null;
+      if (targetFolder !== currentFolderName) {
+        song.folder = targetFolder;
+        song.updated_at = new Date().toISOString();
+        await saveSingleSong(song);
+        renderSongList($('search-input')?.value || '');
+        toast(targetFolder ? `Moved to ${targetFolder}` : 'Moved to All Songs');
+      }
+      close();
+    });
+  });
 }
 
 // Skeleton loading for song list
