@@ -4256,6 +4256,50 @@ window.addEventListener('error', e => {
   // Don't prevent default — let the browser log it too
 });
 
+// ===== Unsaved Changes Protection =====
+
+// Warn before closing/tab away when there are unsaved edits
+window.addEventListener('beforeunload', e => {
+  if (hasChanges) {
+    // Trigger a synchronous save attempt (best-effort)
+    const song = getSong(currentSongId);
+    if (song) {
+      song.title = $('song-title')?.value || 'Untitled';
+      song.updated_at = new Date().toISOString();
+      // Use Beacon API for reliable delivery on page close
+      try {
+        const blob = new Blob([JSON.stringify({ type: 'emergencySave', song })], { type: 'application/json' });
+        navigator.sendBeacon('/__song_notes_save', blob);
+      } catch {}
+      // Also try sync localStorage
+      try {
+        const key = `song_${song.id}`;
+        localStorage.setItem(key, JSON.stringify(song));
+      } catch {}
+    }
+    // Standard beforeunload prompt — browser shows its own dialog
+    e.preventDefault();
+    return e.returnValue = '';
+  }
+});
+
+// Auto-save when the page loses visibility (app backgrounded on mobile, tab switch, etc.)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && hasChanges) {
+    const song = getSong(currentSongId);
+    if (song) {
+      song.title = $('song-title')?.value || 'Untitled';
+      song.updated_at = new Date().toISOString();
+      // Flush the debounced save immediately
+      clearTimeout(autoSaveTimer);
+      saveSingleSong(song);
+      hasChanges = false;
+      if ($('save-btn')) $('save-btn').disabled = true;
+      updateSaveDot('saved');
+    }
+  }
+});
+
 // ===== Metronome Engine =====
 
 function metroGetCtx() {
