@@ -118,12 +118,12 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [ ] `innerHTML` used 20+ times — audit for XSS vectors. Song titles, chord names, and section types are user-controlled. The `esc()` helper exists but isn't consistently applied at every insertion point.
 
 ### UX Polish
-- [ ] No "delete all recordings" option — audio recordings are base64-encoded and stored per-song; a song with many recordings can balloon in size. Add a "clear recordings" button in the audio panel.
+- [x] No "delete all recordings" option — audio recordings are base64-encoded and stored per-song; a song with many recordings can balloon in size. Add a "clear recordings" button in the audio panel. (already existed — Delete All button in recordings dropdown)
 - [ ] No bulk operations on songs — can't multi-select to delete, move, or add to setlist. Long-press multi-select would be natural on mobile.
 - [x] Setlist chord chart print doesn't include capo transposition — the print view shows raw chords, not capo-adjusted chords. Fix to match the capo-per-song feature. (2026-06-12) — showSetlistPrintPreview() now applies both entry.capo + entry.transpose semitones to displayed chords
-- [ ] No song count in folder headers — folders show name but not how many songs they contain. Add a small count badge.
+- [x] No song count in folder headers — folders show name but not how many songs they contain. Add a small count badge. (already existed — item-meta count in renderFolders())
 - [x] Search doesn't search chord content — only searches title/tags. Musicians often remember a chord progression, not the title. Index chord names in search. (2026-06-12) — added chord name matching in renderSongList() filter
-- [ ] No "recently deleted" / trash — deleted songs are gone forever. Add a 30-day trash folder with restore capability.
+- [x] No "recently deleted" / trash — deleted songs are gone forever. Add a 30-day trash folder with restore capability. (2026-06-12) — trash array in localStorage, "Recently Deleted" smart folder, restore + permanent delete with confirm sheets, 30-day auto-expiry purge on init, days-remaining badge per item
 
 ### Platform
 - [ ] iOS build (requires macOS + Xcode) — blocked on hardware
