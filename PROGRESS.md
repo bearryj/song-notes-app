@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (duplicate line in editor)
+2026-06-12 by OWL (code review — added Next Up section with bugs, perf, UX, platform items)
 
 ## Build & Test Commands
 ```bash
@@ -103,6 +103,32 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Quick song switcher in editor (prev/next or swipe between songs in current folder) (2026-06-12) — compact ‹‹ ›› buttons in editor nav bar, wraps around, slide transition, auto-saves current song, mirrors sort order
 22. [x] Chord ribbon — make collapsible (2026-06-12) — smooth max-height transition, localStorage persistence, toggle stays visible when collapsed
 23. [x] Gallery view with card layout (2026-06-12) — 2-column grid with song cards showing title, key badge, chord preview chips, section count, tags, date; staggered entrance animation; pin/delete action buttons; persisted to localStorage; re-renders on toggle
+
+## Next Up (2026-06-12 — OWL review)
+### Bugs / Reliability
+- [ ] Metronome AudioContext never closed — `metroAudioCtx` is created on first use but `.close()` is never called; on mobile this can hit the browser limit of 6 AudioContexts. Add cleanup on metro stop/panel close.
+- [ ] `metroTimerID` not cleared on page navigation away from editor — if metronome is playing and user navigates back, the interval keeps running in the background. Add cleanup in the back-navigation handler.
+- [ ] `sessionTimerInterval` not cleared on song list re-render — if `startSessionTimer` is called multiple times (e.g. re-opening editor), the old interval leaks. Guard with existing check at line 1014 but verify it's hit in all re-entry paths.
+- [ ] `undoTimer` (line 1129) not cleared on song switch — stale undo buffer from a previous song could restore wrong data. Clear on `switchToSong()`.
+
+### Performance / Code Health
+- [ ] `app.js` is 5,698 lines / ~170KB — extract modules (e.g. `metro.js`, `editor.js`, `songlist.js`, `export.js`) to reduce main file and improve maintainability. Vite handles bundling.
+- [ ] `styles.css` is 4,191 lines / ~72KB — split into feature-scoped files (e.g. `editor.css`, `toolbar.css`, `metronome.css`) and import in `index.html`.
+- [ ] 178 `addEventListener` calls with only a handful of `removeEventListener` — audit for leaked listeners on re-rendered DOM elements (especially song list items, toolbar buttons, and sheet modals).
+- [ ] `innerHTML` used 20+ times — audit for XSS vectors. Song titles, chord names, and section types are user-controlled. The `esc()` helper exists but isn't consistently applied at every insertion point.
+
+### UX Polish
+- [ ] No "delete all recordings" option — audio recordings are base64-encoded and stored per-song; a song with many recordings can balloon in size. Add a "clear recordings" button in the audio panel.
+- [ ] No bulk operations on songs — can't multi-select to delete, move, or add to setlist. Long-press multi-select would be natural on mobile.
+- [ ] Setlist chord chart print doesn't include capo transposition — the print view shows raw chords, not capo-adjusted chords. Fix to match the capo-per-song feature.
+- [ ] No song count in folder headers — folders show name but not how many songs they contain. Add a small count badge.
+- [ ] Search doesn't search chord content — only searches title/tags. Musicians often remember a chord progression, not the title. Index chord names in search.
+- [ ] No "recently deleted" / trash — deleted songs are gone forever. Add a 30-day trash folder with restore capability.
+
+### Platform
+- [ ] iOS build (requires macOS + Xcode) — blocked on hardware
+- [ ] Android: test on a real device — the emulator may not reveal touch/gesture issues, audio recording problems, or localStorage quota limits
+- [ ] PWA manifest missing — no `manifest.json` or service worker; can't "Add to Home Screen" on Android/iOS. Add for installability.
 
 ## Newly Discovered TODOs
 - [x] Add loading spinner/skeleton screens for song list (2026-06-11) — shimmer skeleton with staggered animation on init + refresh
