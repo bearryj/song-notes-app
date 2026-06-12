@@ -1454,6 +1454,8 @@ function renderSongList(filter = '') {
       if (s.key?.toLowerCase().includes(q)) return true;
       if (s.sections?.some(sec => sec.lines?.some(l => l.text?.toLowerCase().includes(q)))) return true;
       if (s.tags?.some(t => t.toLowerCase().includes(q))) return true;
+      // Search chord names (musicians often remember progressions, not titles)
+      if (s.sections?.some(sec => sec.lines?.some(l => l.chords?.some(c => c.name?.toLowerCase().includes(q))))) return true;
       return false;
     });
   }
