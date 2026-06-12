@@ -575,6 +575,9 @@ function triggerAutoSave(song) {
   updateSaveDot('unsaved');
   autoSaveTimer = setTimeout(async () => {
     if (!song) return;
+    // Sync title from input before saving
+    const titleEl = $('song-title');
+    if (titleEl) song.title = titleEl.value || 'Untitled';
     song.updated_at = new Date().toISOString();
     await saveSingleSong(song);
     hasChanges = false;
@@ -3191,6 +3194,12 @@ function setupEvents() {
 
   $('new-song-btn').addEventListener('click', () => {
     showNewSongMenu();
+  });
+
+  // Auto-save on title input
+  $('song-title').addEventListener('input', () => {
+    const song = getSong(currentSongId);
+    if (song) triggerAutoSave(song);
   });
 
   // Debounced search: avoid rebuilding DOM on every keystroke
