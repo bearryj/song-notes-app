@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (Offline indicator + sync queue for mobile)
+2026-06-12 by OWL (ChordPro import + valid ChordPro v6 export)
 
 ## Build & Test Commands
 ```bash
@@ -103,6 +103,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Song writing session timer (2026-06-11) — elapsed editing time shown in editor nav, persists session_ms to song data, accumulates across sessions
 - [x] Error recovery UI — init error state with retry button + global unhandledrejection/error handlers (2026-06-12) — try/catch around init(), shows error-state with Try Again button, window listeners for uncaught errors surface toast notifications
 - [x] Offline indicator + sync queue for mobile (show connection status, queue saves when offline, sync on reconnect) (2026-06-12) — fixed-position top banner with pulsing red dot, deduplicating sync queue persisted to localStorage, auto-flush on reconnect
+- [x] ChordPro import + valid ChordPro v6 export (2026-06-12) — .cho/.crd/.chopro file support, auto-detection via directive scanning, full parser for {title:}/{key:}/{start_of_} sections and [chord] tags, dedicated export builder producing valid ChordPro v6 with {start_of_}/{end_of_} section directives
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~170K), CSS (styles.css ~72K), HTML (index.html)
