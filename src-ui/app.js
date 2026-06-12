@@ -4220,9 +4220,10 @@ function showSetlistPrintPreview() {
     const song = songs.find(s => s.id === entry.songId);
     if (!song) return;
 
-    // Build transposed copy for display
+    // Build transposed copy for display (capo + transpose)
     const displaySong = JSON.parse(JSON.stringify(song));
-    if (entry.transpose) transposeSetlistSongData(displaySong, entry.transpose);
+    const totalSemitones = (entry.transpose || 0) + (entry.capo || 0);
+    if (totalSemitones) transposeSetlistSongData(displaySong, totalSemitones);
 
     html += `<div class="pp-song-block">`;
     html += `<div class="pp-song-title">${idx + 1}. ${esc(song.title || 'Untitled')}`;
