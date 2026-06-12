@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (Unsaved changes protection: beforeunload warning + visibilitychange auto-save)
+2026-06-12 by OWL (Offline indicator + sync queue for mobile)
 
 ## Build & Test Commands
 ```bash
@@ -102,7 +102,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Auto-save song title on input (2026-06-11) — title input triggers auto-save with 1200ms debounce, syncs title into song object before save
 - [x] Song writing session timer (2026-06-11) — elapsed editing time shown in editor nav, persists session_ms to song data, accumulates across sessions
 - [x] Error recovery UI — init error state with retry button + global unhandledrejection/error handlers (2026-06-12) — try/catch around init(), shows error-state with Try Again button, window listeners for uncaught errors surface toast notifications
-- [ ] Offline indicator + sync queue for mobile (show connection status, queue saves when offline, sync on reconnect)
+- [x] Offline indicator + sync queue for mobile (show connection status, queue saves when offline, sync on reconnect) (2026-06-12) — fixed-position top banner with pulsing red dot, deduplicating sync queue persisted to localStorage, auto-flush on reconnect
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~170K), CSS (styles.css ~72K), HTML (index.html)
