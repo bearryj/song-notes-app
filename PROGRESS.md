@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (individual song print chord chart)
+2026-06-12 by OWL (duplicate line in editor)
 
 ## Build & Test Commands
 ```bash
@@ -77,6 +77,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Duplicate song from swipe action (⧉ button in swipe-to-action bar, deep copy with new id and title suffix)
 - Enhanced empty states (SVG illustrations, floating animation, fade-in, CTA button for new users)
 - Individual song print chord chart (print preview overlay with chord/lyric layout, window.print() integration, @media print styles)
+- Duplicate line in editor (⧉ button in chord row, deep copy with chords, undo support via snackbar)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
