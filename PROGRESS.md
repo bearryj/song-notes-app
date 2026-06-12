@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (UI overhaul: emoji→glyphs, nav cleanup, grouped toolbar, setlist nav button)
+2026-06-12 by OWL (Move song to folder: context menu option, folder picker sheet with checkmark, drag-to-dismiss)
 
 ## Build & Test Commands
 ```bash
@@ -65,6 +65,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Swipe-to-action on song list (swipe left to reveal pin ★ and delete ✕ buttons, snap animation, tap-outside-to-close)
 - Song writing session timer (tracks editing time per song, persists across sessions, displays in editor nav bar)
 - Directional view transitions (forward nav slides right→left, back nav slides left→right with nav bar parallax)
+- Move song to folder (from song context menu, folder picker sheet with current folder checkmark, drag-to-dismiss)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
