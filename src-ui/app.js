@@ -1464,7 +1464,16 @@ function renderSongList(filter = '') {
   }
 
   if (!list.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">♪</div><h2>' + (filter ? 'No Results' : 'No Songs') + '</h2><p>' + (filter ? 'Try a different search' : 'Tap + to create one') + '</p></div>';
+    const isFilter = !!filter;
+    const iconSvg = isFilter
+      ? '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="36" cy="36" r="22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="52" y1="52" x2="68" y2="68" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M26 36h20M36 26v20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/></svg>'
+      : '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M58 18v32c0 6-5 11-11 11s-11-5-11-11 5-11 11-11c2 0 4 .5 6 1.5V18L30 24v32c0 6-5 11-11 11S8 62 8 56s5-11 11-11c2 0 4 .5 6 1.5V24l33-6z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="19" cy="56" r="2" fill="currentColor" opacity="0.5"/><circle cx="47" cy="44" r="2" fill="currentColor" opacity="0.5"/></svg>';
+    const title = isFilter ? 'No Results' : 'No Songs Yet';
+    const desc = isFilter ? 'Try a different search term' : 'Create your first song to get started';
+    const cta = isFilter ? '' : '<button class="empty-cta" id="empty-create-btn">Create Song</button>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">' + iconSvg + '</div><h2>' + title + '</h2><p>' + desc + '</p>' + cta + '</div>';
+    const ctaBtn = $('empty-create-btn');
+    if (ctaBtn) ctaBtn.addEventListener('click', () => { if (typeof showNewSongSheet === 'function') showNewSongSheet(); });
     return;
   }
 
@@ -3843,7 +3852,8 @@ function renderSetlistList() {
   const el = $('setlist-list');
   if (!el) return;
   if (!setlists.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">≡</div><h2>No Setlists</h2><p>Tap + to create one</p></div>';
+    const iconSvg = '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="12" y="14" width="56" height="8" rx="2" stroke="currentColor" stroke-width="2" opacity="0.4"/><rect x="12" y="30" width="40" height="8" rx="2" stroke="currentColor" stroke-width="2" opacity="0.6"/><rect x="12" y="46" width="48" height="8" rx="2" stroke="currentColor" stroke-width="2" opacity="0.5"/><rect x="12" y="62" width="30" height="8" rx="2" stroke="currentColor" stroke-width="2" opacity="0.3"/><circle cx="60" cy="34" r="10" stroke="currentColor" stroke-width="2" opacity="0.5"/><path d="M56 34h8M60 30v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/></svg>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">' + iconSvg + '</div><h2>No Setlists</h2><p>Organize songs into setlists for performances</p></div>';
     return;
   }
   el.innerHTML = setlists.map(sl => {
@@ -3935,7 +3945,8 @@ function renderSetlistSongs() {
   if (countEl) countEl.textContent = `${setlist.songs.length} song${setlist.songs.length !== 1 ? 's' : ''}`;
 
   if (!setlist.songs.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">♪</div><h2>Empty Setlist</h2><p>Tap + to add songs</p></div>';
+    const iconSvg = '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M28 20v40M52 20v40M28 20c0 0 8-4 12-4s12 4 12 4M28 60c0 0 8 4 12 4s12-4 12-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/><circle cx="40" cy="40" r="8" stroke="currentColor" stroke-width="2" opacity="0.5"/><path d="M37 40h6M40 37v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/></svg>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">' + iconSvg + '</div><h2>Empty Setlist</h2><p>Tap + to add songs from your library</p></div>';
     return;
   }
 
