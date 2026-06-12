@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (swipe-to-action on song list items)
+2026-06-11 by OWL (auto-save song title on input)
 
 ## Build & Test Commands
 ```bash
@@ -91,6 +91,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Support drag files into app for import (desktop) (2026-06-11) — drag-and-drop overlay on #app container, filters .txt/.md, reuses importFiles(), bounce animation
 - [x] Chord progression ribbon in editor (2026-06-11) — horizontal strip showing unique chords per section, tap to highlight + scroll to first occurrence in body
 - [x] Swipe-to-action on song list items (2026-06-11) — swipe left to reveal pin (★) and delete (✕) action buttons, snap-open/close with smooth animation, tap-outside-to-close
+- [x] Auto-save song title on input (2026-06-11) — title input triggers auto-save with 1200ms debounce, syncs title into song object before save
 
 
 ## Architecture Quick Ref
