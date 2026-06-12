@@ -1741,12 +1741,18 @@ function getCurrentSongList() {
 function switchToSong(targetId, direction) {
   const song = getSong(targetId);
   if (!song || targetId === currentSongId) return;
-  // Save current song title
+  // Save current song title and flush pending auto-save
   const currentSong = getSong(currentSongId);
   if (currentSong) {
     currentSong.title = $('song-title').value || 'Untitled';
     currentSong.updated_at = new Date().toISOString();
+    // Flush any pending auto-save timer to avoid stale writes after switch
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
     saveSingleSong(currentSong);
+    hasChanges = false;
+    if ($('save-btn')) $('save-btn').disabled = true;
+    updateSaveDot('saved');
   }
   stopSessionTimer();
   // Apply slide transition on the editor view
@@ -4044,10 +4050,15 @@ function setupEvents() {
   function saveCurrentSongAndGoBack() {
     const song = getSong(currentSongId);
     if (song) {
-      if (versionHistory.length === 0 && !hasChanges) { /* nothing to save */ }
+      // Flush pending auto-save to capture latest edits
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = null;
       song.title = $('song-title').value || 'Untitled';
       song.updated_at = new Date().toISOString();
       saveSingleSong(song);
+      hasChanges = false;
+      if ($('save-btn')) $('save-btn').disabled = true;
+      updateSaveDot('saved');
     }
     stopSessionTimer();
     popView(); renderSongList();
