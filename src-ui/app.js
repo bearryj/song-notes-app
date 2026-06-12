@@ -16,6 +16,11 @@ let isRecording = false;
 let audioPlayer = new Audio();
 let hasChanges = false;
 
+// ===== Offline / Sync Queue State =====
+let isOnline = navigator.onLine;
+let syncQueue = []; // queued save operations while offline
+let syncQueueTimer = null; // debounce timer for queue flush
+
 // ===== Session Timer State =====
 let sessionStartTime = null;
 let sessionTimerInterval = null;
@@ -202,7 +207,13 @@ async function saveSingleSong(song) {
   const idx = songs.findIndex(s => s.id === song.id);
   if (idx >= 0) songs[idx] = song; else songs.unshift(song);
   localStorage.setItem('songs_app', JSON.stringify(songs));
-  if (isTauri) await tauriSaveSong(song);
+  if (isTauri) {
+    if (isOnline) {
+      await tauriSaveSong(song);
+    } else {
+      enqueueSync('save', song);
+    }
+  }
 }
 
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
@@ -776,6 +787,144 @@ function updateSaveDot(state) {
   const dot = $('auto-save-dot');
   if (!dot) return;
   dot.className = 'save-dot ' + state;
+}
+
+// ===== Offline Indicator & Sync Queue =====
+
+function updateOfflineIndicator() {
+  const el = $('offline-indicator');
+  if (!el) return;
+  if (isOnline) {
+    el.classList.remove('visible');
+    el.setAttribute('aria-hidden', 'true');
+    const qCount = $('offline-queue-count');
+    if (qCount) qCount.textContent = '';
+  } else {
+    el.classList.add('visible');
+    el.setAttribute('aria-hidden', 'false');
+    updateQueueCount();
+  }
+}
+
+function updateQueueCount() {
+  const el = $('offline-queue-count');
+  if (!el) return;
+  const pending = syncQueue.length;
+  el.textContent = pending > 0 ? `${pending} saved offline` : '';
+}
+
+// Wrap saveSingleSong to queue when offline
+async function queueOrSave(song) {
+  if (!song) return;
+  // Always save to localStorage immediately (works offline)
+  const idx = songs.findIndex(s => s.id === song.id);
+  if (idx >= 0) songs[idx] = song; else songs.unshift(song);
+  localStorage.setItem('songs_app', JSON.stringify(songs));
+
+  if (isOnline) {
+    // Online: save to Tauri immediately if available
+    if (isTauri) {
+      try {
+        await tauriSaveSong(song);
+      } catch (e) {
+        console.warn('Tauri save failed, queuing:', e);
+        enqueueSync('save', song);
+      }
+    }
+  } else {
+    // Offline: queue Tauri sync for later
+    if (isTauri) {
+      enqueueSync('save', song);
+    }
+    // Update save dot to show "saved locally" state
+    updateSaveDot('unsaved');
+  }
+}
+
+function enqueueSync(operation, song) {
+  // Deduplicate: replace existing queue entry for same song+operation
+  const existingIdx = syncQueue.findIndex(q => q.songId === song.id && q.operation === operation);
+  if (existingIdx >= 0) {
+    syncQueue[existingIdx] = { operation, song, ts: Date.now(), songId: song.id };
+  } else {
+    syncQueue.push({ operation, song, ts: Date.now(), songId: song.id });
+  }
+  // Persist queue to localStorage for survival across page reloads
+  try {
+    localStorage.setItem('sn_sync_queue', JSON.stringify(syncQueue.map(q => ({ operation: q.operation, songId: q.songId }))));
+  } catch {}
+  updateQueueCount();
+}
+
+function flushSyncQueue() {
+  if (!isOnline || !isTauri || syncQueue.length === 0) return;
+  const queue = [...syncQueue];
+  syncQueue = [];
+  updateQueueCount();
+  // Flush in background
+  (async () => {
+    let success = 0;
+    let failed = 0;
+    for (const item of queue) {
+      try {
+        if (item.operation === 'save') {
+          // Re-merge latest song data in case it was updated while queued
+          const latest = songs.find(s => s.id === item.song.id);
+          await tauriSaveSong(latest || item.song);
+        }
+        success++;
+      } catch (e) {
+        console.warn('Sync flush failed for', item.songId, e);
+        failed++;
+      }
+    }
+    if (success > 0) {
+      toast(`Synced ${success} song${success !== 1 ? 's' : ''} from offline`, 'success');
+    }
+    if (failed > 0) {
+      toast(`Sync failed for ${failed} item${failed !== 1 ? 's' : ''}`, 'error');
+    }
+  })();
+}
+
+// Load persisted queue metadata on init
+function loadSyncQueueMeta() {
+  try {
+    const raw = localStorage.getItem('sn_sync_queue');
+    if (raw) {
+      const meta = JSON.parse(raw);
+      if (Array.isArray(meta) && meta.length > 0) {
+        // Rebuild queue from current song data
+        meta.forEach(m => {
+          const song = songs.find(s => s.id === m.songId);
+          if (song) syncQueue.push({ operation: m.operation, song, ts: Date.now(), songId: m.songId });
+        });
+        if (syncQueue.length > 0) {
+          console.log(`Restored ${syncQueue.length} queued sync items`);
+          localStorage.removeItem('sn_sync_queue');
+          updateQueueCount();
+        }
+      }
+    }
+  } catch {}
+}
+
+function handleOnline() {
+  isOnline = true;
+  updateOfflineIndicator();
+  toast('Back online', 'success');
+  // Flush any queued syncs
+  if (isTauri && syncQueue.length > 0) {
+    const count = syncQueue.length;
+    toast(`Syncing ${count} offline change${count !== 1 ? 's' : ''}…`);
+    flushSyncQueue();
+  }
+}
+
+function handleOffline() {
+  isOnline = false;
+  updateOfflineIndicator();
+  toast('You are offline — changes saved locally', 'info');
 }
 
 // ===== Session Timer =====
@@ -4222,6 +4371,12 @@ async function init() {
   renderFolders();
   setupEvents();
   initDragDrop();
+
+  // Offline/online detection
+  loadSyncQueueMeta();
+  updateOfflineIndicator();
+  window.addEventListener('online', handleOnline);
+  window.addEventListener('offline', handleOffline);
 }
 
 function showInitError(err) {

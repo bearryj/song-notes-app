@@ -9,6 +9,12 @@
 </head>
 <body>
   <div id="app" role="application" aria-label="Song Notes">
+    <!-- Offline Indicator -->
+    <div id="offline-indicator" class="offline-indicator" role="status" aria-live="polite" aria-hidden="true">
+      <span class="offline-dot"></span>
+      <span class="offline-text">Offline</span>
+      <span class="offline-queue" id="offline-queue-count"></span>
+    </div>
     <!-- Folder View -->
     <div id="folder-view" class="view active" role="region" aria-label="Folders">
       <div class="nav-bar">

@@ -3661,3 +3661,53 @@ body.ios-device .toolbar-sheet-content {
 .key-picker-close:active {
   color: var(--fg);
 }
+
+/* ===== Offline Indicator ===== */
+.offline-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(255, 69, 58, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 69, 58, 0.2);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--danger);
+  transform: translateY(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+.offline-indicator.visible {
+  transform: translateY(0);
+}
+.offline-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex-shrink: 0;
+  animation: offline-pulse 2s ease-in-out infinite;
+}
+@keyframes offline-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.offline-text {
+  letter-spacing: 0.3px;
+}
+.offline-queue {
+  font-size: 10px;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+.offline-queue:not(:empty)::before {
+  content: '· ';
+}
