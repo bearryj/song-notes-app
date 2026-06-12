@@ -362,6 +362,7 @@ function showKeyPicker(song) {
       saveSingleSong(song);
       renderEditorBody(song);
       renderSongList();
+      updateEditorKeyBpm(song);
       close();
       toast(`Transposed to ${targetKey}`);
     });
@@ -370,12 +371,67 @@ function showKeyPicker(song) {
   // Quick transpose buttons
   sheet.querySelector('.key-picker-transpose-down').addEventListener('click', () => {
     pushVersion(); transposeSong(song, -1); saveSingleSong(song);
-    renderEditorBody(song); renderSongList(); close(); toast('♭');
+    renderEditorBody(song); renderSongList(); updateEditorKeyBpm(song); close(); toast('♭');
   });
   sheet.querySelector('.key-picker-transpose-up').addEventListener('click', () => {
     pushVersion(); transposeSong(song, 1); saveSingleSong(song);
-    renderEditorBody(song); renderSongList(); close(); toast('♯');
+    renderEditorBody(song); renderSongList(); updateEditorKeyBpm(song); close(); toast('♯');
   });
+}
+
+// Compact key+BPM quick-action sheet (tapped from editor nav badge)
+function showKeyBpmSheet(song) {
+  const sheet = document.createElement('div');
+  sheet.className = 'key-bpm-sheet';
+  sheet.innerHTML = `
+    <div class="toolbar-sheet-backdrop"></div>
+    <div class="toolbar-sheet-content">
+      <div class="toolbar-sheet-handle"></div>
+      <div class="key-bpm-sheet-title">Song Settings</div>
+      <div class="key-bpm-row">
+        <div class="key-bpm-label">Key</div>
+        <div class="key-bpm-value" id="kbpms-key">${esc(song.key || '—')}</div>
+        <button class="key-bpm-change-btn" id="kbpms-change-key">Change</button>
+      </div>
+      <div class="key-bpm-row">
+        <div class="key-bpm-label">BPM</div>
+        <div class="key-bpm-value" id="kbpms-bpm">${esc(song.bpm ? String(song.bpm) : '—')}</div>
+        <button class="key-bpm-change-btn" id="kbpms-change-bpm">Change</button>
+      </div>
+      <div class="key-bpm-transpose-row">
+        <button class="key-bpm-transpose-btn" id="kbpms-trans-down">♭ Down 1</button>
+        <button class="key-bpm-transpose-btn" id="kbpms-trans-up">Up 1 ♯</button>
+      </div>
+    </div>`;
+  document.body.appendChild(sheet);
+  enableDragToDismiss(sheet, { contentSelector: '.toolbar-sheet-content', backdropSelector: '.toolbar-sheet-backdrop' });
+
+  const close = () => sheet.remove();
+  sheet.querySelector('.toolbar-sheet-backdrop').onclick = close;
+
+  // Change key → open full key picker
+  sheet.querySelector('#kbpms-change-key').onclick = () => { close(); showKeyPicker(song); };
+  // Change BPM → open input sheet
+  sheet.querySelector('#kbpms-change-bpm').onclick = () => {
+    close();
+    showInputSheet({
+      title: 'Set BPM',
+      placeholder: 'e.g. 120',
+      initialValue: song.bpm ? String(song.bpm) : '',
+      onConfirm: (bpm) => { song.bpm = parseInt(bpm) || null; saveSingleSong(song); updateEditorKeyBpm(song); }
+    });
+  };
+  // Quick transpose
+  sheet.querySelector('#kbpms-trans-down').onclick = () => {
+    pushVersion(); transposeSong(song, -1); saveSingleSong(song);
+    renderEditorBody(song); renderSongList(); updateEditorKeyBpm(song);
+    close(); toast('♭');
+  };
+  sheet.querySelector('#kbpms-trans-up').onclick = () => {
+    pushVersion(); transposeSong(song, 1); saveSingleSong(song);
+    renderEditorBody(song); renderSongList(); updateEditorKeyBpm(song);
+    close(); toast('♯');
+  };
 }
 
 // Calculate semitone distance from one key to another
@@ -1825,10 +1881,28 @@ function openEditor(id) {
   // Update set-key button text in more menu
   const keyBtn = $('more-menu')?.querySelector('[data-action="set-key"]');
   if (keyBtn) keyBtn.textContent = song.key ? `Set Key: ${song.key}` : 'Set Key: —';
+  // Update key+BPM badge in nav bar
+  updateEditorKeyBpm(song);
   // Start session timer
   startSessionTimer();
   // Update switcher button state
   updateSwitcherButtons();
+}
+
+// Update the key+BPM badge in the editor nav bar
+function updateEditorKeyBpm(song) {
+  const badge = $('editor-key-bpm');
+  if (!badge) return;
+  if (!song) { badge.style.display = 'none'; return; }
+  const key = song.key || '';
+  const bpm = song.bpm || '';
+  if (!key && !bpm) { badge.style.display = 'none'; return; }
+  const parts = [];
+  if (key) parts.push(`<span class="k">${esc(key)}</span>`);
+  if (bpm) parts.push(`<span class="b">${esc(String(bpm))}</span>`);
+  badge.innerHTML = parts.join(`<span class="s">·</span>`);
+  badge.style.display = '';
+  badge.setAttribute('aria-label', `${key ? 'Key: ' + key : ''}${key && bpm ? ', ' : ''}${bpm ? 'BPM: ' + bpm : ''}`);
 }
 
 function renderEditorBody(song) {
@@ -2015,6 +2089,66 @@ function renderLine(container, song, si, li, line) {
       song.sections[si].lines.splice(li + 1, 0, { text: textAfter, chords: chordsAfter });
       saveSingleSong(song);
       renderEditorBody(song);
+    }
+    // Backspace at start of line = merge with previous line
+    if (e.key === 'Backspace') {
+      const sel = window.getSelection();
+      const cursorPos = sel?.focusOffset || 0;
+      // Only merge if cursor is at position 0 and there's text content to merge
+      if (cursorPos === 0 && lyricInput.textContent.length > 0) {
+        // Check if selection is collapsed (no text selected)
+        if (sel && sel.isCollapsed) {
+          e.preventDefault();
+          e.stopPropagation();
+          const section = song.sections[si];
+          // Find the previous line (could be in a previous section)
+          let prevLine = null;
+          let prevSi = si, prevLi = li;
+          if (li > 0) {
+            prevLi = li - 1;
+            prevLine = section.lines[prevLi];
+          } else if (si > 0) {
+            prevSi = si - 1;
+            const prevSection = song.sections[prevSi];
+            prevLi = prevSection.lines.length - 1;
+            prevLine = prevSection.lines[prevLi];
+          }
+          if (prevLine) {
+            const prevLineLen = prevLine.text.length;
+            // Append current line text to previous line
+            prevLine.text += lyricInput.textContent;
+            // Merge chords: offset current chords by previous line text length
+            const mergedChords = [
+              ...(prevLine.chords || []),
+              ...(line.chords || []).map(c => ({ ...c, x: c.x + prevLineLen * 8 }))
+            ];
+            prevLine.chords = mergedChords;
+            // Remove current line from section
+            section.lines.splice(li, 1);
+            // If section is now empty, remove it
+            if (section.lines.length === 0 && song.sections.length > 1) {
+              song.sections.splice(si, 1);
+            }
+            saveSingleSong(song);
+            renderEditorBody(song);
+            // Position cursor at the join point in the previous line
+            setTimeout(() => {
+              const prevInput = $(`[data-si="${prevSi}"][data-li="${prevLi}"] .lyric-text`);
+              if (prevInput) {
+                prevInput.focus();
+                const range = document.createRange();
+                const textNode = prevInput.firstChild;
+                if (textNode) {
+                  range.setStart(textNode, prevLineLen);
+                  range.collapse(true);
+                  sel.removeAllRanges();
+                  sel.addRange(range);
+                }
+              }
+            }, 50);
+          }
+        }
+      }
     }
   });
 
@@ -4047,6 +4181,67 @@ function setupEvents() {
   $('prev-song-btn')?.addEventListener('click', prevSong);
   $('next-song-btn')?.addEventListener('click', nextSong);
 
+  // Swipe to switch songs in editor
+  (function initEditorSwipe() {
+    const target = $('song-body');
+    if (!target) return;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let isSwipe = false;
+    const MIN_SWIPE_X = 60;   // min horizontal px to trigger
+    const MAX_SWIPE_Y = 40;   // max vertical px deviation allowed
+    const MAX_DURATION = 500; // ms — must be a quick flick
+
+    target.addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+      isSwipe = false;
+    }, { passive: true });
+
+    target.addEventListener('touchmove', e => {
+      if (isSwipe) return;
+      const dx = Math.abs(e.touches[0].clientX - touchStartX);
+      const dy = Math.abs(e.touches[0].clientY - touchStartY);
+      // Lock in as horizontal swipe if clearly horizontal
+      if (dx > 15 && dx > dy * 1.2) {
+        isSwipe = true;
+      }
+    }, { passive: true });
+
+    target.addEventListener('touchend', e => {
+      if (!isSwipe) return;
+      const elapsed = Date.now() - touchStartTime;
+      if (elapsed > MAX_DURATION) { isSwipe = false; return; }
+
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const dx = endX - touchStartX;
+      const dy = Math.abs(endY - touchStartY);
+
+      if (Math.abs(dx) >= MIN_SWIPE_X && dy <= MAX_SWIPE_Y) {
+        // Haptic feedback
+        navigator.vibrate?.(15);
+        if (dx < 0) {
+          // Swipe left → next song
+          nextSong();
+        } else {
+          // Swipe right → previous song
+          prevSong();
+        }
+      }
+      isSwipe = false;
+    }, { passive: true });
+  })();
+
+  // Key+BPM badge tap → show quick key/BPM action sheet
+  $('editor-key-bpm')?.addEventListener('click', () => {
+    const song = getSong(currentSongId);
+    if (!song) return;
+    showKeyBpmSheet(song);
+  });
+
   function saveCurrentSongAndGoBack() {
     const song = getSong(currentSongId);
     if (song) {
@@ -4157,12 +4352,12 @@ function setupEvents() {
   $('transpose-down-btn').addEventListener('click', () => {
     const song = getSong(currentSongId);
     if (!song) return; pushVersion();
-    transposeSong(song, -1); saveSingleSong(song); renderEditorBody(song); toast('♭');
+    transposeSong(song, -1); saveSingleSong(song); renderEditorBody(song); updateEditorKeyBpm(song); toast('♭');
   });
   $('transpose-up-btn').addEventListener('click', () => {
     const song = getSong(currentSongId);
     if (!song) return; pushVersion();
-    transposeSong(song, 1); saveSingleSong(song); renderEditorBody(song); toast('♯');
+    transposeSong(song, 1); saveSingleSong(song); renderEditorBody(song); updateEditorKeyBpm(song); toast('♯');
   });
 
   // More menu — bottom sheet
@@ -4189,6 +4384,7 @@ function setupEvents() {
           initialValue: song.bpm ? String(song.bpm) : '',
           onConfirm: (bpm) => {
             song.bpm = parseInt(bpm) || null; saveSingleSong(song);
+            updateEditorKeyBpm(song);
           }
         });
       } else if (a === 'import-txt') {
