@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (ChordPro import + valid ChordPro v6 export)
+2026-06-12 by OWL (drag-and-drop ChordPro support + esc() optimization)
 
 ## Build & Test Commands
 ```bash
@@ -104,6 +104,8 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Error recovery UI — init error state with retry button + global unhandledrejection/error handlers (2026-06-12) — try/catch around init(), shows error-state with Try Again button, window listeners for uncaught errors surface toast notifications
 - [x] Offline indicator + sync queue for mobile (show connection status, queue saves when offline, sync on reconnect) (2026-06-12) — fixed-position top banner with pulsing red dot, deduplicating sync queue persisted to localStorage, auto-flush on reconnect
 - [x] ChordPro import + valid ChordPro v6 export (2026-06-12) — .cho/.crd/.chopro file support, auto-detection via directive scanning, full parser for {title:}/{key:}/{start_of_} sections and [chord] tags, dedicated export builder producing valid ChordPro v6 with {start_of_}/{end_of_} section directives
+- [x] Drag-and-drop import now supports ChordPro files (.cho/.crd/.chopro) matching file picker (2026-06-12) — fixed filter regex, updated error toast message
+- [x] Optimized esc() helper — replaced DOM-based escaping with regex replace (2026-06-12) — eliminates 33+ unnecessary createElement calls, many in hot render loops
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~170K), CSS (styles.css ~72K), HTML (index.html)
