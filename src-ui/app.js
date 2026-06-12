@@ -4222,6 +4222,44 @@ function showSetlistPrintPreview() {
   overlay.style.display = 'flex';
 }
 
+// Show print preview for the current song (individual song chord chart)
+function showSongPrintPreview() {
+  const song = getSong(currentSongId);
+  if (!song) return;
+
+  const overlay = $('setlist-print-overlay');
+  const content = $('setlist-print-content');
+  const title = $('print-preview-title');
+  if (!overlay || !content) return;
+
+  if (title) title.textContent = song.title || 'Untitled';
+
+  let html = `<div class="pp-title">${esc(song.title || 'Untitled')}</div>`;
+  if (song.key) html += `<div class="pp-subtitle">Key: ${esc(song.key)}${song.bpm ? ` · ${song.bpm} BPM` : ''}</div>`;
+
+  song.sections?.forEach(section => {
+    html += `<div class="pp-song-block">`;
+    html += `<div class="pp-section-type">${esc(section.type)}</div>`;
+    section.lines?.forEach(line => {
+      if (line.chords?.length) {
+        let chordLine = '';
+        let lx = 0;
+        line.chords.sort((a, b) => a.x - b.x).forEach(ch => {
+          const sp = Math.max(0, Math.floor((ch.x - lx) / 7));
+          chordLine += ' '.repeat(sp) + ch.name;
+          lx = ch.x + ch.name.length * 7;
+        });
+        if (chordLine.trim()) html += `<div class="pp-chord-line">${esc(chordLine)}</div>`;
+      }
+      if (line.text) html += `<div class="pp-lyric-line">${esc(line.text)}</div>`;
+    });
+    html += `</div>`;
+  });
+
+  content.innerHTML = html;
+  overlay.style.display = 'flex';
+}
+
 // Events
 function setupEvents() {
   $('back-to-folders').addEventListener('click', popView);
@@ -4481,6 +4519,9 @@ function setupEvents() {
         const next = current === 'dark' ? 'light' : 'dark';
         applyTheme(next);
         localStorage.setItem('sn_app_theme', next);
+      } else if (a === 'print-song') {
+        hideToolbarSheet();
+        showSongPrintPreview();
       } else if (a === 'info') {
         const bar = $('info-bar');
         if (bar.style.display === 'none' || !bar.style.display) {
