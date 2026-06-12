@@ -425,12 +425,12 @@ html, body {
   color: #fff;
   font-size: 15px;
   font-weight: 600;
-  padding: 0 20px;
+  padding: 0 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
-  min-width: 72px;
+  min-width: 64px;
   justify-content: center;
   transition: opacity 0.15s;
   pointer-events: auto;
@@ -438,6 +438,9 @@ html, body {
 .swipe-item .swipe-bg button:active { opacity: 0.7; }
 .swipe-item .swipe-bg .swipe-pin-btn {
   background: var(--section-label);
+}
+.swipe-item .swipe-bg .swipe-duplicate-btn {
+  background: var(--accent);
 }
 .swipe-item .swipe-bg .swipe-delete-btn {
   background: var(--danger);

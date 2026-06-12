@@ -1619,6 +1619,7 @@ function renderSongList(filter = '') {
     html += `<div class="swipe-item" data-id="${s.id}">
       <div class="swipe-bg">
         <button class="swipe-pin-btn" data-action="pin" aria-label="${s.pinned ? 'Unpin' : 'Pin'} song">${pinLabel}</button>
+        <button class="swipe-duplicate-btn" data-action="duplicate" aria-label="Duplicate song">⧉</button>
         <button class="swipe-delete-btn" data-action="delete" aria-label="Delete song">✕</button>
       </div>
       <div class="swipe-content list-item">
@@ -1660,7 +1661,7 @@ function renderSongList(filter = '') {
     // --- Swipe gesture ---
     let startX = 0, startY = 0, currentX = 0, isSwiping = false, isOpen = false;
     const SWIPE_THRESHOLD = 50;
-    const MAX_OPEN = 144; // two 72px buttons
+    const MAX_OPEN = 192; // three 64px buttons
 
     content.addEventListener('touchstart', e => {
       startX = e.changedTouches[0].clientX;
@@ -1744,6 +1745,7 @@ function renderSongList(filter = '') {
 
     // --- Action buttons ---
     const pinBtn = swipeItem.querySelector('.swipe-pin-btn');
+    const duplicateBtn = swipeItem.querySelector('.swipe-duplicate-btn');
     const deleteBtn = swipeItem.querySelector('.swipe-delete-btn');
 
     if (pinBtn) {
@@ -1755,6 +1757,24 @@ function renderSongList(filter = '') {
         await saveSingleSong(s);
         renderSongList($('search-input')?.value || '');
         toast(s.pinned ? 'Pinned ★' : 'Unpinned');
+      });
+    }
+
+    if (duplicateBtn) {
+      duplicateBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const s = getSong(songId);
+        if (!s) return;
+        const copy = JSON.parse(JSON.stringify(s));
+        copy.id = generateId();
+        copy.title = (s.title || 'Untitled') + ' (Copy)';
+        copy.created_at = new Date().toISOString();
+        copy.updated_at = new Date().toISOString();
+        copy.pinned = false;
+        songs.unshift(copy);
+        await saveSongs();
+        renderSongList($('search-input')?.value || '');
+        toast(`Duplicated "${s.title}"`);
       });
     }
 
