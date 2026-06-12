@@ -86,6 +86,32 @@ html, body {
 .view:first-child {
   transform: translateX(0);
 }
+/* Directional view transitions */
+.view.sliding-out-left {
+  transform: translateX(-30%);
+  opacity: 0.6;
+}
+.view.sliding-out-right {
+  transform: translateX(30%);
+  opacity: 0.6;
+}
+.view.slide-in-left {
+  transform: translateX(-100%) !important;
+  transition: none;
+}
+.view.slide-in-right {
+  transform: translateX(100%) !important;
+  transition: none;
+}
+/* Progressive nav bar parallax during forward nav */
+.view.sliding-out-left .nav-bar {
+  transform: translateX(-8%);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.view.sliding-out-right .nav-bar {
+  transform: translateX(8%);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
 
 /* ===== Navigation Bar ===== */
 .nav-bar {

@@ -70,12 +70,81 @@ function transposeSong(song, semitones) {
 const $ = id => document.getElementById(id);
 
 // Navigation
-function showView(id) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  $(id)?.classList.add('active');
+function showView(id, direction) {
+  const views = document.querySelectorAll('.view');
+  const target = $(id);
+  if (!target) return;
+
+  if (!direction) {
+    // Plain switch (no animation)
+    views.forEach(v => {
+      v.classList.remove('active', 'sliding-out-left', 'sliding-out-right', 'slide-in-left', 'slide-in-right');
+    });
+    target.classList.remove('slide-in-left', 'slide-in-right');
+    target.classList.add('active');
+    return;
+  }
+
+  // Find currently active view
+  let current = null;
+  views.forEach(v => { if (v.classList.contains('active')) current = v; });
+
+  if (!current || current === target) {
+    views.forEach(v => v.classList.remove('active', 'sliding-out-left', 'sliding-out-right', 'slide-in-left', 'slide-in-right'));
+    target.classList.remove('slide-in-left', 'slide-in-right');
+    target.classList.add('active');
+    return;
+  }
+
+  // Clear any lingering transition classes
+  views.forEach(v => v.classList.remove('slide-in-left', 'slide-in-right'));
+
+  const isForward = direction === 'forward';
+
+  // Position incoming view off-screen (left for back, right for forward) — no transition
+  target.classList.add(isForward ? 'slide-in-right' : 'slide-in-left');
+
+  // Force reflow so the browser registers the starting position
+  void target.offsetWidth;
+
+  // Apply sliding-out to current view
+  current.classList.add(isForward ? 'sliding-out-left' : 'sliding-out-right');
+
+  // Trigger incoming view to slide to center (inline transition overrides class)
+  target.style.transition = 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease';
+  target.style.opacity = '0.6';
+  target.style.transform = 'translateX(0)';
+  target.classList.remove('slide-in-left', 'slide-in-right');
+
+  // After animation completes
+  const onEnd = () => {
+    target.removeEventListener('transitionend', onEnd);
+    target.style.transition = '';
+    target.style.opacity = '';
+    target.style.transform = '';
+    views.forEach(v => {
+      if (v !== target) v.classList.remove('active', 'sliding-out-left', 'sliding-out-right');
+    });
+    target.classList.add('active');
+  };
+  target.addEventListener('transitionend', onEnd);
+  // Fallback in case transitionend doesn't fire
+  setTimeout(onEnd, 420);
 }
-function pushView(id) { viewStack.push(id); showView(id); }
-function popView() { if (viewStack.length > 1) { viewStack.pop(); showView(viewStack[viewStack.length - 1]); } }
+
+let pushCallback = null;
+function pushView(id, callback) {
+  viewStack.push(id);
+  showView(id, 'forward');
+  pushCallback = callback;
+}
+function popView() {
+  if (viewStack.length > 1) {
+    viewStack.pop();
+    showView(viewStack[viewStack.length - 1], 'back');
+    if (pushCallback) { pushCallback(); pushCallback = null; }
+  }
+}
 
 // Tauri
 async function initTauri() {
