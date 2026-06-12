@@ -26,6 +26,9 @@ let isOnline = navigator.onLine;
 let syncQueue = []; // queued save operations while offline
 let syncQueueTimer = null; // debounce timer for queue flush
 
+// ===== Trash State =====
+let trash = []; // { song, deletedAt: ISO8601 }
+
 // ===== Session Timer State =====
 let sessionStartTime = null;
 let sessionTimerInterval = null;
@@ -176,6 +179,8 @@ async function tauriSaveFolders(f) { try { await invoke('save_folders', { folder
 async function loadSongs() {
   if (isTauri) { const r = await tauriLoadSongs(); if (r && r.length) { songs = r; return; } }
   try { songs = JSON.parse(localStorage.getItem('songs_app')) || []; } catch { songs = []; }
+  // Load trash
+  try { trash = JSON.parse(localStorage.getItem('sn_trash')) || []; } catch { trash = []; }
 }
 
 // Pull-to-refresh: reload data from storage and re-render
@@ -209,6 +214,9 @@ async function refreshSongData() {
 async function saveSongs() {
   localStorage.setItem('songs_app', JSON.stringify(songs));
   if (isTauri) for (const s of songs) await tauriSaveSong(s);
+}
+function saveTrash() {
+  localStorage.setItem('sn_trash', JSON.stringify(trash));
 }
 async function saveSingleSong(song) {
   if (!song) return;
@@ -554,9 +562,46 @@ function enableDragToDismiss(sheet, { contentSelector = null, backdropSelector =
 }
 
 async function deleteSong(id) {
+  const song = songs.find(s => s.id === id);
+  if (song) {
+    // Move to trash instead of permanent delete
+    trash.unshift({ song, deletedAt: new Date().toISOString() });
+    saveTrash();
+  }
   songs = songs.filter(s => s.id !== id);
   localStorage.setItem('songs_app', JSON.stringify(songs));
   if (isTauri) await tauriDeleteSong(id);
+}
+
+// Restore a song from trash back to active songs
+async function restoreSong(id) {
+  const entry = trash.find(t => t.song.id === id);
+  if (!entry) return;
+  // If song id already exists in active songs, skip (avoid duplicates)
+  if (!songs.find(s => s.id === entry.song.id)) {
+    songs.unshift(entry.song);
+  }
+  trash = trash.filter(t => t.song.id !== id);
+  saveTrash();
+  localStorage.setItem('songs_app', JSON.stringify(songs));
+  if (isTauri) await tauriSaveSong(entry.song);
+}
+
+// Permanently delete a song from trash
+async function permanentlyDeleteSong(id) {
+  trash = trash.filter(t => t.song.id !== id);
+  saveTrash();
+  if (isTauri) await tauriDeleteSong(id);
+}
+
+// Purge trash items older than 30 days
+function purgeExpiredTrash() {
+  const before = trash.length;
+  trash = trash.filter(t => {
+    const d = new Date(t.deletedAt || 0);
+    return Date.now() - d.getTime() < 30 * 86400000;
+  });
+  if (trash.length !== before) saveTrash();
 }
 
 // Duplicate the current song (deep copy with new id and title suffix)
@@ -1065,7 +1110,7 @@ function applyFocusMode() {
 function renderFolders() {
   const el = $('folder-list');
   // Smart folders always at top
-  const smartFolders = ['All Songs', 'Recently Edited'];
+  const smartFolders = ['All Songs', 'Recently Edited', 'Recently Deleted'];
   const customFolders = folders.filter(f => !smartFolders.includes(f));
   
   el.innerHTML = [...smartFolders, ...customFolders].map(f => {
@@ -1074,9 +1119,10 @@ function renderFolders() {
                     const d = new Date(s.updated_at || s.created_at || 0);
                     return Date.now() - d.getTime() < 7 * 86400000;
                   }).length :
+                  f === 'Recently Deleted' ? trash.length :
                   songs.filter(s => s.folder === f).length;
     const cls = f === currentFolder ? 'list-item active' : 'list-item';
-    const icon = f === 'All Songs' ? '♫' : f === 'Recently Edited' ? '↻' : '♪';
+    const icon = f === 'All Songs' ? '♫' : f === 'Recently Edited' ? '↻' : f === 'Recently Deleted' ? '🗑' : '♪';
     return `<div class="${cls}" data-folder="${esc(f)}"><span class="item-icon">${icon}</span><span class="item-title">${esc(f === 'Recently Edited' ? 'Recently Edited' : f)}</span><span class="item-meta">${count}</span>${!smartFolders.includes(f) ? '<span class="folder-dots">⋯</span>' : ''}</div>`;
   }).join('');
   el.querySelectorAll('.list-item[data-folder]').forEach(item => {
@@ -1433,9 +1479,109 @@ function showSongListSkeletonStaggered(count = 6) {
   el.innerHTML = html;
 }
 
+// Trash list — shows deleted songs with restore + permanent delete
+function renderTrashList(el, filter = '') {
+  // Header nav title
+  $('song-title').textContent = 'Recently Deleted';
+
+  if (!trash.length) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">
+        <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 28h32M30 28v-4a6 6 0 0 1 6-6h8a6 6 0 0 1 6 6v4M34 36v20M40 36v20M46 36v20" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="20" y="28" width="40" height="32" rx="4" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2>Trash is Empty</h2>
+      <p>Deleted songs appear here for 30 days</p>
+    </div>`;
+    return;
+  }
+
+  let list = trash;
+  if (filter) {
+    const q = filter.toLowerCase();
+    list = list.filter(t => t.song.title?.toLowerCase().includes(q));
+  }
+
+  // Sort by deletion date, newest first
+  const sorted = [...list].sort((a, b) => new Date(b.deletedAt || 0) - new Date(a.deletedAt || 0));
+
+  const DAYS = 30;
+  const now = Date.now();
+
+  let html = '';
+  sorted.forEach((t, i) => {
+    const s = t.song;
+    const deletedMs = now - new Date(t.deletedAt || 0).getTime();
+    const daysLeft = Math.max(0, Math.ceil((DAYS * 86400000 - deletedMs) / 86400000));
+    const keyBadge = s.key ? `<span class="item-key">${esc(s.key)}</span>` : '';
+    const agoLabel = formatTimeAgo(deletedMs);
+    html += `<div class="list-item trash-item" data-trash-id="${esc(s.id)}" style="animation-delay:${i * 30}ms">
+      <div class="trash-item-info">
+        <span class="item-title">${esc(s.title || 'Untitled')}${keyBadge}</span>
+        <span class="item-meta">Deleted ${agoLabel} · ${daysLeft}d left</span>
+      </div>
+      <div class="trash-item-actions">
+        <button class="trash-restore-btn" data-id="${esc(s.id)}" aria-label="Restore song">↩</button>
+        <button class="trash-delete-btn" data-id="${esc(s.id)}" aria-label="Delete permanently">✕</button>
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+  el.querySelectorAll('.trash-restore-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      showConfirmSheet({
+        title: 'Restore Song',
+        body: 'Restore this song to your library?',
+        confirmText: 'Restore',
+        onConfirm: async () => {
+          await restoreSong(id);
+          renderTrashList(el, filter);
+          renderFolders(); // update count badge
+          toast('Song restored');
+        }
+      });
+    });
+  });
+  el.querySelectorAll('.trash-delete-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      showConfirmSheet({
+        title: 'Delete Forever',
+        body: 'This cannot be undone.',
+        confirmText: 'Delete',
+        confirmClass: 'sheet-danger',
+        onConfirm: async () => {
+          await permanentlyDeleteSong(id);
+          renderTrashList(el, filter);
+          renderFolders();
+          toast('Deleted permanently');
+        }
+      });
+    });
+  });
+}
+
+function formatTimeAgo(ms) {
+  if (ms < 60000) return 'just now';
+  if (ms < 3600000) return `${Math.floor(ms / 60000)}m ago`;
+  if (ms < 86400000) return `${Math.floor(ms / 3600000)}h ago`;
+  return `${Math.floor(ms / 86400000)}d ago`;
+}
+
 // Song list
 function renderSongList(filter = '') {
   const el = $('song-list');
+
+  // Trash view
+  if (currentFolder === 'Recently Deleted') {
+    return renderTrashList(el, filter);
+  }
+
   let list = songs;
   if (currentFolder === 'Recently Edited') {
     list = songs.filter(s => {
@@ -1571,11 +1717,11 @@ function renderSongList(filter = '') {
       });
       if (delBtn) delBtn.addEventListener('click', e => {
         e.stopPropagation();
-        showConfirmSheet({ title: 'Delete Song', body: 'This cannot be undone.', confirmText: 'Delete', confirmClass: 'sheet-danger', onConfirm: async () => {
+        showConfirmSheet({ title: 'Delete Song', body: 'Move to trash? You can restore it within 30 days.', confirmText: 'Delete', confirmClass: 'sheet-danger', onConfirm: async () => {
           await deleteSong(songId);
           if (currentSongId === songId) currentSongId = null;
           renderSongList(filter);
-          toast('Deleted');
+          toast('Moved to trash');
         }});
       });
     });
@@ -1796,13 +1942,13 @@ function renderSongList(filter = '') {
         if (!s) return;
         showConfirmSheet({
           title: 'Delete Song',
-          body: `Delete "${s.title}"?`,
+          body: `Move "${esc(s.title || 'Untitled')}" to trash?`,
           confirmText: 'Delete',
           onConfirm: async () => {
             await deleteSong(songId);
             if (currentSongId === songId) { currentSongId = null; }
             renderSongList($('search-input')?.value || '');
-            toast('Deleted');
+            toast('Moved to trash');
           }
         });
       });
@@ -4903,6 +5049,7 @@ async function init() {
   try {
     await initTauri();
     await loadSongs();
+    purgeExpiredTrash();
   } catch (err) {
     console.error('Init failed:', err);
     showInitError(err);

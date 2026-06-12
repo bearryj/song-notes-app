@@ -459,6 +459,67 @@ html, body {
   background: var(--bg);
 }
 
+/* ===== Trash / Recently Deleted ===== */
+.trash-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  opacity: 0;
+  animation: fadeIn 0.25s ease forwards;
+}
+.trash-item .trash-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.trash-item .trash-item-info .item-title {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--fg-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trash-item .trash-item-info .item-meta {
+  font-size: 12px;
+  color: var(--fg-tertiary);
+}
+.trash-item .trash-item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.trash-item .trash-restore-btn,
+.trash-item .trash-delete-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+}
+.trash-item .trash-restore-btn {
+  background: var(--accent);
+  color: #fff;
+}
+.trash-item .trash-restore-btn:active {
+  opacity: 0.7;
+}
+.trash-item .trash-delete-btn {
+  background: rgba(255, 69, 58, 0.15);
+  color: var(--danger);
+}
+.trash-item .trash-delete-btn:active {
+  opacity: 0.7;
+}
+
 /* ===== Empty State ===== */
 .empty-state {
   display: flex;
