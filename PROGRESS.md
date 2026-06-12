@@ -87,7 +87,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 18. [x] Pull-to-refresh on song list (2026-06-11) — touch gesture to reload data from storage, animated indicator
 19. [x] Accessibility: ARIA roles/labels + :focus-visible keyboard nav (2026-06-11) — role/aria-label on all interactive elements, focus ring styles, radiogroup/radio roles, aria-live regions
 20. [x] UI overhaul — emoji→text glyphs, editor nav cleanup, grouped toolbar sections, setlist nav button, info bar readability (2026-06-12)
-21. [ ] Quick song switcher in editor (prev/next or swipe between songs in current folder)
+21. [x] Quick song switcher in editor (prev/next or swipe between songs in current folder) (2026-06-12) — compact ‹‹ ›› buttons in editor nav bar, wraps around, slide transition, auto-saves current song, mirrors sort order
 22. [ ] Chord ribbon — make collapsible
 
 ## Newly Discovered TODOs
