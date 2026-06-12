@@ -16,6 +16,11 @@ let isRecording = false;
 let audioPlayer = new Audio();
 let hasChanges = false;
 
+// ===== Session Timer State =====
+let sessionStartTime = null;
+let sessionTimerInterval = null;
+let sessionTotalMs = 0; // accumulated ms from previous sessions (from song.session_ms)
+
 // ===== Setlist State =====
 let setlists = [];
 let activeSetlistId = null;
@@ -592,6 +597,51 @@ function updateSaveDot(state) {
   dot.className = 'save-dot ' + state;
 }
 
+// ===== Session Timer =====
+function formatSessionTime(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function startSessionTimer() {
+  stopSessionTimer();
+  const song = getSong(currentSongId);
+  sessionTotalMs = song?.session_ms || 0;
+  sessionStartTime = Date.now();
+  updateSessionTimerDisplay();
+  sessionTimerInterval = setInterval(updateSessionTimerDisplay, 1000);
+}
+
+function stopSessionTimer() {
+  if (sessionTimerInterval) {
+    clearInterval(sessionTimerInterval);
+    sessionTimerInterval = null;
+  }
+  // Persist accumulated time to song
+  if (sessionStartTime && currentSongId) {
+    const song = getSong(currentSongId);
+    if (song) {
+      sessionTotalMs += Date.now() - sessionStartTime;
+      song.session_ms = sessionTotalMs;
+      saveSingleSong(song);
+    }
+  }
+  sessionStartTime = null;
+  const el = $('session-timer');
+  if (el) el.textContent = '';
+}
+
+function updateSessionTimerDisplay() {
+  const el = $('session-timer');
+  if (!el || !sessionStartTime) return;
+  const elapsed = sessionTotalMs + (Date.now() - sessionStartTime);
+  el.textContent = formatSessionTime(elapsed);
+}
+
 // Folders
 function renderFolders() {
   const el = $('folder-list');
@@ -1145,6 +1195,8 @@ function openEditor(id) {
   // Update set-key button text in more menu
   const keyBtn = $('more-menu')?.querySelector('[data-action="set-key"]');
   if (keyBtn) keyBtn.textContent = song.key ? `Set Key: ${song.key}` : 'Set Key: —';
+  // Start session timer
+  startSessionTimer();
 }
 
 function renderEditorBody(song) {
@@ -3179,6 +3231,7 @@ function setupEvents() {
       song.updated_at = new Date().toISOString();
       saveSingleSong(song);
     }
+    stopSessionTimer();
     popView(); renderSongList();
   }
 
@@ -3308,6 +3361,7 @@ function setupEvents() {
           body: `Delete "${song.title}"?`,
           confirmText: 'Delete',
           onConfirm: async () => {
+            stopSessionTimer();
             await deleteSong(currentSongId); currentSongId = null; popView(); renderSongList(); toast('Deleted');
           }
         });

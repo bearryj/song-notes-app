@@ -123,6 +123,14 @@ html, body {
 .save-dot.saved { background: var(--chord); }
 .save-dot.saving { background: var(--section-label); }
 .save-dot.unsaved { background: var(--fg-tertiary); }
+.session-timer {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-tertiary);
+  flex-shrink: 0;
+  margin-left: 4px;
+  letter-spacing: 0.5px;
+}
 .nav-title-input {
   flex: 1;
   font-size: 17px;
