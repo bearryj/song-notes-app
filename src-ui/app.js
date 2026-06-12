@@ -16,6 +16,11 @@ let isRecording = false;
 let audioPlayer = new Audio();
 let hasChanges = false;
 
+// ===== View State =====
+let galleryMode = localStorage.getItem('sn_gallery_mode') === 'true';
+let chordRibbonCollapsed = localStorage.getItem('chordRibbonCollapsed') === 'true';
+let focusMode = localStorage.getItem('sn_focusMode') === 'true';
+
 // ===== Offline / Sync Queue State =====
 let isOnline = navigator.onLine;
 let syncQueue = []; // queued save operations while offline
@@ -29,12 +34,6 @@ let sessionTotalMs = 0; // accumulated ms from previous sessions (from song.sess
 // ===== Setlist State =====
 let setlists = [];
 let activeSetlistId = null;
-
-// ===== Chord Ribbon Collapse State =====
-let chordRibbonCollapsed = localStorage.getItem('chordRibbonCollapsed') === 'true';
-
-// ===== Focus Mode State =====
-let focusMode = localStorage.getItem('sn_focusMode') === 'true';
 
 // ===== Metronome State =====
 let metroBpm = 120;
@@ -1600,16 +1599,36 @@ function renderSongList(filter = '') {
     const pinned = s.pinned ? '<span class="item-pin">★</span>' : '';
     const tagHtml = (s.tags && s.tags.length) ? `<span class="item-tags">${s.tags.map(t => `<span class="item-tag">${esc(t)}</span>`).join('')}</span>` : '';
     const pinLabel = s.pinned ? '☆' : '★';
+
+    // Build preview: first lyric line + first few chords
+    let previewHtml = '';
+    const firstLine = s.sections?.[0]?.lines?.[0];
+    if (firstLine) {
+      const lyricSnippet = firstLine.text?.trim()
+        ? esc(firstLine.text.trim().slice(0, 40))
+        : '';
+      const chords = (firstLine.chords || []).slice(0, 4);
+      const chordHtml = chords.length
+        ? `<span class="item-preview-chords">${chords.map(c => `<span class="item-preview-chord">${esc(c.name)}</span>`).join('')}</span>`
+        : '';
+      if (lyricSnippet || chordHtml) {
+        previewHtml = `<span class="item-preview">${chordHtml}${lyricSnippet ? `<span class="item-preview-text">${lyricSnippet}${firstLine.text.trim().length > 40 ? '…' : ''}</span>` : ''}</span>`;
+      }
+    }
+
     html += `<div class="swipe-item" data-id="${s.id}">
       <div class="swipe-bg">
         <button class="swipe-pin-btn" data-action="pin" aria-label="${s.pinned ? 'Unpin' : 'Pin'} song">${pinLabel}</button>
         <button class="swipe-delete-btn" data-action="delete" aria-label="Delete song">✕</button>
       </div>
       <div class="swipe-content list-item">
-        ${pinned}
-        <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}</span>
-        ${tagHtml}
-        <span class="item-meta">${fmtDate(s.updated_at)}</span>
+        <div class="list-item-main">
+          ${pinned}
+          <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}</span>
+          ${tagHtml}
+          <span class="item-meta">${fmtDate(s.updated_at)}</span>
+        </div>
+        ${previewHtml}
       </div>
     </div>`;
   });
@@ -4718,12 +4737,11 @@ function setupEvents() {
   }
   
   // View toggle (list / gallery)
-  let galleryMode = localStorage.getItem('sn_gallery_mode') === 'true';
   const songListEl = $('song-list');
   const viewToggleEl = $('view-toggle');
   if (songListEl && galleryMode) {
     songListEl.classList.add('gallery');
-    if (viewToggleEl) viewToggleEl.textContent = '☰';
+    if (viewToggleEl) viewToggleEl.textContent = '▦';
   }
   viewToggleEl?.addEventListener('click', () => {
     galleryMode = !galleryMode;

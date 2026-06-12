@@ -352,6 +352,48 @@ html, body {
   margin-left: 8px;
   flex-shrink: 0;
 }
+/* Two-line list item with preview (song list only) */
+.swipe-content.list-item {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px 16px 12px;
+}
+.list-item .list-item-main {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.list-item .item-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding-left: 0;
+  width: 100%;
+  overflow: hidden;
+}
+.list-item .item-preview-chords {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.list-item .item-preview-chord {
+  font-size: 11px;
+  font-family: var(--mono);
+  font-weight: 500;
+  color: var(--chord);
+  background: rgba(48, 209, 88, 0.1);
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.list-item .item-preview-text {
+  font-size: 13px;
+  color: var(--fg-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .list-item .folder-dots {
   color: var(--fg-tertiary);
   font-size: 16px;
@@ -879,9 +921,6 @@ html, body {
 }
 .toolbar-sheet-btn:active {
   background: var(--bg-surface);
-}
-.toolbar-sheet-btn[data-action="delete"] {
-  color: var(--danger);
 }
 .toolbar-sheet-btn.sheet-danger {
   color: var(--danger);
