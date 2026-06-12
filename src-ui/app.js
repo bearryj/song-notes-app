@@ -4642,25 +4642,31 @@ window.addEventListener('error', e => {
 
 // ===== Unsaved Changes Protection =====
 
+// Emergency save — synchronous, best-effort persistence for page-close scenarios
+function emergencySave() {
+  const song = getSong(currentSongId);
+  if (!song) return;
+  song.title = $('song-title')?.value || 'Untitled';
+  song.updated_at = new Date().toISOString();
+  // Flush debounced save timer
+  clearTimeout(autoSaveTimer);
+  // Sync localStorage immediately (reliable in pagehide/visibilitychange)
+  try {
+    const idx = songs.findIndex(s => s.id === song.id);
+    if (idx >= 0) songs[idx] = song; else songs.unshift(song);
+    localStorage.setItem('songs_app', JSON.stringify(songs));
+  } catch {}
+  // Persist to per-song key as redundant backup (survives full data corruption)
+  try { localStorage.setItem(`song_${song.id}`, JSON.stringify(song)); } catch {}
+  hasChanges = false;
+  if ($('save-btn')) $('save-btn').disabled = true;
+  updateSaveDot('saved');
+}
+
 // Warn before closing/tab away when there are unsaved edits
 window.addEventListener('beforeunload', e => {
   if (hasChanges) {
-    // Trigger a synchronous save attempt (best-effort)
-    const song = getSong(currentSongId);
-    if (song) {
-      song.title = $('song-title')?.value || 'Untitled';
-      song.updated_at = new Date().toISOString();
-      // Use Beacon API for reliable delivery on page close
-      try {
-        const blob = new Blob([JSON.stringify({ type: 'emergencySave', song })], { type: 'application/json' });
-        navigator.sendBeacon('/__song_notes_save', blob);
-      } catch {}
-      // Also try sync localStorage
-      try {
-        const key = `song_${song.id}`;
-        localStorage.setItem(key, JSON.stringify(song));
-      } catch {}
-    }
+    emergencySave();
     // Standard beforeunload prompt — browser shows its own dialog
     e.preventDefault();
     return e.returnValue = '';
@@ -4670,17 +4676,15 @@ window.addEventListener('beforeunload', e => {
 // Auto-save when the page loses visibility (app backgrounded on mobile, tab switch, etc.)
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && hasChanges) {
-    const song = getSong(currentSongId);
-    if (song) {
-      song.title = $('song-title')?.value || 'Untitled';
-      song.updated_at = new Date().toISOString();
-      // Flush the debounced save immediately
-      clearTimeout(autoSaveTimer);
-      saveSingleSong(song);
-      hasChanges = false;
-      if ($('save-btn')) $('save-btn').disabled = true;
-      updateSaveDot('saved');
-    }
+    emergencySave();
+  }
+});
+
+// pagehide fires in ALL page-exit scenarios — including mobile app kill/swipe-away
+// where beforeunload does NOT fire. This is the last line of defense for data loss.
+window.addEventListener('pagehide', () => {
+  if (hasChanges) {
+    emergencySave();
   }
 });
 
