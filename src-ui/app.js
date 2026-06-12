@@ -3756,8 +3756,14 @@ function updateInfoBar() {
 async function init() {
   // Show skeleton while loading data
   showSongListSkeletonStaggered(6);
-  await initTauri();
-  await loadSongs();
+  try {
+    await initTauri();
+    await loadSongs();
+  } catch (err) {
+    console.error('Init failed:', err);
+    showInitError(err);
+    return;
+  }
 
   // Restore theme
   const savedTheme = localStorage.getItem('sn_app_theme') || 'dark';
@@ -3785,6 +3791,38 @@ async function init() {
   setupEvents();
   initDragDrop();
 }
+
+function showInitError(err) {
+  const el = $('song-list');
+  if (!el) return;
+  const msg = err?.message || 'Something went wrong';
+  el.innerHTML = `<div class="error-state">
+    <div class="empty-icon">⚠️</div>
+    <h2>Couldn't load songs</h2>
+    <p>${esc(msg)}</p>
+    <button class="error-retry-btn" id="error-retry-btn">Try Again</button>
+  </div>`;
+  el.querySelector('#error-retry-btn').addEventListener('click', () => {
+    showSongListSkeletonStaggered(6);
+    init();
+  });
+}
+
+// Global error handler — last resort for uncaught errors
+window.addEventListener('unhandledrejection', e => {
+  console.error('Unhandled promise rejection:', e.reason);
+  if (e.reason instanceof Error) {
+    toast(`Error: ${e.reason.message}`, 'error');
+  } else {
+    toast('An unexpected error occurred', 'error');
+  }
+});
+
+window.addEventListener('error', e => {
+  console.error('Global error:', e.error || e.message);
+  toast('An unexpected error occurred', 'error');
+  // Don't prevent default — let the browser log it too
+});
 
 // ===== Metronome Engine =====
 
