@@ -2713,6 +2713,49 @@ function buildExportMarkdown(song) {
   return md;
 }
 
+function buildExportChordPro(song) {
+  // Build valid ChordPro v6 format
+  let out = '';
+  out += `{title: ${song.title || 'Untitled'}}`;
+  if (song.key) out += `\n{key: ${song.key}}`;
+  if (song.bpm) out += `\n{tempo: ${song.bpm}}`;
+  out += '\n';
+
+  const sectionTypeMap = {
+    'Chorus': 'chorus', 'Bridge': 'bridge', 'Verse': 'verse',
+    'Intro': 'intro', 'Outro': 'outro', 'Hook': 'hook',
+    'Refrain': 'refrain', 'Pre-Chorus': 'pre-chorus',
+    'Interlude': 'interlude', 'Solo': 'solo', 'Instrumental': 'instrumental',
+  };
+
+  song.sections.forEach(section => {
+    const baseType = section.type.replace(/\s+\d+$/, '');
+    const sectionDirective = sectionTypeMap[baseType] || baseType.toLowerCase();
+    out += `\n{start_of_${sectionDirective}}\n`;
+
+    section.lines.forEach(line => {
+      if (line.chords && line.chords.length) {
+        // Build chord line with proper spacing using pixel positions
+        const sorted = [...line.chords].sort((a, b) => a.x - b.x);
+        let chordLine = '';
+        let pos = 0;
+        sorted.forEach(ch => {
+          const col = Math.max(0, Math.floor(ch.x / 7));
+          while (pos < col) { chordLine += ' '; pos++; }
+          chordLine += `[${ch.name}]`;
+          pos += ch.name.length + 2; // +2 for [ and ]
+        });
+        out += chordLine + '\n';
+      }
+      out += (line.text || '') + '\n';
+    });
+
+    out += `{end_of_${sectionDirective}}\n`;
+  });
+
+  return out;
+}
+
 function downloadFile(content, name, mime) {
   const blob = new Blob([content], { type: mime }); const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
@@ -2944,7 +2987,7 @@ const DEFAULT_PLUGINS = [
     mime: 'text/plain',
     enabled: true,
     builtin: true,
-    template: `{title: {{title}}}{#key}{key: {{key}}}{{/key}}\n\n{{#sections}}{{#type}}{{{type}}}{{/type}}\n{{#lines}}{{#chords}}{{name}}{{/chords}}{{text}}\n{{/lines}}\n{{/sections}}`
+    template: `{{chordpro}}`
   },
   {
     id: 'builtin-json',
@@ -3000,6 +3043,11 @@ function renderPluginTemplate(template, song) {
   // Special: {{json}} outputs the whole song as JSON
   if (template.includes('{{json}}')) {
     return template.replace('{{json}}', JSON.stringify(song, null, 2));
+  }
+
+  // Special: {{chordpro}} outputs valid ChordPro v6 format
+  if (template.includes('{{chordpro}}')) {
+    return template.replace('{{chordpro}}', buildExportChordPro(song));
   }
 
   let result = template;
@@ -3232,7 +3280,7 @@ function renderPluginList() {
 // Import
 function importFiles(fileList) {
   const files = fileList || (() => {
-    const inp = document.createElement('input'); inp.type = 'file'; inp.multiple = true; inp.accept = '.txt,.md,.text';
+    const inp = document.createElement('input'); inp.type = 'file'; inp.multiple = true; inp.accept = '.txt,.md,.text,.cho,.crd,.chopro';
     inp.onchange = async e => { if (e.target.files.length) importFiles(e.target.files); };
     inp.click();
     return null;
@@ -3252,7 +3300,126 @@ function importFiles(fileList) {
 }
 
 
+function parseChordPro(title, content) {
+  const id = generateId();
+  const lines = content.split('\n');
+  const sections = [];
+  let cur = { type: 'Verse', lines: [] };
+  let key = '';
+  let bpm = null;
+  let songTitle = title;
+
+  // ChordPro section directive names map
+  const sectionMap = {
+    'start_of_chorus': 'Chorus', 'soc': 'Chorus', 'start_of_bridge': 'Bridge', 'sob': 'Bridge',
+    'start_of_verse': 'Verse', 'sov': 'Verse', 'start_of_intro': 'Intro', 'soi': 'Intro',
+    'start_of_outro': 'Outro', 'soo': 'Outro', 'start_of_hook': 'Hook', 'soh': 'Hook',
+    'start_of_refrain': 'Refrain', 'sor': 'Refrain', 'start_of_pre-chorus': 'Pre-Chorus',
+    'start_of_interlude': 'Interlude', 'start_of_solo': 'Solo', 'start_of_instrumental': 'Instrumental',
+    'end_of_chorus': null, 'eoc': null, 'end_of_bridge': null, 'eob': null,
+    'end_of_verse': null, 'eov': null, 'end_of_outro': null, 'eoo': null,
+  };
+
+  // Detect chord pattern: [A-G][#b]?(m|maj|min|dim|aug|sus|add|2|4|5|6|7|9|11|13)*(\/[A-G][#b]?)?
+  const chordTagRe = /\[([A-G][#b]?(?:m(?:in)?|maj|dim|aug|sus|add)?\d*(?:\/[A-G][#b]?)?)\]/g;
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const t = raw.trim();
+
+    // Parse directives {name: value} or {name}
+    const dirMatch = t.match(/^\{(\w[\w_-]*)(?::\s*(.+?))?\}$/);
+    if (dirMatch) {
+      const dir = dirMatch[1].toLowerCase();
+      const val = (dirMatch[2] || '').trim();
+
+      if (dir === 'title' || dir === 't') {
+        if (val) songTitle = val;
+        continue;
+      }
+      if (dir === 'key') {
+        if (val) key = val;
+        continue;
+      }
+      if (dir === 'tempo' || dir === 'bpm') {
+        const n = parseInt(val, 10);
+        if (!isNaN(n) && n > 0) bpm = n;
+        continue;
+      }
+
+      // Section start directives
+      const mapped = sectionMap[dir];
+      if (mapped) {
+        if (cur.lines.length) sections.push({ ...cur, lines: cur.lines });
+        // Check for label like {start_of_chorus: Chorus 2}
+        const labelMatch = val.match(/^(.+?)(?:\s+(\d+))?$/);
+        if (labelMatch) {
+          cur = { type: labelMatch[1] + (labelMatch[2] ? ' ' + labelMatch[2] : ''), lines: [] };
+        } else {
+          cur = { type: mapped, lines: [] };
+        }
+        continue;
+      }
+
+      // Section end directives — push current and start a generic one
+      if (mapped === null) {
+        if (cur.lines.length) sections.push({ ...cur, lines: cur.lines });
+        cur = { type: 'Verse', lines: [] };
+        continue;
+      }
+
+      // Skip other directives (comment, highlight, etc.)
+      continue;
+    }
+
+    // Skip empty lines
+    if (!t) {
+      // If current section has lines, keep the empty line as spacing
+      continue;
+    }
+
+    // Check if this line has chord tags
+    const chords = [];
+    let text = t;
+    let m;
+    chordTagRe.lastIndex = 0;
+    while ((m = chordTagRe.exec(text)) !== null) {
+      chords.push({ x: m.index * 8, name: m[1] });
+    }
+    text = text.replace(chordTagRe, '').trim();
+
+    // If line was only chords (no text after removing tags), treat as chord-only line
+    if (!text && chords.length) {
+      cur.lines.push({ text: '', chords });
+    } else if (text || chords.length) {
+      cur.lines.push({ text: text || '', chords });
+    }
+  }
+
+  if (cur.lines.length) sections.push({ ...cur, lines: cur.lines });
+
+  // If no sections found, wrap everything
+  if (!sections.length) sections.push({ type: 'Verse', lines: [{ text: content, chords: [] }] });
+
+  return {
+    id, title: songTitle, key, bpm, time_sig: null, tags: [], folder: null,
+    sections, audio: [],
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  };
+}
+
+function isChordPro(content) {
+  // Detect ChordPro format: has {title:}, {key:}, {start_of_}, or {soc} directives
+  return /^\{(?:title|t|key|start_of_|soc|eoc|sob|eob|sov|eov|soi|eoi|soo|eoo|soh|eoh|sor|eor|tempo|bpm|comment|highlight)\b/m.test(content);
+}
+
+
 function parseImported(title, content) {
+  // Detect ChordPro format and delegate
+  if (isChordPro(content)) {
+    return parseChordPro(title, content);
+  }
+
   const id = generateId();
   const lines = content.split('\n').filter(l => l.trim());
   const kw = ['verse', 'chorus', 'bridge', 'pre-chorus', 'outro', 'intro', 'hook', 'refrain'];
