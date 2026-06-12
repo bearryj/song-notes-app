@@ -484,24 +484,29 @@ html, body {
 .chord-ribbon {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  overflow-x: auto;
-  overflow-y: hidden;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--separator);
   min-height: 36px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  transition: opacity 0.2s ease;
-}
-.chord-ribbon:empty { display: none; }
-.chord-ribbon::-webkit-scrollbar { display: none; }
-
-/* Chord ribbon collapse toggle */
-.chord-ribbon {
   position: relative;
 }
+.chord-ribbon:empty { display: none; }
+
+.chord-ribbon-scroll {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 36px 6px 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex: 1;
+  max-height: 80px;
+  transition: max-height 0.25s ease, padding 0.25s ease, opacity 0.2s ease;
+}
+.chord-ribbon-scroll::-webkit-scrollbar { display: none; }
+
+/* Chord ribbon collapse toggle */
 .chord-ribbon-toggle {
   position: absolute;
   right: 8px;
@@ -526,11 +531,13 @@ html, body {
   background: var(--bg-secondary);
 }
 .chord-ribbon.collapsed {
-  min-height: 0;
-  height: 0;
-  padding: 0;
-  overflow: hidden;
   border-bottom: none;
+}
+.chord-ribbon.collapsed .chord-ribbon-scroll {
+  max-height: 0;
+  padding: 0 36px 0 12px;
+  opacity: 0;
+  overflow: hidden;
 }
 
 .chord-ribbon-item {

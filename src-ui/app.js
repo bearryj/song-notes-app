@@ -26,7 +26,7 @@ let setlists = [];
 let activeSetlistId = null;
 
 // ===== Chord Ribbon Collapse State =====
-let chordRibbonCollapsed = false;
+let chordRibbonCollapsed = localStorage.getItem('chordRibbonCollapsed') === 'true';
 
 // ===== Metronome State =====
 let metroBpm = 120;
@@ -1585,27 +1585,25 @@ function renderChordRibbon(song) {
   toggle.setAttribute('aria-label', chordRibbonCollapsed ? 'Expand chord ribbon' : 'Collapse chord ribbon');
   toggle.addEventListener('click', () => {
     chordRibbonCollapsed = !chordRibbonCollapsed;
+    localStorage.setItem('chordRibbonCollapsed', chordRibbonCollapsed);
     toggle.textContent = chordRibbonCollapsed ? '▸' : '▾';
     toggle.setAttribute('aria-label', chordRibbonCollapsed ? 'Expand chord ribbon' : 'Collapse chord ribbon');
     ribbon.classList.toggle('collapsed', chordRibbonCollapsed);
   });
 
-  const content = document.createElement('div');
-  content.style.display = 'flex';
-  content.style.alignItems = 'center';
-  content.style.gap = 'inherit';
-  content.style.width = '100%';
-  content.innerHTML = items.map(item =>
+  const scroll = document.createElement('div');
+  scroll.className = 'chord-ribbon-scroll';
+  scroll.innerHTML = items.map(item =>
     `<div class="chord-ribbon-item" data-chord="${esc(item.name)}"><span class="chord-name">${esc(item.name)}</span><span class="chord-section">${esc(item.section)}</span></div>`
   ).join('');
 
   ribbon.innerHTML = '';
-  ribbon.appendChild(content);
+  ribbon.appendChild(scroll);
   ribbon.appendChild(toggle);
   ribbon.classList.toggle('collapsed', chordRibbonCollapsed);
 
   // Tap to highlight & scroll to first occurrence
-  ribbon.querySelectorAll('.chord-ribbon-item').forEach(el => {
+  scroll.querySelectorAll('.chord-ribbon-item').forEach(el => {
     el.addEventListener('click', () => {
       const chordName = el.dataset.chord;
       // Highlight matching chord markers in the editor
