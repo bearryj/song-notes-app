@@ -285,6 +285,59 @@ html, body {
 }
 .list-item .folder-dots:active { background: var(--bg-tertiary); }
 
+/* ===== Swipe-to-Action on Song List Items ===== */
+.swipe-item {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+.swipe-item .swipe-bg {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  z-index: 0;
+  pointer-events: none;
+}
+.swipe-item .swipe-bg button {
+  border: none;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 0 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 72px;
+  justify-content: center;
+  transition: opacity 0.15s;
+  pointer-events: auto;
+}
+.swipe-item .swipe-bg button:active { opacity: 0.7; }
+.swipe-item .swipe-bg .swipe-pin-btn {
+  background: var(--section-label);
+}
+.swipe-item .swipe-bg .swipe-delete-btn {
+  background: var(--danger);
+}
+.swipe-item .swipe-content {
+  position: relative;
+  z-index: 1;
+  background: var(--bg);
+  transition: transform 0.05s linear;
+  will-change: transform;
+}
+.swipe-item.swiped .swipe-content {
+  transition: transform 0.2s ease;
+}
+.swipe-item .swipe-content:active {
+  background: var(--bg);
+}
+
 /* ===== Empty State ===== */
 .empty-state {
   display: flex;

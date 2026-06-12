@@ -960,65 +960,164 @@ function renderSongList(filter = '') {
 
     const pinned = s.pinned ? '<span class="item-pin">★</span>' : '';
     const tagHtml = (s.tags && s.tags.length) ? `<span class="item-tags">${s.tags.map(t => `<span class="item-tag">${esc(t)}</span>`).join('')}</span>` : '';
-    html += `<div class="list-item" data-id="${s.id}">
-      ${pinned}
-      <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}</span>
-      ${tagHtml}
-      <span class="item-meta">${fmtDate(s.updated_at)}</span>
+    const pinLabel = s.pinned ? '☆' : '★';
+    html += `<div class="swipe-item" data-id="${s.id}">
+      <div class="swipe-bg">
+        <button class="swipe-pin-btn" data-action="pin" aria-label="${s.pinned ? 'Unpin' : 'Pin'} song">${pinLabel}</button>
+        <button class="swipe-delete-btn" data-action="delete" aria-label="Delete song">✕</button>
+      </div>
+      <div class="swipe-content list-item">
+        ${pinned}
+        <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}</span>
+        ${tagHtml}
+        <span class="item-meta">${fmtDate(s.updated_at)}</span>
+      </div>
     </div>`;
   });
   if (html) html += '</div>';
 
   el.innerHTML = html;
 
-  // Attach events: click to open
-  el.querySelectorAll('.list-item').forEach(item => {
-    // Long press / hover context menu
-    let longPressTimer = null;
-    item.addEventListener('touchstart', e => {
-      longPressTimer = setTimeout(() => { longPressTimer = null; showSongContext(item.dataset.id, item); }, 500);
-    }, { passive: true });
-    item.addEventListener('touchend', () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }, { passive: true });
-    item.addEventListener('touchmove', () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }, { passive: true });
+  // Attach events: click to open, long-press context, swipe actions
+  el.querySelectorAll('.swipe-item').forEach(swipeItem => {
+    const content = swipeItem.querySelector('.swipe-content');
+    const songId = swipeItem.dataset.id;
 
-    item.addEventListener('click', () => {
-      currentSongId = item.dataset.id;
+    // --- Click to open ---
+    content.addEventListener('click', () => {
+      currentSongId = songId;
       localStorage.setItem('songs_app_last', currentSongId);
       openEditor(currentSongId);
       pushView('editor-view');
     });
 
-    // Swipe to delete
-    let startX = 0, currentX = 0, isDragging = false;
-    item.addEventListener('touchstart', e => {
+    // --- Long press context menu ---
+    let longPressTimer = null;
+    content.addEventListener('touchstart', e => {
+      longPressTimer = setTimeout(() => { longPressTimer = null; showSongContext(songId, content); }, 500);
+    }, { passive: true });
+    content.addEventListener('touchend', () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }, { passive: true });
+    content.addEventListener('touchmove', () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }, { passive: true });
+
+    // --- Swipe gesture ---
+    let startX = 0, startY = 0, currentX = 0, isSwiping = false, isOpen = false;
+    const SWIPE_THRESHOLD = 50;
+    const MAX_OPEN = 144; // two 72px buttons
+
+    content.addEventListener('touchstart', e => {
       startX = e.changedTouches[0].clientX;
-      isDragging = false;
+      startY = e.changedTouches[0].clientY;
+      isSwiping = false;
     }, { passive: true });
-    item.addEventListener('touchmove', e => {
+
+    content.addEventListener('touchmove', e => {
       currentX = e.changedTouches[0].clientX;
-      const diff = startX - currentX;
-      if (diff > 20) { isDragging = true; item.style.transform = `translateX(${-Math.min(diff, 80)}px)`; item.style.transition = 'none'; }
-      else if (diff < -20 && isDragging) { item.style.transform = ''; isDragging = false; }
+      const diffX = startX - currentX;
+      const diffY = Math.abs(e.changedTouches[0].clientY - startY);
+
+      // Only engage horizontal swipe if clearly horizontal
+      if (!isSwiping && diffX > 15 && diffY < 20) {
+        isSwiping = true;
+      }
+      if (!isSwiping) return;
+
+      // Prevent vertical scroll while swiping horizontally
+      if (diffY < Math.abs(diffX)) {
+        e.preventDefault();
+      }
+
+      if (isOpen) {
+        // Already open: dragging right closes it
+        const offset = Math.max(0, Math.min(MAX_OPEN, MAX_OPEN - diffX));
+        content.style.transform = `translateX(${-offset}px)`;
+        content.style.transition = 'none';
+      } else {
+        // Closed: dragging left opens it
+        if (diffX > 0) {
+          const offset = Math.min(diffX, MAX_OPEN);
+          content.style.transform = `translateX(${-offset}px)`;
+          content.style.transition = 'none';
+        }
+      }
+    }, { passive: false });
+
+    content.addEventListener('touchend', e => {
+      if (!isSwiping) return;
+      const diffX = startX - currentX;
+
+      content.style.transition = 'transform 0.2s ease';
+      if (isOpen) {
+        if (diffX < -30) {
+          // Dragged right: close
+          content.style.transform = 'translateX(0)';
+          isOpen = false;
+          swipeItem.classList.remove('swiped');
+        } else {
+          // Stay open
+          content.style.transform = `translateX(${-MAX_OPEN}px)`;
+        }
+      } else {
+        if (diffX > SWIPE_THRESHOLD) {
+          // Dragged left past threshold: open
+          content.style.transform = `translateX(${-MAX_OPEN}px)`;
+          isOpen = true;
+          swipeItem.classList.add('swiped');
+        } else {
+          // Not far enough: snap back
+          content.style.transform = 'translateX(0)';
+          isOpen = false;
+          swipeItem.classList.remove('swiped');
+        }
+      }
+      isSwiping = false;
     }, { passive: true });
-    item.addEventListener('touchend', e => {
-      if (isDragging && (startX - currentX) > 60) {
-        // Swipe left = show delete
-        const id = item.dataset.id;
+
+    // Close swipe on touch elsewhere
+    const closeSwipe = (e) => {
+      if (!isOpen) return;
+      if (!swipeItem.contains(e.target)) {
+        content.style.transition = 'transform 0.2s ease';
+        content.style.transform = 'translateX(0)';
+        isOpen = false;
+        swipeItem.classList.remove('swiped');
+      }
+    };
+    document.addEventListener('touchstart', closeSwipe, { passive: true });
+
+    // --- Action buttons ---
+    const pinBtn = swipeItem.querySelector('.swipe-pin-btn');
+    const deleteBtn = swipeItem.querySelector('.swipe-delete-btn');
+
+    if (pinBtn) {
+      pinBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const s = getSong(songId);
+        if (!s) return;
+        s.pinned = !s.pinned;
+        await saveSingleSong(s);
+        renderSongList($('search-input')?.value || '');
+        toast(s.pinned ? 'Pinned ★' : 'Unpinned');
+      });
+    }
+
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const s = getSong(songId);
+        if (!s) return;
         showConfirmSheet({
           title: 'Delete Song',
-          body: `Delete "${getSong(id)?.title || 'this song'}"?`,
+          body: `Delete "${s.title}"?`,
           confirmText: 'Delete',
-          onConfirm: () => {
-            deleteSong(id);
-            if (currentSongId === id) { currentSongId = null; }
-            renderSongList($('search-input').value);
+          onConfirm: async () => {
+            await deleteSong(songId);
+            if (currentSongId === songId) { currentSongId = null; }
+            renderSongList($('search-input')?.value || '');
             toast('Deleted');
           }
         });
-      }
-      item.style.transform = ''; item.style.transition = 'transform 0.2s ease';
-      isDragging = false;
-    }, { passive: true });
+      });
+    }
   });
 
   // Update tag filter bar
