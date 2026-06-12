@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (Move song to folder: context menu option, folder picker sheet with checkmark, drag-to-dismiss)
+2026-06-12 by OWL (Unsaved changes protection: beforeunload warning + visibilitychange auto-save)
 
 ## Build & Test Commands
 ```bash
@@ -66,6 +66,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Song writing session timer (tracks editing time per song, persists across sessions, displays in editor nav bar)
 - Directional view transitions (forward nav slides right→left, back nav slides left→right with nav bar parallax)
 - Move song to folder (from song context menu, folder picker sheet with current folder checkmark, drag-to-dismiss)
+- Unsaved changes protection (beforeunload warning when edits pending, visibilitychange auto-save on mobile background/tab switch)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -101,7 +102,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Auto-save song title on input (2026-06-11) — title input triggers auto-save with 1200ms debounce, syncs title into song object before save
 - [x] Song writing session timer (2026-06-11) — elapsed editing time shown in editor nav, persists session_ms to song data, accumulates across sessions
 - [x] Error recovery UI — init error state with retry button + global unhandledrejection/error handlers (2026-06-12) — try/catch around init(), shows error-state with Try Again button, window listeners for uncaught errors surface toast notifications
-
+- [ ] Offline indicator + sync queue for mobile (show connection status, queue saves when offline, sync on reconnect)
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~170K), CSS (styles.css ~72K), HTML (index.html)
