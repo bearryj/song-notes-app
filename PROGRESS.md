@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (enhanced empty states with SVG illustrations)
+2026-06-12 by OWL (individual song print chord chart)
 
 ## Build & Test Commands
 ```bash
@@ -76,6 +76,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 |- Tap tempo (tap-to-detect BPM with outlier filtering, auto-applies to metronome, 2s auto-reset)
 - Duplicate song from swipe action (⧉ button in swipe-to-action bar, deep copy with new id and title suffix)
 - Enhanced empty states (SVG illustrations, floating animation, fade-in, CTA button for new users)
+- Individual song print chord chart (print preview overlay with chord/lyric layout, window.print() integration, @media print styles)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
