@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (chord progression ribbon)
+2026-06-11 by OWL (accessibility — ARIA + focus-visible)
 
 ## Build & Test Commands
 ```bash
@@ -82,6 +82,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 16. [x] Duplicate song from toolbar sheet (2026-06-11) — deep copy with new id, title suffix, pinned reset
 17. [x] Undo for section and line deletion (2026-06-11) — undoBuffer with snackbar toast, 4s dismiss timer, restores exact position
 18. [x] Pull-to-refresh on song list (2026-06-11) — touch gesture to reload data from storage, animated indicator
+19. [x] Accessibility: ARIA roles/labels + :focus-visible keyboard nav (2026-06-11) — role/aria-label on all interactive elements, focus ring styles, radiogroup/radio roles, aria-live regions
 
 ## Newly Discovered TODOs
 - [x] Add loading spinner/skeleton screens for song list (2026-06-11) — shimmer skeleton with staggered animation on init + refresh
