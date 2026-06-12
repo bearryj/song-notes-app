@@ -122,7 +122,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [ ] No bulk operations on songs — can't multi-select to delete, move, or add to setlist. Long-press multi-select would be natural on mobile.
 - [ ] Setlist chord chart print doesn't include capo transposition — the print view shows raw chords, not capo-adjusted chords. Fix to match the capo-per-song feature.
 - [ ] No song count in folder headers — folders show name but not how many songs they contain. Add a small count badge.
-- [ ] Search doesn't search chord content — only searches title/tags. Musicians often remember a chord progression, not the title. Index chord names in search.
+- [x] Search doesn't search chord content — only searches title/tags. Musicians often remember a chord progression, not the title. Index chord names in search. (2026-06-12) — added chord name matching in renderSongList() filter
 - [ ] No "recently deleted" / trash — deleted songs are gone forever. Add a 30-day trash folder with restore capability.
 
 ### Platform
