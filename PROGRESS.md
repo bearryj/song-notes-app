@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-11 by OWL (undo for section/line deletion)
+2026-06-11 by OWL (song list sort options)
 
 ## Build & Test Commands
 ```bash
@@ -61,6 +61,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 61|- Polished bottom sheets replacing all raw browser prompt()/confirm() dialogs (input sheet + confirm sheet)
 62|- Visual key picker for transposition (circle-of-fifths grid, 12 keys, quick ♭/♯ buttons)
 - Duplicate song (deep copy from toolbar sheet, auto-suffixes title with " (Copy)")
+- Song list sort (4 modes: recent, A→Z, Z→A, Key — pinned always first, persisted)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -84,6 +85,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 
 ## Newly Discovered TODOs
 - [x] Add loading spinner/skeleton screens for song list (2026-06-11) — shimmer skeleton with staggered animation on init + refresh
+- [x] Song list sort options (recent, A-Z, Z-A, key) (2026-06-11) — sort button in nav bar, popover with 4 modes, pinned always first, persisted to localStorage
 - [ ] Support drag files into app for import (desktop)
 
 
