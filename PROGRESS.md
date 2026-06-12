@@ -83,7 +83,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 18. [x] Pull-to-refresh on song list (2026-06-11) — touch gesture to reload data from storage, animated indicator
 
 ## Newly Discovered TODOs
-- [ ] Add loading spinner/skeleton screens for song list
+- [x] Add loading spinner/skeleton screens for song list (2026-06-11) — shimmer skeleton with staggered animation on init + refresh
 - [ ] Support drag files into app for import (desktop)
 
 

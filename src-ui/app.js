@@ -620,6 +620,7 @@ function renderFolders() {
 }
 
 let activeFolderName = '';
+let activeSortMode = 'recent'; // recent | title-za | title-az | key
 
 // ===== Undo Buffer =====
 let undoBuffer = null;
@@ -658,6 +659,54 @@ function showUndoToast(msg, onUndo) {
 function clearUndo() {
   if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
   undoBuffer = null;
+}
+
+// ===== Sort Popover =====
+function showSortPopover(anchorEl) {
+  // Close existing
+  hideSortPopover();
+  const popover = document.createElement('div');
+  popover.id = 'sort-popover';
+  popover.className = 'popover sort-popover';
+  const modes = [
+    { id: 'recent', label: 'Recent', icon: '🕐' },
+    { id: 'title-az', label: 'A → Z', icon: 'A' },
+    { id: 'title-za', label: 'Z → A', icon: 'Z' },
+    { id: 'key', label: 'Key', icon: '🎵' },
+  ];
+  popover.innerHTML = modes.map(m =>
+    `<button class="sort-opt${activeSortMode === m.id ? ' active' : ''}" data-mode="${m.id}"><span class="sort-opt-icon">${m.icon}</span>${m.label}</button>`
+  ).join('');
+  document.body.appendChild(popover);
+  const rect = anchorEl.getBoundingClientRect();
+  popover.style.position = 'fixed';
+  popover.style.top = (rect.bottom + 4) + 'px';
+  popover.style.right = (window.innerWidth - rect.right) + 'px';
+  popover.style.display = 'block';
+  popover.querySelectorAll('.sort-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newMode = btn.dataset.mode;
+      if (newMode === activeSortMode) { hideSortPopover(); return; }
+      activeSortMode = newMode;
+      localStorage.setItem('sn_app_sort', activeSortMode);
+      hideSortPopover();
+      updateSortBtn();
+      renderSongList($('search-input')?.value || '');
+    });
+  });
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', hideSortPopover, { once: true });
+  }, 50);
+}
+function hideSortPopover() {
+  const p = $('sort-popover');
+  if (p) p.remove();
+}
+function updateSortBtn() {
+  const btn = $('sort-btn');
+  if (!btn) return;
+  btn.classList.toggle('nav-btn-active', activeSortMode !== 'recent');
 }
 
 function showFolderActions(name, anchor) {
@@ -868,10 +917,19 @@ function renderSongList(filter = '') {
     return;
   }
 
-  // Sort: pinned first (by updated_at), then unpinned (by updated_at)
+  // Sort
+  const SORT_MODES = { recent: 'Recent', 'title-az': 'A → Z', 'title-za': 'Z → A', key: 'Key' };
   const sorted = [...list].sort((a, b) => {
+    // Pinned always first
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
+    if (activeSortMode === 'title-az') return (a.title || '').localeCompare(b.title || '');
+    if (activeSortMode === 'title-za') return (b.title || '').localeCompare(a.title || '');
+    if (activeSortMode === 'key') {
+      const ka = (a.key || 'ZZZ').toLowerCase(), kb = (b.key || 'ZZZ').toLowerCase();
+      return ka.localeCompare(kb);
+    }
+    // recent (default)
     return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
   });
 
@@ -2988,6 +3046,12 @@ function setupEvents() {
     searchTimer = setTimeout(() => renderSongList(e.target.value), 150);
   });
 
+  // Sort button
+  $('sort-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    showSortPopover(e.currentTarget);
+  });
+
   // Save / Done button
   $('save-btn').addEventListener('click', () => {
     const song = getSong(currentSongId);
@@ -3415,6 +3479,13 @@ async function init() {
 
   try { const s = JSON.parse(localStorage.getItem('folders_app')); if (s?.length) folders = s; } catch {}
   if (isTauri) { const bf = await tauriLoadFolders(); if (bf?.length) folders = bf; }
+
+  // Restore sort mode
+  const savedSort = localStorage.getItem('sn_app_sort');
+  if (savedSort && ['recent', 'title-az', 'title-za', 'key'].includes(savedSort)) {
+    activeSortMode = savedSort;
+  }
+  updateSortBtn();
 
   addSampleSongs();
   
