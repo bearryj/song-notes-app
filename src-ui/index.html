@@ -449,17 +449,18 @@
   <template id="section-template">
     <div class="song-section">
       <div class="section-header">
-        <select class="section-type">
-          <option value="Verse">Verse</option>
-          <option value="Verse 2">Verse 2</option>
-          <option value="Chorus" selected>Chorus</option>
-          <option value="Pre-Chorus">Pre-Chorus</option>
-          <option value="Bridge">Bridge</option>
-          <option value="Tag">Tag</option>
-          <option value="Coda">Coda</option>
-          <option value="Outro">Outro</option>
-          <option value="Intro">Intro</option>
-        </select>
+        <input class="section-type-input" list="section-type-list" spellcheck="false" aria-label="Section type" />
+        <datalist id="section-type-list">
+          <option value="Verse"></option>
+          <option value="Verse 2"></option>
+          <option value="Chorus"></option>
+          <option value="Pre-Chorus"></option>
+          <option value="Bridge"></option>
+          <option value="Tag"></option>
+          <option value="Coda"></option>
+          <option value="Outro"></option>
+          <option value="Intro"></option>
+        </datalist>
         <span class="section-controls">
           <button class="move-up" title="Move up">▲</button>
           <button class="move-down" title="Move down">▼</button>

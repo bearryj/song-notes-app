@@ -2071,9 +2071,60 @@ function renderEditorBody(song) {
   song.sections.forEach((section, si) => {
     const tmpl = $('section-template').content.cloneNode(true);
     const sectionEl = tmpl.querySelector('.song-section');
-    const typeSelect = tmpl.querySelector('.section-type');
-    const opt = typeSelect.querySelector(`option[value="${esc(section.type)}"]`);
-    if (opt) opt.selected = true;
+    const typeInput = tmpl.querySelector('.section-type-input');
+    if (typeInput) {
+      typeInput.value = section.type || 'Verse';
+
+      // Auto-capitalize: match typed input against known section types
+      const knownTypes = ['Verse', 'Verse 2', 'Chorus', 'Pre-Chorus', 'Bridge', 'Tag', 'Coda', 'Outro', 'Intro'];
+      function autoCapitalize(val) {
+        const lower = val.toLowerCase().trim();
+        if (!lower) return;
+        const match = knownTypes.find(t => t.toLowerCase() === lower);
+        if (match && typeInput.value !== match) {
+          typeInput.value = match;
+          song.sections[si].type = match;
+          triggerAutoSave(song);
+          return true;
+        }
+        // Also match partial prefix: "vers" -> "Verse", "chor" -> "Chorus"
+        const prefixMatch = knownTypes.find(t => t.toLowerCase().startsWith(lower) && lower.length >= 2);
+        if (prefixMatch) {
+          // Don't auto-replace while still typing (wait for exact or longer match), but capitalize first letter of each word
+          const words = val.split(/\s+/);
+          const capitalized = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+          if (capitalized !== val) {
+            typeInput.value = capitalized;
+            // Move cursor to end
+            setTimeout(() => { typeInput.selectionStart = typeInput.selectionEnd = typeInput.value.length; }, 0);
+          }
+        }
+        return false;
+      }
+
+      typeInput.addEventListener('input', () => {
+        const prev = song.sections[si].type;
+        const val = typeInput.value;
+        song.sections[si].type = val;
+        autoCapitalize(val);
+        if (song.sections[si].type !== prev) triggerAutoSave(song);
+      });
+      typeInput.addEventListener('change', () => {
+        // On blur/enter, do a final capitalize pass
+        const matched = autoCapitalize(typeInput.value);
+        if (!matched) {
+          // If no known match, still capitalize first letter of each word
+          const val = typeInput.value;
+          const words = val.split(/\s+/);
+          const capitalized = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+          if (capitalized !== val) {
+            typeInput.value = capitalized;
+            song.sections[si].type = capitalized;
+          }
+        }
+        triggerAutoSave(song);
+      });
+    }
 
     tmpl.querySelector('.delete-section').addEventListener('click', () => {
       if (song.sections.length <= 1) { toast('Need at least one section'); return; }
@@ -2094,7 +2145,6 @@ function renderEditorBody(song) {
       };
       showUndoToast('Section deleted');
     });
-    typeSelect.addEventListener('change', () => { song.sections[si].type = typeSelect.value; triggerAutoSave(song); });
     tmpl.querySelector('.move-up').addEventListener('click', () => {
       if (si <= 0) return;
       [song.sections[si-1], song.sections[si]] = [song.sections[si], song.sections[si-1]];
