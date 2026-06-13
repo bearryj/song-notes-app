@@ -144,7 +144,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 ### Data & Sync
 - [ ] Cloud backup / sync — songs stored only in localStorage are lost on device change. Add optional cloud sync (e.g. a simple REST API, or even just export/import a full backup JSON). At minimum: "Export All Songs" and "Import Backup" buttons.
 - [ ] Song-level auto-backup — keep last N auto-saved snapshots separate from version history, so a user can recover from a bad edit even after auto-save overwrites.
-- [ ] Duplicate song detection — warn when creating/importing a song with the same title as an existing one.
+- [x] Duplicate song detection — warn when creating/importing a song with the same title as an existing one. (2026-06-13) — isDuplicateTitle() helper, blocks creation with error toast, skips file imports with count, blocks share code import with guidance
 
 ### Editor Quality of Life
 - [x] Adjustable editor font size — A-/A+ buttons in editor nav bar (13-24px), CSS custom property --editor-font-size scales lyrics, chords, section headers. Persisted to localStorage. (2026-06-13)
