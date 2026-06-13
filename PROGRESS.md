@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (PWA manifest + service worker)
+2026-06-12 by OWL (multi-select: long-press + right-click + Select All bar)
 
 ## Build & Test Commands
 ```bash
@@ -119,7 +119,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 
 ### UX Polish
 - [x] No "delete all recordings" option — audio recordings are base64-encoded and stored per-song; a song with many recordings can balloon in size. Add a "clear recordings" button in the audio panel. (already existed — Delete All button in recordings dropdown)
-- [ ] No bulk operations on songs — can't multi-select to delete, move, or add to setlist. Long-press multi-select would be natural on mobile.
+- [x] No bulk operations on songs — can't multi-select to delete, move, or add to setlist. Long-press multi-select would be natural on mobile. (2026-06-12) — long-press enters multi-select, right-click on desktop, tap to toggle, bottom bar with pin/duplicate/folder/setlist/delete + Select All/Deselect All toggle
 - [x] Setlist chord chart print doesn't include capo transposition — the print view shows raw chords, not capo-adjusted chords. Fix to match the capo-per-song feature. (2026-06-12) — showSetlistPrintPreview() now applies both entry.capo + entry.transpose semitones to displayed chords
 - [x] No song count in folder headers — folders show name but not how many songs they contain. Add a small count badge. (already existed — item-meta count in renderFolders())
 - [x] Search doesn't search chord content — only searches title/tags. Musicians often remember a chord progression, not the title. Index chord names in search. (2026-06-12) — added chord name matching in renderSongList() filter
@@ -145,6 +145,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Optimized esc() helper — replaced DOM-based escaping with regex replace (2026-06-12) — eliminates 33+ unnecessary createElement calls, many in hot render loops
 - [x] Auto-save timer flush on song switch + back navigation (2026-06-12) — clearTimeout + reset hasChanges + updateSaveDot in switchToSong() and saveCurrentSongAndGoBack() to prevent stale debounced writes from corrupting state
 - [x] Song content preview in list view (2026-06-12) — chord chips + first lyric line snippet under each title, two-line layout with .list-item-main wrapper, scoped to .swipe-content.list-item to avoid affecting folder items
+- [x] Multi-select mode — long-press (touch) or right-click (desktop) to enter, tap to toggle selection, bottom bar with Select All/Deselect All, Pin, Duplicate, Move to Folder, Add to Setlist, Delete (2026-06-12)
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~170K), CSS (styles.css ~72K), HTML (index.html)

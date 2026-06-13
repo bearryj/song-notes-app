@@ -43,6 +43,10 @@ let activeSetlistId = null;
 // Track swipe state per swipe-item element (avoids per-item listeners)
 const swipeState = new WeakMap();
 
+// ===== Multi-Select State =====
+let multiSelectMode = false;
+let selectedSongIds = new Set();
+
 // Chord definitions
 const CHROMATIC = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const CHROMATIC_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -1659,7 +1663,7 @@ function renderSongList(filter = '') {
       const chordPreview = chordSet.length ? `<div class="card-chords">${chordSet.map(c => `<span class="card-chord-chip">${esc(c)}</span>`).join('')}</div>` : '';
       const tagHtml = (s.tags && s.tags.length) ? `<div class="card-tags">${s.tags.slice(0, 3).map(t => `<span class="card-tag">${esc(t)}</span>`).join('')}${s.tags.length > 3 ? `<span class="card-tag-more">+${s.tags.length - 3}</span>` : ''}</div>` : '';
       const pinLabel = s.pinned ? '☆' : '★';
-      html += `<div class="gallery-card" data-id="${s.id}" style="animation-delay:${i * 30}ms">
+      html += `<div class="gallery-card${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}" style="animation-delay:${i * 30}ms">
         <div class="gallery-card-top">
           ${pinned}
           <span class="card-title">${esc(s.title || 'Untitled')}</span>
@@ -1728,7 +1732,7 @@ function renderSongList(filter = '') {
       }
     }
 
-    html += `<div class="swipe-item" data-id="${s.id}">
+    html += `<div class="swipe-item${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}">
       <div class="swipe-bg">
         <button class="swipe-pin-btn" data-action="pin" aria-label="${s.pinned ? 'Unpin' : 'Pin'} song">${pinLabel}</button>
         <button class="swipe-duplicate-btn" data-action="duplicate" aria-label="Duplicate song">⧉</button>
@@ -4274,13 +4278,16 @@ function showSongPrintPreview() {
     st.startY = e.changedTouches[0].clientY;
     st.isSwiping = false;
 
-    // Long press timer for context menu (only on touch)
+    // Long press timer — enters multi-select mode (only on touch)
     st.longPressTimer = setTimeout(() => {
       st.longPressTimer = null;
       const songId = item.dataset.id;
-      if (songId) showSongContext(songId, content);
+      if (songId) {
+        if (navigator.vibrate) navigator.vibrate(30);
+        enterMultiSelectMode(songId);
+      }
       st.isSwiping = true; // prevent click
-    }, 600);
+    }, 500);
   }, { passive: true });
 
   list.addEventListener('touchmove', (e) => {
@@ -4352,6 +4359,13 @@ function showSongPrintPreview() {
     if (!item) return;
     const songId = item.dataset.id;
     if (!songId) return;
+
+    // Multi-select mode: tap toggles selection
+    if (multiSelectMode) {
+      if (e.target.closest('.swipe-bg') || e.target.closest('.gallery-card-actions')) return;
+      toggleSongSelection(songId);
+      return;
+    }
 
     // Action buttons in swipe background
     const actionBtn = e.target.closest('[data-action]');
@@ -4432,7 +4446,287 @@ function showSongPrintPreview() {
     openEditor(currentSongId);
     pushView('editor-view');
   });
+
+  // Right-click (desktop) to enter multi-select or toggle selection
+  list.addEventListener('contextmenu', (e) => {
+    const item = e.target.closest('.swipe-item') || e.target.closest('.gallery-card');
+    if (!item) return;
+    const songId = item.dataset.id;
+    if (!songId) return;
+    e.preventDefault();
+    if (multiSelectMode) {
+      toggleSongSelection(songId);
+    } else {
+      enterMultiSelectMode(songId);
+    }
+  });
 })();
+
+// ===== Multi-Select Mode =====
+function enterMultiSelectMode(songId) {
+  multiSelectMode = true;
+  selectedSongIds = new Set([songId]);
+  document.body.classList.add('multi-select-mode');
+  renderSongList($('search-input')?.value || '');
+  renderMultiSelectBar();
+  updateMultiSelectBar();
+}
+
+function exitMultiSelectMode() {
+  multiSelectMode = false;
+  selectedSongIds.clear();
+  document.body.classList.remove('multi-select-mode');
+  const bar = $('multi-select-bar');
+  if (bar) bar.remove();
+  renderSongList($('search-input')?.value || '');
+}
+
+function toggleSongSelection(songId) {
+  if (selectedSongIds.has(songId)) {
+    selectedSongIds.delete(songId);
+    if (selectedSongIds.size === 0) {
+      exitMultiSelectMode();
+      return;
+    }
+  } else {
+    selectedSongIds.add(songId);
+  }
+  updateMultiSelectBar();
+  document.querySelectorAll('.swipe-item, .gallery-card').forEach(el => {
+    const id = el.dataset.id;
+    el.classList.toggle('selected', selectedSongIds.has(id));
+  });
+}
+
+function renderMultiSelectBar() {
+  if ($('multi-select-bar')) return;
+  const bar = document.createElement('div');
+  bar.id = 'multi-select-bar';
+  bar.innerHTML = `
+    <button class="ms-bar-close" aria-label="Exit selection">✕</button>
+    <span class="ms-bar-count" id="ms-bar-count">1 selected</span>
+    <div class="ms-bar-actions">
+      <button class="ms-bar-btn" data-ms-action="selectall" aria-label="Select all">☑</button>
+      <button class="ms-bar-btn" data-ms-action="pin" aria-label="Pin selected">★</button>
+      <button class="ms-bar-btn" data-ms-action="duplicate" aria-label="Duplicate selected">⧉</button>
+      <button class="ms-bar-btn" data-ms-action="folder" aria-label="Move to folder">◎</button>
+      <button class="ms-bar-btn" data-ms-action="setlist" aria-label="Add to setlist">≡</button>
+      <button class="ms-bar-btn ms-bar-danger" data-ms-action="delete" aria-label="Delete selected">✕</button>
+    </div>`;
+  document.body.appendChild(bar);
+
+  bar.querySelector('.ms-bar-close').addEventListener('click', exitMultiSelectMode);
+  bar.querySelectorAll('.ms-bar-btn').forEach(btn => {
+    btn.addEventListener('click', () => handleBulkAction(btn.dataset.msAction));
+  });
+}
+
+function updateMultiSelectBar() {
+  const count = selectedSongIds.size;
+  const el = $('ms-bar-count');
+  if (el) el.textContent = count + ' selected';
+  // Toggle select-all button icon based on visible items
+  const btn = document.querySelector('#multi-select-bar .ms-bar-btn[data-ms-action="selectall"]');
+  if (btn) {
+    const visibleItems = document.querySelectorAll('#song-list .swipe-item, #song-list .gallery-card');
+    const visibleIds = [...visibleItems].map(el => el.dataset.id).filter(Boolean);
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedSongIds.has(id));
+    btn.textContent = allSelected ? '☐' : '☑';
+    btn.setAttribute('aria-label', allSelected ? 'Deselect all' : 'Select all');
+  }
+}
+
+async function handleBulkAction(action) {
+  const ids = [...selectedSongIds];
+  if (!ids.length && action !== 'selectall') return;
+
+  if (action === 'selectall') {
+    // Check if all visible items (matching current search filter) are selected
+    const visibleItems = document.querySelectorAll('#song-list .swipe-item, #song-list .gallery-card');
+    const visibleIds = [...visibleItems].map(el => el.dataset.id).filter(Boolean);
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedSongIds.has(id));
+    if (allSelected) {
+      // Deselect all visible
+      visibleIds.forEach(id => selectedSongIds.delete(id));
+      if (selectedSongIds.size === 0) exitMultiSelectMode();
+      else updateMultiSelectBar();
+      visibleItems.forEach(el => el.classList.remove('selected'));
+      return;
+    }
+    // Select all visible
+    visibleIds.forEach(id => selectedSongIds.add(id));
+    updateMultiSelectBar();
+    visibleItems.forEach(el => el.classList.add('selected'));
+    return;
+  }
+
+  if (action === 'delete') {
+    const count = ids.length;
+    showConfirmSheet({
+      title: 'Delete Songs',
+      body: 'Move ' + count + ' song' + (count !== 1 ? 's' : '') + ' to trash?',
+      confirmText: 'Delete',
+      confirmClass: 'sheet-danger',
+      onConfirm: async () => {
+        for (const id of ids) await deleteSong(id);
+        toast('Moved ' + count + ' song' + (count !== 1 ? 's' : '') + ' to trash');
+        exitMultiSelectMode();
+      }
+    });
+  } else if (action === 'pin') {
+    const allPinned = ids.every(id => getSong(id)?.pinned);
+    for (const id of ids) {
+      const s = getSong(id);
+      if (s) { s.pinned = !allPinned; await saveSingleSong(s); }
+    }
+    toast(allPinned ? 'Unpinned' : 'Pinned');
+    exitMultiSelectMode();
+  } else if (action === 'duplicate') {
+    for (const id of ids) {
+      const s = getSong(id);
+      if (!s) continue;
+      const copy = JSON.parse(JSON.stringify(s));
+      copy.id = generateId();
+      copy.title = (s.title || 'Untitled') + ' (Copy)';
+      copy.pinned = false;
+      copy.created_at = new Date().toISOString();
+      copy.updated_at = new Date().toISOString();
+      songs.unshift(copy);
+    }
+    await saveSongs();
+    toast('Duplicated ' + ids.length + ' song' + (ids.length !== 1 ? 's' : ''));
+    exitMultiSelectMode();
+  } else if (action === 'folder') {
+    showBulkMoveToFolderSheet(ids);
+  } else if (action === 'setlist') {
+    showBulkAddToSetlistSheet(ids);
+  }
+}
+
+// ===== Bulk Move to Folder =====
+function showBulkMoveToFolderSheet(songIds) {
+  const sheet = document.createElement('div');
+  sheet.className = 'confirm-sheet';
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-label', 'Move to folder');
+
+  const customFolders = folders.filter(f => f !== 'All Songs' && f !== 'Recently Edited');
+  let folderListHtml = '<button class="folder-picker-item selected" data-folder="">' +
+    '<span class="folder-picker-icon">♫</span>' +
+    '<span class="folder-picker-name">All Songs</span>' +
+    '<span class="folder-picker-check">✓</span></button>';
+
+  customFolders.forEach(f => {
+    folderListHtml += '<button class="folder-picker-item" data-folder="' + escHtml(f) + '">' +
+      '<span class="folder-picker-icon">♪</span>' +
+      '<span class="folder-picker-name">' + escHtml(f) + '</span></button>';
+  });
+
+  if (!customFolders.length) {
+    folderListHtml += '<div class="folder-picker-empty">No custom folders yet</div>';
+  }
+
+  sheet.innerHTML = '<div class="confirm-sheet-backdrop"></div>' +
+    '<div class="confirm-sheet-content" style="max-height:60vh;">' +
+    '<div class="confirm-sheet-handle"></div>' +
+    '<div class="confirm-sheet-title">Move ' + songIds.length + ' Song' + (songIds.length !== 1 ? 's' : '') + ' to Folder</div>' +
+    '<div class="folder-picker-list">' + folderListHtml + '</div>' +
+    '<div class="confirm-sheet-actions">' +
+    '<button class="confirm-sheet-cancel">Cancel</button></div></div>';
+
+  document.body.appendChild(sheet);
+  const close = () => sheet.remove();
+  sheet.querySelector('.confirm-sheet-backdrop').onclick = close;
+  sheet.querySelector('.confirm-sheet-cancel').onclick = close;
+  enableDragToDismiss(sheet, { contentSelector: '.confirm-sheet-content', backdropSelector: '.confirm-sheet-backdrop', onDismiss: close });
+
+  sheet.querySelectorAll('.folder-picker-item').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const targetFolder = btn.dataset.folder || null;
+      for (const id of songIds) {
+        const s = getSong(id);
+        if (s) { s.folder = targetFolder; s.updated_at = new Date().toISOString(); await saveSingleSong(s); }
+      }
+      renderSongList($('search-input')?.value || '');
+      toast(targetFolder ? 'Moved to ' + targetFolder : 'Moved to All Songs');
+      close();
+      exitMultiSelectMode();
+    });
+  });
+}
+
+// ===== Bulk Add to Setlist =====
+function showBulkAddToSetlistSheet(songIds) {
+  if (!setlists.length) {
+    showInputSheet({
+      title: 'New Setlist',
+      placeholder: 'Setlist name',
+      onConfirm: async (name) => {
+        const sl = { id: generateId(), name, songs: [], created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        setlists.push(sl);
+        localStorage.setItem('sn_setlists', JSON.stringify(setlists));
+        for (const id of songIds) sl.songs.push({ id, capo: null, transpose: 0 });
+        localStorage.setItem('sn_setlists', JSON.stringify(setlists));
+        toast('Created "' + name + '" with ' + songIds.length + ' song' + (songIds.length !== 1 ? 's' : ''));
+        exitMultiSelectMode();
+      }
+    });
+    return;
+  }
+
+  const sheet = document.createElement('div');
+  sheet.className = 'confirm-sheet';
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-label', 'Add to setlist');
+
+  let setlistHtml = '';
+  setlists.forEach(sl => {
+    setlistHtml += '<button class="folder-picker-item" data-setlist-id="' + sl.id + '">' +
+      '<span class="folder-picker-icon">≡</span>' +
+      '<span class="folder-picker-name">' + escHtml(sl.name) + '</span>' +
+      '<span class="folder-picker-count">' + sl.songs.length + '</span></button>';
+  });
+
+  sheet.innerHTML = '<div class="confirm-sheet-backdrop"></div>' +
+    '<div class="confirm-sheet-content" style="max-height:60vh;">' +
+    '<div class="confirm-sheet-handle"></div>' +
+    '<div class="confirm-sheet-title">Add to Setlist</div>' +
+    '<div class="folder-picker-list">' + setlistHtml + '</div>' +
+    '<div class="confirm-sheet-or">— or —</div>' +
+    '<button class="confirm-sheet-create" id="ms-new-setlist">+ New Setlist</button>' +
+    '<div class="confirm-sheet-actions">' +
+    '<button class="confirm-sheet-cancel">Cancel</button></div></div>';
+
+  document.body.appendChild(sheet);
+  const close = () => sheet.remove();
+  sheet.querySelector('.confirm-sheet-backdrop').onclick = close;
+  sheet.querySelector('.confirm-sheet-cancel').onclick = close;
+  enableDragToDismiss(sheet, { contentSelector: '.confirm-sheet-content', backdropSelector: '.confirm-sheet-backdrop', onDismiss: close });
+
+  sheet.querySelectorAll('.folder-picker-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const slId = btn.dataset.setlistId;
+      const sl = setlists.find(s => s.id === slId);
+      if (!sl) return;
+      for (const id of songIds) {
+        if (!sl.songs.some(e => e.id === id)) sl.songs.push({ id, capo: null, transpose: 0 });
+      }
+      sl.updated_at = new Date().toISOString();
+      localStorage.setItem('sn_setlists', JSON.stringify(setlists));
+      toast('Added to "' + sl.name + '"');
+      close();
+      exitMultiSelectMode();
+    });
+  });
+
+  const newBtn = $('ms-new-setlist');
+  if (newBtn) {
+    newBtn.addEventListener('click', () => {
+      close();
+      showBulkAddToSetlistSheet(songIds);
+    });
+  }
+}
 
 function setupEvents() {
   $('back-to-folders').addEventListener('click', popView);
