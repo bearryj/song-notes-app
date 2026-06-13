@@ -98,7 +98,7 @@
 }
 
 /* ===== Section ===== */
-.song-section { margin-bottom: 28px; }
+.song-section { margin-bottom: 28px; content-visibility: auto; contain-intrinsic-size: auto 120px; }
 .section-header {
   display: flex;
   align-items: center;

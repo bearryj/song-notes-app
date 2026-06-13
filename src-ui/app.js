@@ -2036,7 +2036,7 @@ function buildSongRowHTML(s, offset, height) {
 
   const hasRec = s.audio && s.audio.length > 0;
   const isThisPlaying = currentPlayingSongId === s.id;
-  const recBadge = hasRec ? `<button class="song-play-rec-btn${isThisPlaying ? ' playing' : ''}" data-id="${s.id}" aria-label="${isThisPlaying ? 'Pause' : 'Play'} recording" title="${isThisPlaying ? 'Pause' : 'Play'} latest recording (${s.audio.length})"><span>${isThisPlaying ? '❚❚' : '▶'}</span><span class="rec-count">${s.audio.length}</span></button>` : '';
+  const recBadge = hasRec ? `<button class="song-play-rec-btn${isThisPlaying ? ' playing' : ''}" data-id="${s.id}" aria-label="${isThisPlaying ? 'Pause' : 'Play'} recording" title="${isThisPlaying ? 'Pause' : 'Play'} latest recording (${s.audio.length})"><span class="rec-icon">${isThisPlaying ? '❚❚' : '▶'}</span><span class="rec-count">${s.audio.length}</span></button>` : '';
   const tutorialBadge = s.tutorial ? '<span class="tutorial-badge">Tutorial</span>' : '';
 
   return `<div class="swipe-item${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}" style="position:absolute;top:${offset}px;left:0;right:0;height:${height}px">
@@ -2367,12 +2367,106 @@ function updateEditorKeyBpm(song) {
   badge.setAttribute('aria-label', labels.join(', '));
 }
 
+// ===== Lazy Section Rendering =====
+// For large songs (40+ sections), use IntersectionObserver to render sections on demand.
+// Off-screen sections are replaced with height-preserving placeholders to avoid jank.
+let sectionObserver = null;
+let sectionObserverSongId = null;
+
+function getSectionEstimatedHeight(section) {
+  // Estimate height: header (~46px) + lines (~34px each) + add-line btn (~36px) + margin (28px)
+  const lineCount = section.lines ? section.lines.length : 1;
+  return 46 + (lineCount * 34) + 36 + 28;
+}
+
+function initSectionObserver(song, el) {
+  if (sectionObserver) { sectionObserver.disconnect(); sectionObserver = null; }
+  sectionObserverSongId = song.id;
+  sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const idx = parseInt(entry.target.dataset.sectionIdx);
+      if (isNaN(idx)) return;
+      if (entry.isIntersecting && entry.target.classList.contains('section-placeholder')) {
+        // Render real section
+        const section = song.sections[idx];
+        if (!section) return;
+        const realEl = buildSectionElement(song, idx, section);
+        entry.target.replaceWith(realEl);
+        // Observe the real element for going out of view
+        sectionObserver.observe(realEl);
+      } else if (!entry.isIntersecting && !entry.target.classList.contains('section-placeholder')) {
+        // Far out of view — replace with placeholder (only if > 500px from viewport)
+        const rect = entry.target.getBoundingClientRect();
+        const viewportH = window.innerHeight;
+        if (rect.bottom < -500 || rect.top > viewportH + 500) {
+          const placeholder = createSectionPlaceholder(idx, entry.target.offsetHeight);
+          entry.target.replaceWith(placeholder);
+          sectionObserver.observe(placeholder);
+        }
+      }
+    });
+  }, { root: el, rootMargin: '200px 0px', threshold: 0 });
+}
+
+function createSectionPlaceholder(idx, height) {
+  const div = document.createElement('div');
+  div.className = 'song-section section-placeholder';
+  div.dataset.sectionIdx = idx;
+  div.style.height = height + 'px';
+  div.style.minHeight = '60px';
+  div.style.display = 'flex';
+  div.style.alignItems = 'center';
+  div.style.justifyContent = 'center';
+  div.style.opacity = 0.3;
+  div.style.fontSize = '11px';
+  div.style.letterSpacing = '0.5px';
+  div.style.color = 'var(--text-secondary)';
+  div.textContent = songSections[idx] ? songSections[idx].type || 'Section' : '⋯';
+  return div;
+}
+
+// Reference to song sections for placeholder labels (set during renderEditorBody)
+let songSections = [];
+
 function renderEditorBody(song) {
   const el = $('song-body');
   el.innerHTML = '';
-  song.sections.forEach((section, si) => {
+  songSections = song.sections;
+
+  // For small songs, render all sections normally (fast enough)
+  if (song.sections.length <= 40) {
+    song.sections.forEach((section, si) => {
+      const sectionEl = buildSectionElement(song, si, section);
+      el.appendChild(sectionEl);
+    });
+  } else {
+    // Large song: lazy rendering with IntersectionObserver
+    // Render first 3 sections immediately so the user sees content right away
+    const initialCount = Math.min(3, song.sections.length);
+    for (let si = 0; si < initialCount; si++) {
+      const sectionEl = buildSectionElement(song, si, song.sections[si]);
+      el.appendChild(sectionEl);
+      if (sectionObserver) sectionObserver.observe(sectionEl);
+    }
+    // Placeholder for remaining sections
+    for (let si = initialCount; si < song.sections.length; si++) {
+      const estimatedH = getSectionEstimatedHeight(song.sections[si]);
+      const placeholder = createSectionPlaceholder(si, estimatedH);
+      el.appendChild(placeholder);
+      if (sectionObserver) sectionObserver.observe(placeholder);
+    }
+  }
+
+  renderChordRibbon(song);
+  applyDisplayMode();
+  applyEditorFontSize();
+}
+
+// Build a single section DOM element (extracted from the old forEach)
+function buildSectionElement(song, si, section) {
     const tmpl = $('section-template').content.cloneNode(true);
     const sectionEl = tmpl.querySelector('.song-section');
+    sectionEl.dataset.sectionIdx = si;
     const typeInput = tmpl.querySelector('.section-type-input');
     if (typeInput) {
       typeInput.value = section.type || 'Verse';
@@ -2504,12 +2598,13 @@ function renderEditorBody(song) {
 
     // Drag to reorder
     sectionEl.draggable = true;
+    const songBodyEl = $('song-body');
     sectionEl.addEventListener('dragstart', e => { sectionEl.style.opacity = '0.4'; e.dataTransfer.effectAllowed = 'move'; });
     sectionEl.addEventListener('dragover', e => { e.preventDefault(); sectionEl.classList.add('drag-over'); });
     sectionEl.addEventListener('dragleave', () => sectionEl.classList.remove('drag-over'));
     sectionEl.addEventListener('drop', e => {
       e.preventDefault(); sectionEl.classList.remove('drag-over');
-      const children = [...el.children];
+      const children = [...songBodyEl.children];
       const fromIdx = children.indexOf(document.querySelector('.song-section[draggable]'));
       if (fromIdx !== -1) {
         const [removed] = song.sections.splice(fromIdx, 1);
@@ -2531,11 +2626,7 @@ function renderEditorBody(song) {
       saveSingleSong(song); renderLine(editorDiv, song, si, song.sections[si].lines.length - 1, { text: '', chords: [] });
     });
     editorDiv.appendChild(addLineBtn);
-    el.appendChild(sectionEl);
-  });
-  renderChordRibbon(song);
-  applyDisplayMode();
-  applyEditorFontSize();
+    return sectionEl;
 }
 
 function applyDisplayMode() {
