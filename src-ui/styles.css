@@ -187,6 +187,10 @@ html, body {
   color: var(--fg-tertiary);
   padding: 0 3px;
 }
+.editor-key-bpm .c {
+  color: var(--chord);
+  font-weight: 500;
+}
 .nav-title-input {
   flex: 1;
   font-size: 17px;

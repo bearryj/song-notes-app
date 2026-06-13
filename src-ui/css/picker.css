@@ -252,6 +252,33 @@
 .key-bpm-change-btn:active {
   background: rgba(10, 132, 255, 0.15);
 }
+.key-bpm-capo-btns {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.key-bpm-capo-btn {
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--fg);
+  background: var(--bg-surface);
+  border: 1px solid var(--separator);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font);
+  transition: background 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+.key-bpm-capo-btn:active {
+  background: var(--bg-tertiary);
+  border-color: var(--fg-tertiary);
+}
 .key-bpm-transpose-row {
   display: flex;
   gap: 10px;

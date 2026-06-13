@@ -39,6 +39,14 @@
   color: var(--chord);
 }
 
+.cd-capo-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  margin-top: 2px;
+  letter-spacing: 0.2px;
+}
+
 .cd-fretboard-wrap {
   display: flex;
   justify-content: center;

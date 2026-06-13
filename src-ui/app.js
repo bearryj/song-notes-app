@@ -405,6 +405,14 @@ function showKeyBpmSheet(song) {
         <div class="key-bpm-value" id="kbpms-bpm">${esc(song.bpm ? String(song.bpm) : '—')}</div>
         <button class="key-bpm-change-btn" id="kbpms-change-bpm">Change</button>
       </div>
+      <div class="key-bpm-row">
+        <div class="key-bpm-label">Capo</div>
+        <div class="key-bpm-value" id="kbpms-capo">${song.capo || 0}</div>
+        <div class="key-bpm-capo-btns">
+          <button class="key-bpm-capo-btn" id="kbpms-capo-down" title="Decrease capo">−</button>
+          <button class="key-bpm-capo-btn" id="kbpms-capo-up" title="Increase capo">+</button>
+        </div>
+      </div>
       <div class="key-bpm-transpose-row">
         <button class="key-bpm-transpose-btn" id="kbpms-trans-down">♭ Down 1</button>
         <button class="key-bpm-transpose-btn" id="kbpms-trans-up">Up 1 ♯</button>
@@ -427,6 +435,21 @@ function showKeyBpmSheet(song) {
       initialValue: song.bpm ? String(song.bpm) : '',
       onConfirm: (bpm) => { song.bpm = parseInt(bpm) || null; saveSingleSong(song); updateEditorKeyBpm(song); }
     });
+  };
+  // Capo up/down
+  const updateCapoDisplay = () => {
+    sheet.querySelector('#kbpms-capo').textContent = song.capo || 0;
+    updateEditorKeyBpm(song);
+  };
+  sheet.querySelector('#kbpms-capo-down').onclick = () => {
+    song.capo = Math.max(0, (song.capo || 0) - 1);
+    saveSingleSong(song);
+    updateCapoDisplay();
+  };
+  sheet.querySelector('#kbpms-capo-up').onclick = () => {
+    song.capo = Math.min(11, (song.capo || 0) + 1);
+    saveSingleSong(song);
+    updateCapoDisplay();
   };
   // Quick transpose
   sheet.querySelector('#kbpms-trans-down').onclick = () => {
@@ -2051,20 +2074,26 @@ function openEditor(id) {
   updateSwitcherButtons();
 }
 
-// Update the key+BPM badge in the editor nav bar
+// Update the key+BPM+capo badge in the editor nav bar
 function updateEditorKeyBpm(song) {
   const badge = $('editor-key-bpm');
   if (!badge) return;
   if (!song) { badge.style.display = 'none'; return; }
   const key = song.key || '';
   const bpm = song.bpm || '';
-  if (!key && !bpm) { badge.style.display = 'none'; return; }
+  const capo = song.capo || 0;
+  if (!key && !bpm && !capo) { badge.style.display = 'none'; return; }
   const parts = [];
   if (key) parts.push(`<span class="k">${esc(key)}</span>`);
   if (bpm) parts.push(`<span class="b">${esc(String(bpm))}</span>`);
+  if (capo) parts.push(`<span class="c">capo ${capo}</span>`);
   badge.innerHTML = parts.join(`<span class="s">·</span>`);
   badge.style.display = '';
-  badge.setAttribute('aria-label', `${key ? 'Key: ' + key : ''}${key && bpm ? ', ' : ''}${bpm ? 'BPM: ' + bpm : ''}`);
+  const labels = [];
+  if (key) labels.push('Key: ' + key);
+  if (bpm) labels.push('BPM: ' + bpm);
+  if (capo) labels.push('Capo: ' + capo);
+  badge.setAttribute('aria-label', labels.join(', '));
 }
 
 function renderEditorBody(song) {
@@ -2917,7 +2946,7 @@ function getStartFret(frets) {
   return min - 1;
 }
 
-function renderFretboard(container, chordName) {
+function renderFretboard(container, chordName, capo) {
   const shape = getChordShape(chordName);
   if (!shape) {
     container.innerHTML = `<div class="cd-no-chord">No diagram for "${esc(chordName)}"<br><span style="font-size:13px;color:var(--fg-tertiary);">Try common chords like G, C, D, Am, Em, F...</span></div>`;
@@ -2945,6 +2974,27 @@ function renderFretboard(container, chordName) {
   const minFret = Math.min(...frets.filter(f => f > 0));
   const hasOpen = frets.some(f => f === 0);
   const showNut = hasOpen || minFret <= 2;
+
+  // Capo indicator: draw a thick horizontal bar across all strings at the capo fret
+  // The capo sits *above* the first displayed fret, so we show it at the nut position
+  // or between frets if capo >= startFret
+  const showCapo = capo && capo > 0;
+  let capoY = null;
+  if (showCapo) {
+    if (capo < startFret) {
+      // Capo is below the first displayed fret — show at nut position
+      capoY = padY;
+    } else {
+      // Capo is within the displayed range
+      const capoFretPos = capo - startFret + (showNut ? 0 : 1);
+      capoY = padY + capoFretPos * fretSpacing + fretSpacing / 2;
+    }
+    // Draw capo bar
+    if (capoY !== null) {
+      svg += `<rect x="${padX - 2}" y="${capoY - 5}" width="${fretW + 4}" height="10" rx="5" fill="var(--accent)" opacity="0.85"/>`;
+      svg += `<text x="${padX - 14}" y="${capoY + 4}" fill="var(--accent)" font-size="10" font-family="var(--font)" text-anchor="middle" font-weight="700">C${capo}</text>`;
+    }
+  }
 
   if (!showNut && startFret > 1) {
     svg += `<text x="${padX - 12}" y="${padY + fretSpacing * 0.7}" fill="var(--fg-tertiary)" font-size="12" font-family="var(--font)" text-anchor="middle">${startFret}fr</text>`;
@@ -2974,8 +3024,15 @@ function renderFretboard(container, chordName) {
       const y = padY - 14;
       svg += `<text x="${x}" y="${y}" fill="var(--fg-tertiary)" font-size="14" font-family="var(--font)" text-anchor="middle" font-weight="bold">&#10005;</text>`;
     } else if (fret === 0) {
-      const y = padY - 14;
-      svg += `<text x="${x}" y="${y}" fill="var(--fg-secondary)" font-size="14" font-family="var(--font)" text-anchor="middle" font-weight="bold">&#9675;</text>`;
+      // Open string — only show if no capo, or if capo doesn't cover this string
+      if (!showCapo || capo < startFret) {
+        const y = padY - 14;
+        svg += `<text x="${x}" y="${y}" fill="var(--fg-secondary)" font-size="14" font-family="var(--font)" text-anchor="middle" font-weight="bold">&#9675;</text>`;
+      } else {
+        // Capo covers this open string — show muted
+        const y = padY - 14;
+        svg += `<text x="${x}" y="${y}" fill="var(--fg-tertiary)" font-size="14" font-family="var(--font)" text-anchor="middle" font-weight="bold">&#10005;</text>`;
+      }
     } else {
       const fretPos = fret - startFret + (showNut ? 0 : 1);
       const y = padY + fretPos * fretSpacing + fretSpacing / 2;
@@ -3006,6 +3063,10 @@ function renderFretboard(container, chordName) {
 }
 
 function showChordDiagramPanel(initialChord) {
+  // Get current song's capo
+  const currentSong = getSong(currentSongId);
+  const capo = currentSong?.capo || 0;
+
   let panel = $('chord-diagram-panel');
   if (!panel) {
     panel = document.createElement('div');
@@ -3018,6 +3079,7 @@ function showChordDiagramPanel(initialChord) {
       <div class="cd-header">
         <h3 class="cd-title">Chord Diagram</h3>
         <div class="cd-chord-name" id="cd-chord-name">C</div>
+        <div class="cd-capo-label" id="cd-capo-label" style="display:none;"></div>
       </div>
       <div class="cd-fretboard-wrap" id="cd-fretboard-wrap"></div>
       <div class="cd-controls">
@@ -3042,22 +3104,24 @@ function showChordDiagramPanel(initialChord) {
       panel.style.display = 'none';
     });
 
+    const doSet = (name) => setDiagramChord(name, capo);
+
     $('cd-prev').addEventListener('click', () => {
       const name = $('cd-chord-name').textContent;
       const idx = ALL_CHORD_NAMES.indexOf(name);
       const prev = idx > 0 ? ALL_CHORD_NAMES[idx - 1] : ALL_CHORD_NAMES[ALL_CHORD_NAMES.length - 1];
-      setDiagramChord(prev);
+      doSet(prev);
     });
     $('cd-next').addEventListener('click', () => {
       const name = $('cd-chord-name').textContent;
       const idx = ALL_CHORD_NAMES.indexOf(name);
       const next = idx < ALL_CHORD_NAMES.length - 1 ? ALL_CHORD_NAMES[idx + 1] : ALL_CHORD_NAMES[0];
-      setDiagramChord(next);
+      doSet(next);
     });
 
     $('cd-lookup-btn').addEventListener('click', () => {
       const val = $('cd-chord-input').value.trim();
-      if (val) setDiagramChord(val);
+      if (val) doSet(val);
     });
     $('cd-chord-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') $('cd-lookup-btn').click();
@@ -3067,21 +3131,41 @@ function showChordDiagramPanel(initialChord) {
     const commonChords = ['C','D','E','F','G','A','B','Am','Bm','Cm','Dm','Em','Fm','Gm','C7','D7','E7','G7','A7','B7','Cmaj7','Dmaj7','Fmaj7','Gmaj7','Amaj7','Em7','Am7','Bm7','Dm7','Fdim','Gdim','Adim','Bdim','Caug','Daug','Eaug','Aaug','Dsus4','Esus4','Gsus4','Asus4','Cadd9','Dadd9','Eadd9','Gadd9','Aadd9'];
     grid.innerHTML = commonChords.map(ch => `<button class="cd-browse-btn" data-chord="${ch}">${ch}</button>`).join('');
     grid.querySelectorAll('.cd-browse-btn').forEach(btn => {
-      btn.addEventListener('click', () => setDiagramChord(btn.dataset.chord));
+      btn.addEventListener('click', () => doSet(btn.dataset.chord));
     });
   }
 
   panel.style.display = 'flex';
-  setDiagramChord(initialChord || 'C');
+  // Update capo label visibility
+  const capoLabel = $('cd-capo-label');
+  if (capoLabel) {
+    if (capo > 0) {
+      // Compute real chord name
+      const realChord = initialChord ? transposeChord(initialChord, capo) : '';
+      capoLabel.textContent = `Capo ${capo} — sounds as ${realChord}`;
+      capoLabel.style.display = 'block';
+    } else {
+      capoLabel.style.display = 'none';
+    }
+  }
+  setDiagramChord(initialChord || 'C', capo);
 }
 
-function setDiagramChord(name) {
+function setDiagramChord(name, capo) {
   const nameEl = $('cd-chord-name');
   const inputEl = $('cd-chord-input');
   const wrap = $('cd-fretboard-wrap');
+  const capoLabel = $('cd-capo-label');
   if (nameEl) nameEl.textContent = name;
   if (inputEl) inputEl.value = name;
-  if (wrap) renderFretboard(wrap, name);
+  if (wrap) renderFretboard(wrap, name, capo);
+  if (capoLabel && capo > 0) {
+    const realChord = transposeChord(name, capo);
+    capoLabel.textContent = `Capo ${capo} — sounds as ${realChord}`;
+    capoLabel.style.display = 'block';
+  } else if (capoLabel) {
+    capoLabel.style.display = 'none';
+  }
   document.querySelectorAll('.cd-browse-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.chord === name);
   });
