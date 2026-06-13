@@ -48,6 +48,15 @@ let sessionStartTime = null;
 let sessionTimerInterval = null;
 let sessionTotalMs = 0; // accumulated ms from previous sessions (from song.session_ms)
 
+// ===== Virtual Scroll State =====
+// For list mode: flat array of { type: 'header'|'song', data, height, offset }
+let virtualItems = [];
+let virtualScrollInitialized = false;
+let virtualScrollRAF = null;
+const VIRTUAL_BUFFER = 8; // extra items to render above/below viewport
+const ITEM_HEIGHT = 52;   // estimated song row height (px)
+const HEADER_HEIGHT = 31;  // estimated section header height (px)
+
 // ===== Setlist State =====
 let setlists = [];
 let activeSetlistId = null;
@@ -1905,6 +1914,171 @@ function formatTimeAgo(ms) {
   return `${Math.floor(ms / 86400000)}d ago`;
 }
 
+// ===== Virtual Scroll Helpers =====
+
+// Build the virtual items array from the sorted song list (list mode only).
+// Each entry: { type: 'header', name: 'Today', offset, height }
+//             { type: 'song', song: s, offset, height }
+function buildVirtualItems(sorted) {
+  virtualItems = [];
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const thisWeek = new Date(today.getTime() - 6 * 86400000);
+  let offset = 0;
+  let lastSection = '';
+
+  for (const s of sorted) {
+    const d = new Date(s.updated_at || s.created_at || 0);
+    let section = '';
+    const dd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    if (dd.getTime() === today.getTime()) section = 'Today';
+    else if (dd.getTime() === yesterday.getTime()) section = 'Yesterday';
+    else if (dd >= thisWeek) section = 'This Week';
+    else if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) section = 'This Month';
+    else section = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+    if (section !== lastSection) {
+      virtualItems.push({ type: 'header', name: section, offset, height: HEADER_HEIGHT });
+      offset += HEADER_HEIGHT;
+      lastSection = section;
+    }
+
+    // Determine if this song has a preview line (affects height)
+    const firstLine = s.sections?.[0]?.lines?.[0];
+    const hasPreview = firstLine && (firstLine.text?.trim() || (firstLine.chords && firstLine.chords.length));
+    const h = hasPreview ? ITEM_HEIGHT + 20 : ITEM_HEIGHT;
+
+    virtualItems.push({ type: 'song', song: s, offset, height: h });
+    offset += h;
+  }
+
+  return offset; // total height
+}
+
+// Render only the visible virtual items into the container
+function renderVirtualItems() {
+  const el = $('song-list');
+  if (!el || !virtualItems.length) return;
+
+  const containerEl = el.closest('.list') || el.parentElement;
+  if (!containerEl) return;
+
+  const scrollTop = containerEl.scrollTop;
+  const viewportH = containerEl.clientHeight;
+
+  // Find visible range
+  let startIdx = 0;
+  let endIdx = virtualItems.length - 1;
+
+  // Binary search for start
+  let lo = 0, hi = virtualItems.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const item = virtualItems[mid];
+    if (item.offset + item.height < scrollTop - VIRTUAL_BUFFER * ITEM_HEIGHT) {
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  startIdx = Math.max(0, lo - VIRTUAL_BUFFER);
+
+  // Binary search for end
+  lo = 0; hi = virtualItems.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const item = virtualItems[mid];
+    if (item.offset > scrollTop + viewportH + VIRTUAL_BUFFER * ITEM_HEIGHT) {
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+  endIdx = Math.min(virtualItems.length - 1, lo + VIRTUAL_BUFFER);
+
+  // Build HTML for visible items
+  let html = '';
+  for (let i = startIdx; i <= endIdx; i++) {
+    const item = virtualItems[i];
+    if (item.type === 'header') {
+      html += `<div class="list-section-header" style="position:absolute;top:${item.offset}px;left:0;right:0;height:${item.height}px">${esc(item.name)}</div>`;
+    } else {
+      html += buildSongRowHTML(item.song, item.offset, item.height);
+    }
+  }
+
+  // Set container to relative positioning for absolute children
+  el.style.position = 'relative';
+  el.innerHTML = html;
+}
+
+// Build HTML for a single song row (extracted from renderSongList)
+function buildSongRowHTML(s, offset, height) {
+  const pinned = s.pinned ? '<span class="item-pin">★</span>' : '';
+  const tagHtml = (s.tags && s.tags.length) ? `<span class="item-tags">${s.tags.map(t => `<span class="item-tag">${esc(t)}</span>`).join('')}</span>` : '';
+  const pinLabel = s.pinned ? '☆' : '★';
+
+  let previewHtml = '';
+  const firstLine = s.sections?.[0]?.lines?.[0];
+  if (firstLine) {
+    const lyricSnippet = firstLine.text?.trim()
+      ? esc(firstLine.text.trim().slice(0, 40))
+      : '';
+    const chords = (firstLine.chords || []).slice(0, 4);
+    const chordHtml = chords.length
+      ? `<span class="item-preview-chords">${chords.map(c => `<span class="item-preview-chord">${esc(c.name)}</span>`).join('')}</span>`
+      : '';
+    if (lyricSnippet || chordHtml) {
+      previewHtml = `<span class="item-preview">${chordHtml}${lyricSnippet ? `<span class="item-preview-text">${lyricSnippet}${firstLine.text.trim().length > 40 ? '…' : ''}</span>` : ''}</span>`;
+    }
+  }
+
+  const hasRec = s.audio && s.audio.length > 0;
+  const isThisPlaying = currentPlayingSongId === s.id;
+  const recBadge = hasRec ? `<button class="song-play-rec-btn${isThisPlaying ? ' playing' : ''}" data-id="${s.id}" aria-label="${isThisPlaying ? 'Pause' : 'Play'} recording" title="${isThisPlaying ? 'Pause' : 'Play'} latest recording (${s.audio.length})"><span>${isThisPlaying ? '❚❚' : '▶'}</span><span class="rec-count">${s.audio.length}</span></button>` : '';
+  const tutorialBadge = s.tutorial ? '<span class="tutorial-badge">Tutorial</span>' : '';
+
+  return `<div class="swipe-item${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}" style="position:absolute;top:${offset}px;left:0;right:0;height:${height}px">
+      <div class="swipe-bg">
+        <button class="swipe-pin-btn" data-action="pin" aria-label="${s.pinned ? 'Unpin' : 'Pin'} song">${pinLabel}</button>
+        <button class="swipe-duplicate-btn" data-action="duplicate" aria-label="Duplicate song">⧉</button>
+        <button class="swipe-delete-btn" data-action="delete" aria-label="Delete song">✕</button>
+      </div>
+      <div class="swipe-content list-item">
+        <div class="list-item-main">
+          ${pinned}
+          <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}${tutorialBadge}</span>
+          ${tagHtml}
+          <span class="item-meta">${fmtDate(s.updated_at)}</span>
+          ${recBadge}
+        </div>
+        ${previewHtml}
+      </div>
+    </div>`;
+}
+
+// Set up the virtual scroll container (called once)
+function initVirtualScroll() {
+  if (virtualScrollInitialized) return;
+  virtualScrollInitialized = true;
+
+  const el = $('song-list');
+  if (!el) return;
+  // #song-list itself has .list class and is the scrollable container
+  const containerEl = el.classList.contains('list') ? el : el.closest('.list');
+  if (!containerEl) return;
+
+  containerEl.addEventListener('scroll', () => {
+    if (virtualScrollRAF) cancelAnimationFrame(virtualScrollRAF);
+    virtualScrollRAF = requestAnimationFrame(() => {
+      if (!galleryMode && virtualItems.length) {
+        renderVirtualItems();
+      }
+    });
+  }, { passive: true });
+}
+
 // Song list
 function renderSongList(filter = '') {
   const el = $('song-list');
@@ -2024,79 +2198,16 @@ function renderSongList(filter = '') {
     return;
   }
 
-  // List mode: build date-based sections
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today.getTime() - 86400000);
-  const thisWeek = new Date(today.getTime() - 6 * 86400000);
+  // List mode: virtual scrolling for performance with large lists
+  initVirtualScroll();
+  const totalHeight = buildVirtualItems(sorted);
 
-  let html = '';
-  let lastSection = '';
+  // Set the spacer height so the scrollbar reflects the full list
+  el.style.minHeight = totalHeight + 'px';
+  el.style.position = 'relative';
 
-  sorted.forEach((s, i) => {
-    const d = new Date(s.updated_at || s.created_at || 0);
-    let section = '';
-    const dd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    if (dd.getTime() === today.getTime()) section = 'Today';
-    else if (dd.getTime() === yesterday.getTime()) section = 'Yesterday';
-    else if (dd >= thisWeek) section = 'This Week';
-    else if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) section = 'This Month';
-    else section = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-
-    if (section !== lastSection) {
-      if (html) html += '</div>';
-      html += `<div class="list-section-header">${esc(section)}</div><div class="list-section">`;
-      lastSection = section;
-    }
-
-    const pinned = s.pinned ? '<span class="item-pin">★</span>' : '';
-    const tagHtml = (s.tags && s.tags.length) ? `<span class="item-tags">${s.tags.map(t => `<span class="item-tag">${esc(t)}</span>`).join('')}</span>` : '';
-    const pinLabel = s.pinned ? '☆' : '★';
-
-    // Build preview: first lyric line + first few chords
-    let previewHtml = '';
-    const firstLine = s.sections?.[0]?.lines?.[0];
-    if (firstLine) {
-      const lyricSnippet = firstLine.text?.trim()
-        ? esc(firstLine.text.trim().slice(0, 40))
-        : '';
-      const chords = (firstLine.chords || []).slice(0, 4);
-      const chordHtml = chords.length
-        ? `<span class="item-preview-chords">${chords.map(c => `<span class="item-preview-chord">${esc(c.name)}</span>`).join('')}</span>`
-        : '';
-      if (lyricSnippet || chordHtml) {
-        previewHtml = `<span class="item-preview">${chordHtml}${lyricSnippet ? `<span class="item-preview-text">${lyricSnippet}${firstLine.text.trim().length > 40 ? '…' : ''}</span>` : ''}</span>`;
-      }
-    }
-
-    const hasRec = s.audio && s.audio.length > 0;
-    const isThisPlaying = currentPlayingSongId === s.id;
-    const recBadge = hasRec ? `<button class="song-play-rec-btn${isThisPlaying ? ' playing' : ''}" data-id="${s.id}" aria-label="${isThisPlaying ? 'Pause' : 'Play'} recording" title="${isThisPlaying ? 'Pause' : 'Play'} latest recording (${s.audio.length})"><span>${isThisPlaying ? '❚❚' : '▶'}</span><span class="rec-count">${s.audio.length}</span></button>` : '';
-    const tutorialBadge = s.tutorial ? '<span class="tutorial-badge">Tutorial</span>' : '';
-
-    html += `<div class="swipe-item${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}">
-      <div class="swipe-bg">
-        <button class="swipe-pin-btn" data-action="pin" aria-label="${s.pinned ? 'Unpin' : 'Pin'} song">${pinLabel}</button>
-        <button class="swipe-duplicate-btn" data-action="duplicate" aria-label="Duplicate song">⧉</button>
-        <button class="swipe-delete-btn" data-action="delete" aria-label="Delete song">✕</button>
-      </div>
-      <div class="swipe-content list-item">
-        <div class="list-item-main">
-          ${pinned}
-          <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}${tutorialBadge}</span>
-          ${tagHtml}
-          <span class="item-meta">${fmtDate(s.updated_at)}</span>
-          ${recBadge}
-        </div>
-        ${previewHtml}
-      </div>
-    </div>`;
-  });
-  if (html) html += '</div>';
-
-  el.innerHTML = html;
-
-  // Events handled by delegated listener on #song-list (initSongListDelegation)
+  // Render initial visible items
+  renderVirtualItems();
 
   // Update tag filter bar
   renderTagFilterBar();
