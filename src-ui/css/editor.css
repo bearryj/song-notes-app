@@ -943,6 +943,52 @@
   padding: 8px;
 }
 
+/* ===== History Panel Items ===== */
+.hist-section-label {
+  padding: 6px 8px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--fg-tertiary);
+}
+.hist-item {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-bottom: 2px;
+  transition: background 0.15s;
+}
+.hist-item:active, .hist-item:hover {
+  background: var(--bg-tertiary);
+}
+.hist-time {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-primary);
+}
+.hist-meta {
+  font-size: 11px;
+  color: var(--fg-tertiary);
+  margin-top: 2px;
+}
+.hist-ab-tag {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--accent);
+  color: var(--bg-primary);
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.hist-backup .hist-time {
+  color: var(--accent);
+}
+
 /* ===== Recordings Dropdown ===== */
 .rec-dropdown-header {
   padding: 8px 12px;

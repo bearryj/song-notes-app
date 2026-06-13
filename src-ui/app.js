@@ -694,6 +694,7 @@ async function restoreSong(id) {
 async function permanentlyDeleteSong(id) {
   trash = trash.filter(t => t.song.id !== id);
   saveTrash();
+  deleteAutoBackupsForSong(id);
   if (isTauri) await tauriDeleteSong(id);
 }
 
@@ -751,15 +752,100 @@ function toggleHistory() {
 }
 function renderHistoryList() {
   const list = $('hist-list');
-  if (!versionHistory.length) { list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--fg-tertiary);font-size:13px;">No versions yet</div>'; return; }
-  list.innerHTML = [...versionHistory].reverse().map(v => `<div class="hist-item" data-ts="${v.ts}"><div class="hist-time">${new Date(v.ts).toLocaleTimeString()}</div><div class="hist-meta">${esc(v.key || '—')} · ${v.sections.reduce((a,s) => a + s.lines.length, 0)} lines</div></div>`).join('');
-  list.querySelectorAll('.hist-item').forEach(el => {
+  const song = getSong(currentSongId);
+  const autoBackups = song?.id ? (loadAutoBackups()[song.id] || []) : [];
+
+  let html = '';
+
+  // Auto-backups section
+  if (autoBackups.length) {
+    html += `<div class="hist-section-label">Auto-Backups</div>`;
+    html += [...autoBackups].reverse().map((v, i) => {
+      const idx = autoBackups.length - 1 - i;
+      return `<div class="hist-item hist-backup" data-ab-idx="${idx}"><div class="hist-time">${new Date(v.ts).toLocaleTimeString()}</div><div class="hist-meta">${esc(v.key || '—')} · ${v.sections.reduce((a,s) => a + s.lines.length, 0)} lines <span class="hist-ab-tag">auto</span></div></div>`;
+    }).join('');
+  }
+
+  // Manual version history section
+  if (versionHistory.length) {
+    html += `<div class="hist-section-label">Versions</div>`;
+    html += [...versionHistory].reverse().map(v => `<div class="hist-item" data-ts="${v.ts}"><div class="hist-time">${new Date(v.ts).toLocaleTimeString()}</div><div class="hist-meta">${esc(v.key || '—')} · ${v.sections.reduce((a,s) => a + s.lines.length, 0)} lines</div></div>`).join('');
+  }
+
+  if (!html) {
+    html = '<div style="padding:20px;text-align:center;color:var(--fg-tertiary);font-size:13px;">No versions yet</div>';
+  }
+
+  list.innerHTML = html;
+
+  // Wire up version history items
+  list.querySelectorAll('.hist-item:not(.hist-backup)').forEach(el => {
     el.addEventListener('click', () => {
       const v = versionHistory.find(x => x.ts === parseInt(el.dataset.ts));
       if (!v) return;
       showVersionDiff(v);
     });
   });
+
+  // Wire up auto-backup items
+  list.querySelectorAll('.hist-item.hist-backup').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.abIdx);
+      const snap = autoBackups[idx];
+      if (!snap) return;
+      showAutoBackupDiff(snap);
+    });
+  });
+}
+
+// ===== Auto-Backup Diff View =====
+function showAutoBackupDiff(snapshot) {
+  const song = getSong(currentSongId);
+  if (!song) return;
+
+  const oldText = sectionsToText(snapshot.sections);
+  const newText = sectionsToText(song.sections);
+  const diff = computeDiff(oldText, newText);
+
+  const modal = document.createElement('div');
+  modal.id = 'diff-modal';
+  modal.innerHTML = `
+    <div class="diff-backdrop"></div>
+    <div class="diff-content">
+      <div class="diff-header">
+        <div class="diff-title">Auto-Backup Diff</div>
+        <div class="diff-subtitle">${new Date(snapshot.ts).toLocaleString()} → Now</div>
+        <div class="diff-key-changes">${esc(snapshot.key || '—')} → ${esc(song.key || '—')}</div>
+      </div>
+      <div class="diff-body" id="diff-body">${diff}</div>
+      <div class="diff-actions">
+        <button id="diff-restore-btn" class="diff-btn diff-restore">Restore This Backup</button>
+        <button id="diff-close-btn" class="diff-btn diff-close">Close</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  modal.querySelector('.diff-backdrop').onclick = () => modal.remove();
+  modal.querySelector('#diff-close-btn').onclick = () => modal.remove();
+  modal.querySelector('#diff-restore-btn').onclick = () => {
+    showConfirmSheet({
+      title: 'Restore Auto-Backup',
+      body: `Restore the auto-backup from ${new Date(snapshot.ts).toLocaleString()}? Current version will be lost.`,
+      confirmText: 'Restore',
+      confirmClass: 'neutral',
+      onConfirm: () => {
+        const song2 = getSong(currentSongId);
+        if (!song2) return;
+        song2.key = snapshot.key;
+        song2.sections = JSON.parse(JSON.stringify(snapshot.sections));
+        saveSingleSong(song2);
+        openEditor(currentSongId);
+        modal.remove();
+        $('history-panel').style.display = 'none';
+        toast('Auto-backup restored', 'success');
+      }
+    });
+  };
 }
 
 // ===== Version Diff View =====
@@ -1060,11 +1146,48 @@ function triggerAutoSave(song) {
     const titleEl = $('song-title');
     if (titleEl) song.title = titleEl.value || 'Untitled';
     song.updated_at = new Date().toISOString();
+    // Push auto-backup snapshot before saving
+    pushAutoBackup(song);
     await saveSingleSong(song);
     hasChanges = false;
     $('save-btn').disabled = true;
     updateSaveDot('saved');
   }, 1200);
+}
+
+// ===== Auto-Backup System =====
+// Keeps last N auto-saved snapshots per song, separate from version history.
+// Stored in localStorage as { [songId]: [{ ts, key, title, sections }], ... }
+
+const AUTO_BACKUP_MAX = 10; // max snapshots per song
+
+function loadAutoBackups() {
+  try { return JSON.parse(localStorage.getItem('sn_auto_backups')) || {}; } catch { return {}; }
+}
+
+function saveAutoBackups(data) {
+  localStorage.setItem('sn_auto_backups', JSON.stringify(data));
+}
+
+function pushAutoBackup(song) {
+  if (!song || !song.id) return;
+  const all = loadAutoBackups();
+  if (!all[song.id]) all[song.id] = [];
+  all[song.id].push({
+    ts: Date.now(),
+    key: song.key || '',
+    title: song.title || 'Untitled',
+    sections: JSON.parse(JSON.stringify(song.sections || []))
+  });
+  // Trim to max
+  while (all[song.id].length > AUTO_BACKUP_MAX) all[song.id].shift();
+  saveAutoBackups(all);
+}
+
+function deleteAutoBackupsForSong(songId) {
+  const all = loadAutoBackups();
+  delete all[songId];
+  saveAutoBackups(all);
 }
 
 function updateSaveDot(state) {
