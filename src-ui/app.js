@@ -2434,26 +2434,27 @@ function renderEditorBody(song) {
   songSections = song.sections;
 
   // For small songs, render all sections normally (fast enough)
-  if (song.sections.length <= 40) {
+  if (song.sections.length <= 30) {
     song.sections.forEach((section, si) => {
       const sectionEl = buildSectionElement(song, si, section);
       el.appendChild(sectionEl);
     });
   } else {
     // Large song: lazy rendering with IntersectionObserver
+    initSectionObserver(song, el);
     // Render first 3 sections immediately so the user sees content right away
     const initialCount = Math.min(3, song.sections.length);
     for (let si = 0; si < initialCount; si++) {
       const sectionEl = buildSectionElement(song, si, song.sections[si]);
       el.appendChild(sectionEl);
-      if (sectionObserver) sectionObserver.observe(sectionEl);
+      sectionObserver.observe(sectionEl);
     }
     // Placeholder for remaining sections
     for (let si = initialCount; si < song.sections.length; si++) {
       const estimatedH = getSectionEstimatedHeight(song.sections[si]);
       const placeholder = createSectionPlaceholder(si, estimatedH);
       el.appendChild(placeholder);
-      if (sectionObserver) sectionObserver.observe(placeholder);
+      sectionObserver.observe(placeholder);
     }
   }
 
