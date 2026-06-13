@@ -39,6 +39,10 @@ let sessionTotalMs = 0; // accumulated ms from previous sessions (from song.sess
 let setlists = [];
 let activeSetlistId = null;
 
+// ===== Song List Delegation State =====
+// Track swipe state per swipe-item element (avoids per-item listeners)
+const swipeState = new WeakMap();
+
 // Chord definitions
 const CHROMATIC = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const CHROMATIC_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -1675,45 +1679,7 @@ function renderSongList(filter = '') {
     });
     el.innerHTML = html;
 
-    // Gallery card events: click to open, long-press context, tap action buttons
-    el.querySelectorAll('.gallery-card').forEach(card => {
-      const songId = card.dataset.id;
-      let longPressTimer = null;
-
-      // Click to open (unless tapping action buttons)
-      card.addEventListener('click', e => {
-        if (e.target.closest('.gallery-card-actions')) return;
-        currentSongId = songId;
-        localStorage.setItem('songs_app_last', currentSongId);
-        openEditor(currentSongId);
-        pushView('editor-view');
-      });
-
-      // Long press for context menu
-      card.addEventListener('touchstart', e => {
-        longPressTimer = setTimeout(() => { longPressTimer = null; showSongContext(songId, card); }, 500);
-      }, { passive: true });
-      card.addEventListener('touchend', () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }, { passive: true });
-      card.addEventListener('touchmove', () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }, { passive: true });
-
-      // Action buttons
-      const pinBtn = card.querySelector('.gallery-card-pin');
-      const delBtn = card.querySelector('.gallery-card-delete');
-      if (pinBtn) pinBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        const s = getSong(songId);
-        if (s) { s.pinned = !s.pinned; saveSingleSong(s); renderSongList(filter); toast(s.pinned ? '★ Pinned' : '☆ Unpinned'); }
-      });
-      if (delBtn) delBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        showConfirmSheet({ title: 'Delete Song', body: 'Move to trash? You can restore it within 30 days.', confirmText: 'Delete', confirmClass: 'sheet-danger', onConfirm: async () => {
-          await deleteSong(songId);
-          if (currentSongId === songId) currentSongId = null;
-          renderSongList(filter);
-          toast('Moved to trash');
-        }});
-      });
-    });
+    // Events handled by delegated listener on #song-list (initSongListDelegation)
     return;
   }
 
@@ -1783,166 +1749,7 @@ function renderSongList(filter = '') {
 
   el.innerHTML = html;
 
-  // Attach events: click to open, long-press context, swipe actions
-  el.querySelectorAll('.swipe-item').forEach(swipeItem => {
-    const content = swipeItem.querySelector('.swipe-content');
-    const songId = swipeItem.dataset.id;
-
-    // --- Click to open ---
-    content.addEventListener('click', () => {
-      currentSongId = songId;
-      localStorage.setItem('songs_app_last', currentSongId);
-      openEditor(currentSongId);
-      pushView('editor-view');
-    });
-
-    // --- Long press context menu ---
-    let longPressTimer = null;
-    content.addEventListener('touchstart', e => {
-      longPressTimer = setTimeout(() => { longPressTimer = null; showSongContext(songId, content); }, 500);
-    }, { passive: true });
-    content.addEventListener('touchend', () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }, { passive: true });
-    content.addEventListener('touchmove', () => { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }, { passive: true });
-
-    // --- Swipe gesture ---
-    let startX = 0, startY = 0, currentX = 0, isSwiping = false, isOpen = false;
-    const SWIPE_THRESHOLD = 50;
-    const MAX_OPEN = 192; // three 64px buttons
-
-    content.addEventListener('touchstart', e => {
-      startX = e.changedTouches[0].clientX;
-      startY = e.changedTouches[0].clientY;
-      isSwiping = false;
-    }, { passive: true });
-
-    content.addEventListener('touchmove', e => {
-      currentX = e.changedTouches[0].clientX;
-      const diffX = startX - currentX;
-      const diffY = Math.abs(e.changedTouches[0].clientY - startY);
-
-      // Only engage horizontal swipe if clearly horizontal
-      if (!isSwiping && diffX > 15 && diffY < 20) {
-        isSwiping = true;
-      }
-      if (!isSwiping) return;
-
-      // Prevent vertical scroll while swiping horizontally
-      if (diffY < Math.abs(diffX)) {
-        e.preventDefault();
-      }
-
-      if (isOpen) {
-        // Already open: dragging right closes it
-        const offset = Math.max(0, Math.min(MAX_OPEN, MAX_OPEN - diffX));
-        content.style.transform = `translateX(${-offset}px)`;
-        content.style.transition = 'none';
-      } else {
-        // Closed: dragging left opens it
-        if (diffX > 0) {
-          const offset = Math.min(diffX, MAX_OPEN);
-          content.style.transform = `translateX(${-offset}px)`;
-          content.style.transition = 'none';
-        }
-      }
-    }, { passive: false });
-
-    content.addEventListener('touchend', e => {
-      if (!isSwiping) return;
-      const diffX = startX - currentX;
-
-      content.style.transition = 'transform 0.2s ease';
-      if (isOpen) {
-        if (diffX < -30) {
-          // Dragged right: close
-          content.style.transform = 'translateX(0)';
-          isOpen = false;
-          swipeItem.classList.remove('swiped');
-        } else {
-          // Stay open
-          content.style.transform = `translateX(${-MAX_OPEN}px)`;
-        }
-      } else {
-        if (diffX > SWIPE_THRESHOLD) {
-          // Dragged left past threshold: open
-          content.style.transform = `translateX(${-MAX_OPEN}px)`;
-          isOpen = true;
-          swipeItem.classList.add('swiped');
-        } else {
-          // Not far enough: snap back
-          content.style.transform = 'translateX(0)';
-          isOpen = false;
-          swipeItem.classList.remove('swiped');
-        }
-      }
-      isSwiping = false;
-    }, { passive: true });
-
-    // Close swipe on touch elsewhere
-    const closeSwipe = (e) => {
-      if (!isOpen) return;
-      if (!swipeItem.contains(e.target)) {
-        content.style.transition = 'transform 0.2s ease';
-        content.style.transform = 'translateX(0)';
-        isOpen = false;
-        swipeItem.classList.remove('swiped');
-      }
-    };
-    document.addEventListener('touchstart', closeSwipe, { passive: true });
-
-    // --- Action buttons ---
-    const pinBtn = swipeItem.querySelector('.swipe-pin-btn');
-    const duplicateBtn = swipeItem.querySelector('.swipe-duplicate-btn');
-    const deleteBtn = swipeItem.querySelector('.swipe-delete-btn');
-
-    if (pinBtn) {
-      pinBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const s = getSong(songId);
-        if (!s) return;
-        s.pinned = !s.pinned;
-        await saveSingleSong(s);
-        renderSongList($('search-input')?.value || '');
-        toast(s.pinned ? 'Pinned ★' : 'Unpinned');
-      });
-    }
-
-    if (duplicateBtn) {
-      duplicateBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const s = getSong(songId);
-        if (!s) return;
-        const copy = JSON.parse(JSON.stringify(s));
-        copy.id = generateId();
-        copy.title = (s.title || 'Untitled') + ' (Copy)';
-        copy.created_at = new Date().toISOString();
-        copy.updated_at = new Date().toISOString();
-        copy.pinned = false;
-        songs.unshift(copy);
-        await saveSongs();
-        renderSongList($('search-input')?.value || '');
-        toast(`Duplicated "${s.title}"`);
-      });
-    }
-
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const s = getSong(songId);
-        if (!s) return;
-        showConfirmSheet({
-          title: 'Delete Song',
-          body: `Move "${esc(s.title || 'Untitled')}" to trash?`,
-          confirmText: 'Delete',
-          onConfirm: async () => {
-            await deleteSong(songId);
-            if (currentSongId === songId) { currentSongId = null; }
-            renderSongList($('search-input')?.value || '');
-            toast('Moved to trash');
-          }
-        });
-      });
-    }
-  });
+  // Events handled by delegated listener on #song-list (initSongListDelegation)
 
   // Update tag filter bar
   renderTagFilterBar();
@@ -4428,6 +4235,205 @@ function showSongPrintPreview() {
 }
 
 // Events
+// Delegated song-list events: single listener on #song-list handles all
+// song-item interactions (click-to-open, swipe, long-press, action buttons)
+(function initSongListDelegation() {
+  const list = $('song-list');
+  if (!list) return;
+
+  const SWIPE_THRESHOLD = 50;
+  const MAX_OPEN = 192;
+
+  // Close any open swipe when touching elsewhere on the list
+  document.addEventListener('touchstart', (e) => {
+    list.querySelectorAll('.swiped').forEach(item => {
+      const c = item.querySelector('.swipe-content');
+      if (c && !item.contains(e.target)) {
+        c.style.transition = 'transform 0.2s ease';
+        c.style.transform = 'translateX(0)';
+        item.classList.remove('swiped');
+        swipeState.delete(item);
+      }
+    });
+  }, { passive: true });
+
+  list.addEventListener('touchstart', (e) => {
+    const item = e.target.closest('.swipe-item');
+    if (!item) return;
+    const content = item.querySelector('.swipe-content');
+    if (!content) return;
+    // Skip if tapping action buttons
+    if (e.target.closest('.swipe-bg')) return;
+
+    // Initialize swipe state for this item
+    if (!swipeState.has(item)) {
+      swipeState.set(item, { startX: 0, startY: 0, currentX: 0, isSwiping: false, isOpen: false, longPressTimer: null });
+    }
+    const st = swipeState.get(item);
+    st.startX = e.changedTouches[0].clientX;
+    st.startY = e.changedTouches[0].clientY;
+    st.isSwiping = false;
+
+    // Long press timer for context menu (only on touch)
+    st.longPressTimer = setTimeout(() => {
+      st.longPressTimer = null;
+      const songId = item.dataset.id;
+      if (songId) showSongContext(songId, content);
+      st.isSwiping = true; // prevent click
+    }, 600);
+  }, { passive: true });
+
+  list.addEventListener('touchmove', (e) => {
+    const item = e.target.closest('.swipe-item');
+    const st = swipeState.get(item);
+    if (!st || !st.startX) return;
+    const content = item.querySelector('.swipe-content');
+    if (!content) return;
+
+    st.currentX = e.changedTouches[0].clientX;
+    const diffX = st.startX - st.currentX;
+    const diffY = Math.abs(e.changedTouches[0].clientY - st.startY);
+
+    if (!st.isSwiping && diffX > 15 && diffY < 20) {
+      st.isSwiping = true;
+      if (st.longPressTimer) { clearTimeout(st.longPressTimer); st.longPressTimer = null; }
+    }
+    if (!st.isSwiping) return;
+
+    if (diffY < Math.abs(diffX)) e.preventDefault();
+
+    content.style.transition = 'none';
+    if (st.isOpen) {
+      content.style.transform = `translateX(${Math.max(0, Math.min(MAX_OPEN, MAX_OPEN - diffX))}px)`;
+    } else if (diffX > 0) {
+      content.style.transform = `translateX(${Math.min(diffX, MAX_OPEN) * -1}px)`;
+    }
+  }, { passive: false });
+
+  list.addEventListener('touchend', (e) => {
+    const item = e.target.closest('.swipe-item');
+    const st = swipeState.get(item);
+    if (!st) return;
+    const content = item.querySelector('.swipe-content');
+    if (!content) return;
+
+    if (st.longPressTimer) { clearTimeout(st.longPressTimer); st.longPressTimer = null; }
+
+    if (st.isSwiping) {
+      const diffX = st.startX - st.currentX;
+      content.style.transition = 'transform 0.2s ease';
+      if (st.isOpen) {
+        if (diffX < -30) {
+          content.style.transform = 'translateX(0)';
+          st.isOpen = false;
+          item.classList.remove('swiped');
+        } else {
+          content.style.transform = `translateX(${-MAX_OPEN}px)`;
+        }
+      } else {
+        if (diffX > SWIPE_THRESHOLD) {
+          content.style.transform = `translateX(${-MAX_OPEN}px)`;
+          st.isOpen = true;
+          item.classList.add('swiped');
+        } else {
+          content.style.transform = 'translateX(0)';
+          st.isOpen = false;
+          item.classList.remove('swiped');
+        }
+      }
+    }
+    st.isSwiping = false;
+    st.startX = 0;
+  }, { passive: true });
+
+  // Click handler: open song or trigger action buttons
+  list.addEventListener('click', async (e) => {
+    const item = e.target.closest('.swipe-item');
+    if (!item) return;
+    const songId = item.dataset.id;
+    if (!songId) return;
+
+    // Action buttons in swipe background
+    const actionBtn = e.target.closest('[data-action]');
+    if (actionBtn) {
+      const action = actionBtn.dataset.action;
+      const s = getSong(songId);
+      if (!s) return;
+      if (action === 'pin') {
+        s.pinned = !s.pinned;
+        await saveSingleSong(s);
+        renderSongList($('search-input')?.value || '');
+        toast(s.pinned ? 'Pinned ★' : 'Unpinned');
+      } else if (action === 'duplicate') {
+        const copy = JSON.parse(JSON.stringify(s));
+        copy.id = generateId();
+        copy.title = (s.title || 'Untitled') + ' (Copy)';
+        copy.created_at = new Date().toISOString();
+        copy.updated_at = new Date().toISOString();
+        copy.pinned = false;
+        songs.unshift(copy);
+        await saveSongs();
+        renderSongList($('search-input')?.value || '');
+        toast('Duplicated');
+      } else if (action === 'delete') {
+        showConfirmSheet({
+          title: 'Delete Song',
+          body: `Move "${esc(s.title || 'Untitled')}" to trash?`,
+          confirmText: 'Delete',
+          onConfirm: async () => {
+            await deleteSong(songId);
+            if (currentSongId === songId) currentSongId = null;
+            renderSongList($('search-input')?.value || '');
+            toast('Moved to trash');
+          }
+        });
+      }
+      return;
+    }
+
+    // Gallery card action buttons
+    const galleryAction = e.target.closest('.gallery-card-pin, .gallery-card-delete');
+    if (galleryAction) {
+      const s = getSong(songId);
+      if (!s) return;
+      if (galleryAction.classList.contains('gallery-card-pin')) {
+        s.pinned = !s.pinned;
+        await saveSingleSong(s);
+        renderSongList($('search-input')?.value || '');
+        toast(s.pinned ? '★ Pinned' : '☆ Unpinned');
+      } else {
+        showConfirmSheet({
+          title: 'Delete Song',
+          body: 'Move to trash? You can restore it within 30 days.',
+          confirmText: 'Delete',
+          confirmClass: 'sheet-danger',
+          onConfirm: async () => {
+            await deleteSong(songId);
+            if (currentSongId === songId) currentSongId = null;
+            renderSongList($('search-input')?.value || '');
+            toast('Moved to trash');
+          }
+        });
+      }
+      return;
+    }
+
+    // Click on card/content to open song
+    const st = swipeState.get(item);
+    if (st && st.isOpen) return; // don't open if swipe was just closed
+
+    const content = item.querySelector('.swipe-content') || item.querySelector('.gallery-card');
+    if (!content) return;
+    // Only open if click wasn't on an interactive element
+    if (e.target.closest('.gallery-card-actions') || e.target.closest('.swipe-bg')) return;
+
+    currentSongId = songId;
+    localStorage.setItem('songs_app_last', currentSongId);
+    openEditor(currentSongId);
+    pushView('editor-view');
+  });
+})();
+
 function setupEvents() {
   $('back-to-folders').addEventListener('click', popView);
   $('back-to-songs').addEventListener('click', () => saveCurrentSongAndGoBack());
