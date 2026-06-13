@@ -153,7 +153,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Auto-capitalize section headers — when typing "verse 1" auto-suggest "Verse 1" (matching existing section type labels). (2026-06-13) — converted <select> to <input list="section-type-list"> with <datalist> suggestions; auto-capitalize on input/change matches known types case-insensitively, capitalizes first letter of each word for custom labels
 
 ### Onboarding & Discovery
-- [ ] First-run onboarding — 3-4 swipeable cards explaining: create a song, add chords, use the toolbar, setlist mode. Shown only on first launch.
+- [x] First-run onboarding — 3-4 swipeable cards explaining: create a song, add chords, use the toolbar, setlist mode. Shown only on first launch. (2026-06-13) — 4-card swipeable walkthrough with dot navigation, skip/next buttons, swipe gestures, bounce animation, Apple Notes dark theme, persisted via sn_onboarding_seen localStorage key
 - [ ] Interactive tutorial song — "Welcome to Song Notes" sample song with pre-filled chords and annotations explaining features (tap this chord, swipe here, etc.).
 - [ ] Feature discovery hints — subtle one-time tooltips for power features (swipe-to-action, long-press multi-select, gallery view toggle) that dismiss after first use.
 
