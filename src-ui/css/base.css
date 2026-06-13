@@ -1,0 +1,115 @@
+/* ===== Song Notes — Apple Notes Inspired ===== */
+
+:root {
+  --bg: #000;
+  --bg-surface: #1c1c1e;
+  --bg-secondary: #2c2c2e;
+  --bg-tertiary: #3a3a3c;
+  --separator: #38383a;
+  --fg: #fff;
+  --fg-secondary: #98989e;
+  --fg-tertiary: #636366;
+  --accent: #0a84ff;
+  --accent-dim: #0a5dc2;
+  --danger: #ff453a;
+  --chord: #30d158;
+  --section-label: #ff9f0a;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro', 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --bar-height: 44px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
+
+/* ===== Focus Visible — Accessibility ===== */
+:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Larger focus ring for interactive elements */
+button:focus-visible,
+.nav-btn:focus-visible,
+.fab:focus-visible,
+.toolbar-btn:focus-visible,
+.sheet-item:focus-visible,
+.icon-btn:focus-visible {
+  outline: 2.5px solid var(--accent) !important;
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+/* Subtle focus for list items and song rows */
+.list-item:focus-visible,
+.song-row:focus-visible,
+.setlist-song:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: -2px;
+  border-radius: var(--radius);
+}
+/* Input focus glow */
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 0;
+  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.2);
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ===== View Management ===== */
+.view {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  background: var(--bg);
+}
+.view.active {
+  transform: translateX(0);
+}
+.view:first-child {
+  transform: translateX(0);
+}
+/* Directional view transitions */
+.view.sliding-out-left {
+  transform: translateX(-30%);
+  opacity: 0.6;
+}
+.view.sliding-out-right {
+  transform: translateX(30%);
+  opacity: 0.6;
+}
+.view.slide-in-left {
+  transform: translateX(-100%) !important;
+  transition: none;
+}
+.view.slide-in-right {
+  transform: translateX(100%) !important;
+  transition: none;
+}
+/* Progressive nav bar parallax during forward nav */
+.view.sliding-out-left .nav-bar {
+  transform: translateX(-8%);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.view.sliding-out-right .nav-bar {
+  transform: translateX(8%);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+

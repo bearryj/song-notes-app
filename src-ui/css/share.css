@@ -1,0 +1,435 @@
+/* ===== Chord Diagram Panel ===== */
+#chord-diagram-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  display: none;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.cd-panel-content {
+  position: relative;
+  background: var(--bg-secondary);
+  border-radius: 16px 16px 0 0;
+  padding: 8px 16px calc(20px + var(--safe-bottom));
+  animation: slide-up 0.25s ease;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.cd-header {
+  text-align: center;
+  padding: 4px 0 8px;
+}
+
+.cd-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin: 0 0 4px;
+}
+
+.cd-chord-name {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--chord);
+}
+
+.cd-fretboard-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 180px;
+  padding: 8px 0;
+}
+
+.cd-fretboard {
+  max-width: 220px;
+  width: 100%;
+  height: auto;
+}
+
+.cd-no-chord {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--fg-secondary);
+  font-size: 15px;
+}
+
+.cd-controls {
+  padding: 4px 0 8px;
+}
+
+.cd-chord-nav {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.cd-nav-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--separator);
+  color: var(--fg);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 22px;
+  font-weight: 300;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font);
+  transition: background 0.15s;
+}
+
+.cd-nav-btn:active {
+  background: var(--bg-tertiary);
+}
+
+.cd-chord-input-wrap {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.cd-chord-input {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--chord);
+  background: var(--bg-surface);
+  border: 1px solid var(--separator);
+  border-radius: 8px;
+  outline: none;
+  width: 100px;
+  padding: 8px 12px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.cd-chord-input:focus {
+  border-color: var(--chord);
+}
+
+.cd-chord-input::placeholder {
+  color: var(--fg-tertiary);
+  text-transform: none;
+}
+
+.cd-lookup-btn {
+  background: var(--chord);
+  border: none;
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: opacity 0.15s;
+}
+
+.cd-lookup-btn:active {
+  opacity: 0.7;
+}
+
+.cd-browse {
+  padding: 8px 0 16px;
+}
+
+.cd-browse-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.cd-browse-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.cd-browse-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--separator);
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--mono);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  min-width: 40px;
+  text-align: center;
+}
+
+.cd-browse-btn:active {
+  background: var(--bg-tertiary);
+}
+
+.cd-browse-btn.active {
+  background: var(--chord);
+  border-color: var(--chord);
+  color: var(--bg);
+}
+
+/* Chord marker tap-to-view hint */
+.chord-marker {
+  position: relative;
+}
+.chord-marker::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+/* ===== Share Sheet ===== */
+#share-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+.share-title {
+  font-size: 17px;
+  font-weight: 600;
+  padding: 4px 0 8px;
+  text-align: center;
+}
+.share-song-title {
+  font-size: 14px;
+  color: var(--fg-secondary);
+  text-align: center;
+  padding-bottom: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.share-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.share-opt-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s;
+}
+.share-opt-btn:active {
+  background: var(--bg-tertiary);
+}
+.share-opt-icon {
+  font-size: 22px;
+  width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.share-opt-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--fg);
+}
+.share-opt-desc {
+  font-size: 12px;
+  color: var(--fg-tertiary);
+  display: block;
+  margin-top: 1px;
+}
+.share-code-section {
+  margin-bottom: 14px;
+}
+.share-code-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.share-code-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.share-code-area {
+  flex: 1;
+  min-height: 60px;
+  max-height: 100px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 11px;
+  padding: 8px;
+  resize: none;
+  word-break: break-all;
+  line-height: 1.4;
+}
+.share-code-area:focus {
+  outline: none;
+  border-color: var(--fg-tertiary);
+}
+.share-copy-code-btn {
+  padding: 8px 14px;
+  background: var(--fg);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.share-copy-code-btn:active {
+  opacity: 0.8;
+}
+.share-divider {
+  display: flex;
+  align-items: center;
+  margin: 14px 0;
+  color: var(--fg-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+}
+.share-divider::before,
+.share-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.share-divider span {
+  padding: 0 12px;
+}
+.share-import-area {
+  width: 100%;
+  min-height: 60px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 12px;
+  padding: 10px;
+  resize: vertical;
+  margin-bottom: 8px;
+  word-break: break-all;
+  line-height: 1.4;
+}
+.share-import-area:focus {
+  outline: none;
+  border-color: var(--fg-tertiary);
+}
+.share-import-area::placeholder {
+  color: var(--fg-tertiary);
+  font-family: var(--font);
+  font-size: 13px;
+}
+.share-import-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--fg);
+  color: var(--bg);
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.share-import-btn:active {
+  opacity: 0.85;
+}
+
+/* ===== Share QR Modal ===== */
+.share-qr-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.share-qr-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+}
+.share-qr-content {
+  position: relative;
+  background: var(--bg);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 340px;
+  width: 90vw;
+  text-align: center;
+}
+.share-qr-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.share-qr-code {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  word-break: break-all;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--fg);
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  user-select: all;
+}
+.share-qr-hint {
+  font-size: 13px;
+  color: var(--fg-secondary);
+  margin-bottom: 16px;
+}
+.share-qr-close {
+  width: 100%;
+  padding: 12px;
+  background: var(--fg);
+  color: var(--bg);
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.share-qr-close:active {
+  opacity: 0.85;
+}
+

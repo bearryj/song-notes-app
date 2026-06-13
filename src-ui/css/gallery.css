@@ -1,0 +1,140 @@
+/* ===== Gallery View ===== */
+.list.gallery {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px 16px;
+}
+.gallery-card {
+  position: relative;
+  background: var(--bg-surface);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius);
+  padding: 14px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  overflow: hidden;
+  animation: cardIn 0.3s ease both;
+  -webkit-tap-highlight-color: transparent;
+}
+.gallery-card:active {
+  opacity: 0.7;
+  transform: scale(0.98);
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.gallery-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-pin {
+  font-size: 12px;
+  color: var(--accent, #ff9f0a);
+  flex-shrink: 0;
+}
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+.card-key {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-secondary);
+  background: var(--bg-tertiary);
+  padding: 2px 7px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.card-chords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 0;
+}
+.card-chord-chip {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-secondary);
+  background: var(--bg-tertiary);
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.gallery-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-meta {
+  font-size: 11px;
+  color: var(--fg-tertiary);
+}
+.card-date {
+  font-size: 11px;
+  color: var(--fg-tertiary);
+}
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.card-tag {
+  font-size: 10px;
+  color: var(--fg-secondary);
+  background: var(--bg-tertiary);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.card-tag-more {
+  font-size: 10px;
+  color: var(--fg-tertiary);
+  padding: 1px 4px;
+}
+.gallery-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--separator);
+}
+.gallery-card-pin,
+.gallery-card-delete {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--bg-tertiary);
+  color: var(--fg);
+  -webkit-tap-highlight-color: transparent;
+}
+.gallery-card-delete {
+  color: #ff453a;
+}
+.gallery-card-pin:active,
+.gallery-card-delete:active {
+  opacity: 0.6;
+}
+/* Hide list-section wrappers in gallery mode */
+.list.gallery .list-section-header,
+.list.gallery .list-section {
+  display: contents;
+}
+/* Empty state in gallery */
+.list.gallery .empty-state {
+  grid-column: 1 / -1;
+}
+

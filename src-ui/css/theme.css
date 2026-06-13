@@ -1,0 +1,23 @@
+/* ===== Light Theme ===== */
+:root,
+[data-theme="dark"] {
+  --bg: #000;
+  --bg-surface: #1c1c1e;
+  --bg-secondary: #2c2c2e;
+  --bg-tertiary: #3a3a3c;
+  --separator: #38383a;
+  --fg: #fff;
+  --fg-secondary: #98989e;
+  --fg-tertiary: #636366;
+}
+[data-theme="light"] {
+  --bg: #f2f2f7;
+  --bg-surface: #ffffff;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e5e5ea;
+  --separator: #c6c6c8;
+  --fg: #000000;
+  --fg-secondary: #636366;
+  --fg-tertiary: #aeaeb2;
+}
+
