@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (multi-select: long-press + right-click + Select All bar)
+2026-06-12 by OWL (round 2 review — 26 new TODOs: musician workflow, data/sync, editor QoL, onboarding, performance, platform)
 
 ## Build & Test Commands
 ```bash
@@ -128,6 +128,43 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 ### Platform
 - [ ] iOS build (requires macOS + Xcode) — blocked on hardware
 - [ ] Android: test on a real device — the emulator may not reveal touch/gesture issues, audio recording problems, or localStorage quota limits
+
+## Next Up — Round 2 (2026-06-12 — OWL review)
+### Musician Workflow
+- [ ] Chord sheet display modes — "lyrics only", "chords only", "chords + lyrics" toggle for the editor view. Musicians use chord sheets differently in rehearsal vs. performance.
+- [ ] Strumming pattern notation — simple text-based pattern editor (e.g. "D-DU-UDU") per section, displayed above the chord ribbon. No audio, just visual reference.
+- [ ] Song memo / notes field — a free-text "Notes" area per song (not part of the chord/lyric body) for ideas, reminders, co-writer credits, recording notes. Shown in info panel.
+- [ ] Tuner / pitch detection — use `getUserMedia` + AnalyserNode + autocorrelation to detect pitch from mic. Simple chromatic tuner panel (like a guitar tuner app). Already have mic permission flow for recording.
+- [ ] Capo chord diagram view — when capo is set, optionally show chord diagrams with capo fret indicated and "real" chord names in parentheses.
+
+### Data & Sync
+- [ ] Cloud backup / sync — songs stored only in localStorage are lost on device change. Add optional cloud sync (e.g. a simple REST API, or even just export/import a full backup JSON). At minimum: "Export All Songs" and "Import Backup" buttons.
+- [ ] Song-level auto-backup — keep last N auto-saved snapshots separate from version history, so a user can recover from a bad edit even after auto-save overwrites.
+- [ ] Duplicate song detection — warn when creating/importing a song with the same title as an existing one.
+
+### Editor Quality of Life
+- [ ] Adjustable editor font size — pinch-to-zoom or A-/A+ buttons for lyrics and chord text. Critical for live performance readability on small screens.
+- [ ] Section templates beyond song structure — "Pre-Chorus", "Bridge", "Tag", "Coda", "Outro", "Intro" as one-tap section types with appropriate default labels.
+- [ ] Line/section find — Ctrl+F to search within the current song's lyrics, not just the song list.
+- [ ] Auto-capitalize section headers — when typing "verse 1" auto-suggest "Verse 1" (matching existing section type labels).
+
+### Onboarding & Discovery
+- [ ] First-run onboarding — 3-4 swipeable cards explaining: create a song, add chords, use the toolbar, setlist mode. Shown only on first launch.
+- [ ] Interactive tutorial song — "Welcome to Song Notes" sample song with pre-filled chords and annotations explaining features (tap this chord, swipe here, etc.).
+- [ ] Feature discovery hints — subtle one-time tooltips for power features (swipe-to-action, long-press multi-select, gallery view toggle) that dismiss after first use.
+
+### Performance & Robustness
+- [ ] Virtual scrolling for song list — with hundreds of songs, rendering all DOM nodes is slow. Virtualize the list to only render visible items.
+- [ ] Debounce localStorage writes — every save serializes the full songs array to localStorage. With many songs this blocks the UI. Debounce or diff-write.
+- [ ] Audio recording compression — recordings are stored as raw base64 webm. Add a quality/compression option to reduce storage. Show per-song recording size in info panel.
+- [ ] Graceful degradation for large songs — songs with 50+ sections can cause jank when rendering the editor. Add lazy rendering for off-screen sections.
+
+### Platform
+- [ ] iOS build (requires macOS + Xcode) — blocked on hardware
+- [ ] Android: test on a real device — touch gestures, audio recording, localStorage limits
+- [ ] Android: build and test APK on real device — the symlink workaround may not hold on all devices
+- [ ] Desktop Tauri build — the app is mobile-only in tauri.conf.json; enable desktop targets for Windows/Mac/Linux distribution
+- [ ] Keyboard shortcuts for desktop — Ctrl+S (save), Ctrl+Z (undo), Ctrl+F (find), Ctrl+P (print), arrow keys for song navigation. Currently only Ctrl+/ and Ctrl+Z are documented.
 - [x] PWA manifest + service worker (2026-06-12) — manifest.json with standalone display + maskable icons, 192/512 SVG icons (♫ in white on black), service worker with network-first strategy + offline caching, meta tags for apple-mobile-web-app/mobile-web-app-capable, safe-area-inset for notched devices, overscroll-behavior in standalone mode
 
 ## Newly Discovered TODOs
