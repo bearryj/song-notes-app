@@ -513,3 +513,161 @@
 .tuner-start-btn.stopping {
   background: var(--danger);
 }
+
+/* ===== First-Run Onboarding ===== */
+#onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.onboarding-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: fadeIn 0.3s ease;
+}
+.onboarding-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 360px;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+.onboarding-track {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--surface-elevated, #1c1c1e);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+.onboarding-card {
+  flex: 0 0 100%;
+  padding: 40px 28px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.onboarding-art {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: var(--surface, #2c2c2e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  line-height: 1;
+  margin-bottom: 4px;
+  animation: onboardingBounce 0.5s ease 0.2s both;
+}
+.onboarding-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+.onboarding-text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-secondary, #98989d);
+  margin: 0;
+  max-width: 280px;
+}
+.onboarding-text strong {
+  color: var(--text-primary, #fff);
+  font-weight: 600;
+}
+.onboarding-dots {
+  display: flex;
+  gap: 8px;
+}
+.onboarding-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.onboarding-dot.active {
+  background: var(--accent, #0a84ff);
+  width: 20px;
+  border-radius: 4px;
+}
+.onboarding-dot:focus-visible {
+  outline: 2px solid var(--accent, #0a84ff);
+  outline-offset: 2px;
+}
+.onboarding-actions {
+  display: flex;
+  width: 100%;
+  gap: 12px;
+}
+.onboarding-skip {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: var(--surface, #2c2c2e);
+  color: var(--text-secondary, #98989d);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.onboarding-skip:hover { opacity: 0.8; }
+.onboarding-skip:active { opacity: 0.6; }
+.onboarding-next {
+  flex: 2;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent, #0a84ff);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+.onboarding-next:hover { opacity: 0.9; }
+.onboarding-next:active { transform: scale(0.97); }
+.onboarding-next:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes onboardingBounce {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Swipe hint animation on first card */
+.onboarding-card[data-card="0"] .onboarding-art {
+  animation: onboardingBounce 0.5s ease 0.2s both, onboardingPulse 2s ease 1.5s 2;
+}
+@keyframes onboardingPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}

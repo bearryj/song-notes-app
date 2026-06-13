@@ -552,6 +552,45 @@
     </div>
   </div>
 
+  <!-- First-Run Onboarding Overlay -->
+  <div id="onboarding" style="display:none;" role="dialog" aria-label="Welcome to Song Notes" aria-modal="true">
+    <div class="onboarding-backdrop"></div>
+    <div class="onboarding-container">
+      <div class="onboarding-track" id="onboarding-track">
+        <div class="onboarding-card" data-card="0">
+          <div class="onboarding-art">♫</div>
+          <h2 class="onboarding-title">Welcome to Song Notes</h2>
+          <p class="onboarding-text">Your mobile songwriting companion. Write songs with chords, lyrics, and more — all in one beautiful place.</p>
+        </div>
+        <div class="onboarding-card" data-card="1">
+          <div class="onboarding-art">✎</div>
+          <h2 class="onboarding-title">Create a Song</h2>
+          <p class="onboarding-text">Tap <strong>+</strong> to start a new song. Choose a template like Verse-Chorus or AABA, or start blank. Add chords by tapping above any lyric line.</p>
+        </div>
+        <div class="onboarding-card" data-card="2">
+          <div class="onboarding-art">≡</div>
+          <h2 class="onboarding-title">Use the Toolbar</h2>
+          <p class="onboarding-text">Tap <strong>⋯</strong> for tools: transpose keys, set BPM, record audio, view chord diagrams, metronome, tuner, and more. Swipe songs for quick actions.</p>
+        </div>
+        <div class="onboarding-card" data-card="3">
+          <div class="onboarding-art">▤</div>
+          <h2 class="onboarding-title">Setlists & Export</h2>
+          <p class="onboarding-text">Build setlists for gigs, reorder songs, set capo per song. Export as text, markdown, or ChordPro — or share with a code.</p>
+        </div>
+      </div>
+      <div class="onboarding-dots" id="onboarding-dots" role="tablist" aria-label="Onboarding steps">
+        <button class="onboarding-dot active" data-idx="0" aria-label="Step 1" role="tab" aria-selected="true"></button>
+        <button class="onboarding-dot" data-idx="1" aria-label="Step 2" role="tab" aria-selected="false"></button>
+        <button class="onboarding-dot" data-idx="2" aria-label="Step 3" role="tab" aria-selected="false"></button>
+        <button class="onboarding-dot" data-idx="3" aria-label="Step 4" role="tab" aria-selected="false"></button>
+      </div>
+      <div class="onboarding-actions">
+        <button class="onboarding-skip" id="onboarding-skip">Skip</button>
+        <button class="onboarding-next" id="onboarding-next">Next</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="./app.js"></script>
 </body>
 </html>

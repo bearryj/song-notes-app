@@ -6155,6 +6155,98 @@ function updateNotesStats(song) {
   statsEl.innerHTML = html;
 }
 
+// ===== First-Run Onboarding =====
+let onboardingCardIdx = 0;
+const TOTAL_ONBOARDING_CARDS = 4;
+
+function showOnboarding() {
+  const el = $('onboarding');
+  if (!el) return;
+  el.style.display = 'flex';
+  onboardingCardIdx = 0;
+  updateOnboardingCards();
+  // Trap focus inside onboarding
+  setTimeout(() => {
+    const nextBtn = $('onboarding-next');
+    if (nextBtn) nextBtn.focus();
+  }, 100);
+}
+
+function hideOnboarding() {
+  const el = $('onboarding');
+  if (!el) return;
+  el.style.display = 'none';
+  localStorage.setItem('sn_onboarding_seen', 'true');
+}
+
+function updateOnboardingCards() {
+  const track = $('onboarding-track');
+  if (track) {
+    track.style.transform = `translateX(-${onboardingCardIdx * 100}%)`;
+  }
+  // Update dots
+  const dots = document.querySelectorAll('.onboarding-dot');
+  dots.forEach((d, i) => {
+    d.classList.toggle('active', i === onboardingCardIdx);
+    d.setAttribute('aria-selected', i === onboardingCardIdx ? 'true' : 'false');
+  });
+  // Update next button text
+  const nextBtn = $('onboarding-next');
+  if (nextBtn) {
+    nextBtn.textContent = onboardingCardIdx === TOTAL_ONBOARDING_CARDS - 1 ? 'Get Started' : 'Next';
+  }
+}
+
+function onboardingNext() {
+  if (onboardingCardIdx < TOTAL_ONBOARDING_CARDS - 1) {
+    onboardingCardIdx++;
+    updateOnboardingCards();
+  } else {
+    hideOnboarding();
+  }
+}
+
+function onboardingGoTo(idx) {
+  if (idx >= 0 && idx < TOTAL_ONBOARDING_CARDS) {
+    onboardingCardIdx = idx;
+    updateOnboardingCards();
+  }
+}
+
+// Wire onboarding events
+document.addEventListener('DOMContentLoaded', () => {
+  const nextBtn = $('onboarding-next');
+  const skipBtn = $('onboarding-skip');
+  const dots = document.querySelectorAll('.onboarding-dot');
+  const track = $('onboarding-track');
+
+  if (nextBtn) nextBtn.addEventListener('click', onboardingNext);
+  if (skipBtn) skipBtn.addEventListener('click', hideOnboarding);
+  dots.forEach(d => {
+    d.addEventListener('click', () => onboardingGoTo(parseInt(d.dataset.idx)));
+  });
+
+  // Swipe support
+  if (track) {
+    let startX = 0, startY = 0, isSwiping = false;
+    track.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      isSwiping = true;
+    }, { passive: true });
+    track.addEventListener('touchend', e => {
+      if (!isSwiping) return;
+      isSwiping = false;
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+        if (dx < 0) onboardingNext();
+        else if (onboardingCardIdx > 0) onboardingGoTo(onboardingCardIdx - 1);
+      }
+    }, { passive: true });
+  }
+});
+
 // Init
 async function init() {
   // Initialize modules
@@ -6186,7 +6278,12 @@ async function init() {
   updateSortBtn();
 
   addSampleSongs();
-  
+
+  // Show first-run onboarding
+  if (!localStorage.getItem('sn_onboarding_seen')) {
+    showOnboarding();
+  }
+
   // Remember last opened song
   const lastId = localStorage.getItem('songs_app_last');
   if (lastId && getSong(lastId)) {
