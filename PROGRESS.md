@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-13 by OWL (adjustable editor font size)
+2026-06-13 by OWL (section type picker)
 
 ## Build & Test Commands
 ```bash
@@ -147,7 +147,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 
 ### Editor Quality of Life
 - [x] Adjustable editor font size — A-/A+ buttons in editor nav bar (13-24px), CSS custom property --editor-font-size scales lyrics, chords, section headers. Persisted to localStorage. (2026-06-13)
-- [ ] Section templates beyond song structure — "Pre-Chorus", "Bridge", "Tag", "Coda", "Outro", "Intro" as one-tap section types with appropriate default labels.
+- [x] Section templates beyond song structure — "Pre-Chorus", "Bridge", "Tag", "Coda", "Outro", "Intro" as one-tap section types with appropriate default labels. (2026-06-13) — section type picker bottom sheet with 9 types (Verse, Verse 2, Chorus, Pre-Chorus, Bridge, Tag, Coda, Outro, Intro); Tag + Coda added to dropdown, ChordPro export map, and ChordPro import map
 - [x] Line/section find — Ctrl+F to search within the current song's lyrics. Find bar at bottom of editor with match count, prev/next navigation, Enter/Shift+Enter to cycle, debounced highlight, Escape to close. (2026-06-13)
 - [ ] Auto-capitalize section headers — when typing "verse 1" auto-suggest "Verse 1" (matching existing section type labels).
 
