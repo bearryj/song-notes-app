@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-13 by OWL (debounce localStorage writes — 2s batch window)
+2026-06-13 by OWL (interactive tutorial song — Welcome to Song Notes)
 
 ## Build & Test Commands
 ```bash
@@ -154,7 +154,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 
 ### Onboarding & Discovery
 - [x] First-run onboarding — 3-4 swipeable cards explaining: create a song, add chords, use the toolbar, setlist mode. Shown only on first launch. (2026-06-13) — 4-card swipeable walkthrough with dot navigation, skip/next buttons, swipe gestures, bounce animation, Apple Notes dark theme, persisted via sn_onboarding_seen localStorage key
-- [ ] Interactive tutorial song — "Welcome to Song Notes" sample song with pre-filled chords and annotations explaining features (tap this chord, swipe here, etc.).
+- [x] Interactive tutorial song — "Welcome to Song Notes" sample song with pre-filled chords and annotations explaining features (tap this chord, swipe here, etc.). (2026-06-13) — ★ Welcome to Song Notes pinned tutorial song with 5 annotated sections (Intro/Verse/Chorus/Bridge/Outro), tutorial badge in list + gallery views, auto-pinned on first launch
 - [ ] Feature discovery hints — subtle one-time tooltips for power features (swipe-to-action, long-press multi-select, gallery view toggle) that dismiss after first use.
 
 ### Performance & Robustness
