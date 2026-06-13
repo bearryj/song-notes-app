@@ -1969,6 +1969,8 @@ function switchToSong(targetId, direction) {
   stopSessionTimer();
   // Stop metronome if playing to avoid background interval after navigation
   if (isMetroPlaying()) metroStop();
+  // Stop tuner if active to avoid background audio processing
+  if (tunerActive) stopTuner();
   // Clear undo buffer from previous song to prevent stale restores
   clearUndo();
   // Apply slide transition on the editor view
@@ -5135,6 +5137,7 @@ function setupEvents() {
     }
     stopSessionTimer();
     if (isMetroPlaying()) metroStop();
+    if (tunerActive) stopTuner();
     popView(); renderSongList();
   }
 
@@ -5318,6 +5321,8 @@ function setupEvents() {
         showPluginSheet();
       } else if (a === 'metronome') {
         showMetronomePanel();
+      } else if (a === 'tuner') {
+        showTunerPanel();
       } else if (a === 'song-stats') {
         showSongStatsPanel();
       } else if (a === 'edit-tags') {
@@ -5383,6 +5388,27 @@ function setupEvents() {
     tapBtn.addEventListener('click', handleTapTempo);
     tapBtn.addEventListener('touchend', e => { e.preventDefault(); handleTapTempo(); });
   }
+
+  // ===== Tuner Events =====
+
+  // Start/stop tuner
+  $('tuner-start-btn')?.addEventListener('click', () => {
+    if (tunerActive) { stopTuner(); } else { startTuner(); }
+  });
+
+  // String selector buttons
+  document.querySelectorAll('.tuner-string-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tuner-string-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-checked', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-checked', 'true');
+      tunerTargetNote = btn.dataset.note;
+      updateTunerTargetDisplay();
+    });
+  });
 
   // ===== Setlist Events =====
 
@@ -6578,6 +6604,260 @@ function findPrev() {
   updateActiveHighlight();
   scrollToMatch(findCurrentIdx);
   updateFindCount();
+}
+
+// ===== Tuner / Pitch Detection =====
+let tunerStream = null;
+let tunerAudioCtx = null;
+let tunerAnalyser = null;
+let tunerAnimFrame = null;
+let tunerActive = false;
+let tunerTargetNote = 'E2';
+
+// Standard guitar string frequencies
+const STRING_FREQS = {
+  'E2': 82.41, 'A2': 110.00, 'D3': 146.83,
+  'G3': 196.00, 'B3': 246.94, 'E4': 329.63
+};
+
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+function freqToNote(freq) {
+  if (freq <= 0) return null;
+  // A4 = 440Hz = MIDI 69
+  const midi = 12 * Math.log2(freq / 440) + 69;
+  const midiRound = Math.round(midi);
+  const cents = Math.round((midi - midiRound) * 100);
+  const noteIdx = ((midiRound % 12) + 12) % 12;
+  const octave = Math.floor(midiRound / 12) - 1;
+  return {
+    name: NOTE_NAMES[noteIdx],
+    octave: octave,
+    cents: cents,
+    freq: freq,
+    midi: midiRound
+  };
+}
+
+// Autocorrelation pitch detection
+function autoCorrelate(buf, sampleRate) {
+  const bufLen = buf.length;
+  // Downsample to reduce computation
+  const downsampleFactor = 4;
+  const downsampledLen = Math.floor(bufLen / downsampleFactor);
+  const downsampled = new Float32Array(downsampledLen);
+  for (let i = 0; i < downsampledLen; i++) {
+    downsampled[i] = buf[i * downsampleFactor];
+  }
+  const effectiveSR = sampleRate / downsampleFactor;
+
+  // RMS check — skip if too quiet
+  let rms = 0;
+  for (let i = 0; i < downsampledLen; i++) rms += downsampled[i] * downsampled[i];
+  rms = Math.sqrt(rms / downsampledLen);
+  if (rms < 0.01) return -1; // too quiet
+
+  // Autocorrelation
+  const minPeriod = Math.floor(effectiveSR / 500); // max freq 500Hz (covers guitar low E)
+  const maxPeriod = Math.floor(effectiveSR / 50);  // min freq 50Hz
+
+  let bestCorr = -1;
+  let bestPeriod = -1;
+
+  for (let period = minPeriod; period <= maxPeriod && period < downsampledLen; period++) {
+    let corr = 0;
+    const compareLen = Math.min(downsampledLen - period, 512);
+    for (let i = 0; i < compareLen; i++) {
+      corr += Math.abs(downsampled[i] * downsampled[i + period]);
+    }
+    if (corr > bestCorr) {
+      bestCorr = corr;
+      bestPeriod = period;
+    }
+  }
+
+  if (bestPeriod === -1) return -1;
+
+  // Parabolic interpolation for better accuracy
+  const y1 = bestCorr;
+  let y0 = 0, y2 = 0;
+  if (bestPeriod > minPeriod) {
+    for (let i = 0; i < Math.min(downsampledLen - (bestPeriod - 1), 512); i++) {
+      y0 += Math.abs(downsampled[i] * downsampled[i + bestPeriod - 1]);
+    }
+  }
+  if (bestPeriod < maxPeriod && (bestPeriod + 1) < downsampledLen) {
+    for (let i = 0; i < Math.min(downsampledLen - (bestPeriod + 1), 512); i++) {
+      y2 += Math.abs(downsampled[i] * downsampled[i + bestPeriod + 1]);
+    }
+  }
+
+  const shift = (y2 - y0) / (2 * (2 * y1 - y0 - y2 + 1e-10));
+  const refinedPeriod = bestPeriod + shift;
+
+  return effectiveSR / refinedPeriod;
+}
+
+function tunerTick() {
+  if (!tunerActive) return;
+
+  const bufferLength = tunerAnalyser.fftSize;
+  const dataArray = new Float32Array(bufferLength);
+  tunerAnalyser.getFloatTimeDomainData(dataArray);
+
+  const freq = autoCorrelate(dataArray, tunerAudioCtx.sampleRate);
+
+  if (freq > 0) {
+    const note = freqToNote(freq);
+    if (note) {
+      updateTunerDisplay(note);
+    }
+  }
+
+  tunerAnimFrame = requestAnimationFrame(tunerTick);
+}
+
+function updateTunerDisplay(note) {
+  const noteEl = $('tuner-note');
+  const freqEl = $('tuner-frequency');
+  const centsEl = $('tuner-cents');
+  const needle = $('tuner-needle');
+  const status = $('tuner-status');
+
+  if (noteEl) {
+    noteEl.textContent = note.name;
+    noteEl.classList.toggle('in-tune', Math.abs(note.cents) < 5);
+  }
+  if (freqEl) freqEl.textContent = `${note.freq.toFixed(1)} Hz`;
+
+  if (centsEl) {
+    if (Math.abs(note.cents) < 5) {
+      centsEl.textContent = '✓ In tune';
+      centsEl.className = 'tuner-cents in-tune';
+    } else if (note.cents > 0) {
+      centsEl.textContent = `+${note.cents}¢ sharp`;
+      centsEl.className = 'tuner-cents sharp';
+    } else {
+      centsEl.textContent = `${note.cents}¢ flat`;
+      centsEl.className = 'tuner-cents flat';
+    }
+  }
+
+  // Needle: map -50..+50 cents to -130..+130px (half of 280px meter minus margin)
+  if (needle) {
+    const clamped = Math.max(-50, Math.min(50, note.cents));
+    const px = (clamped / 50) * 130;
+    needle.style.transform = `translateX(-50%) translateX(${px}px)`;
+  }
+
+  // Check if near target string
+  const targetFreq = STRING_FREQS[tunerTargetNote];
+  if (targetFreq) {
+    const centsFromTarget = 1200 * Math.log2(note.freq / targetFreq);
+    if (Math.abs(centsFromTarget) < 15) {
+      if (status) {
+        status.textContent = `🎯 Near ${tunerTargetNote}!`;
+        status.className = 'tuner-status active';
+      }
+      // Highlight matching string button
+      document.querySelectorAll('.tuner-string-btn').forEach(btn => {
+        btn.classList.toggle('near-match', btn.dataset.note === tunerTargetNote);
+      });
+    } else {
+      if (status) {
+        status.textContent = `Detected: ${note.name}${note.octave}`;
+        status.className = 'tuner-status';
+      }
+      document.querySelectorAll('.tuner-string-btn').forEach(btn => {
+        btn.classList.remove('near-match');
+      });
+    }
+  }
+}
+
+async function startTuner() {
+  try {
+    tunerStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        sampleRate: 48000,
+        channelCount: 1
+      }
+    });
+
+    tunerAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    tunerAnalyser = tunerAudioCtx.createAnalyser();
+    tunerAnalyser.fftSize = 4096;
+    tunerAnalyser.smoothingTimeConstant = 0;
+
+    const source = tunerAudioCtx.createMediaStreamSource(tunerStream);
+    source.connect(tunerAnalyser);
+
+    tunerActive = true;
+    tunerTick();
+
+    const btn = $('tuner-start-btn');
+    if (btn) {
+      btn.textContent = 'Stop';
+      btn.classList.add('stopping');
+    }
+    const status = $('tuner-status');
+    if (status) {
+      status.textContent = 'Listening… Play a string';
+      status.className = 'tuner-status active';
+    }
+  } catch (e) {
+    console.error('Tuner start failed:', e);
+    toast('Microphone access denied', 'error');
+  }
+}
+
+function stopTuner() {
+  tunerActive = false;
+  if (tunerAnimFrame) { cancelAnimationFrame(tunerAnimFrame); tunerAnimFrame = null; }
+  if (tunerStream) { tunerStream.getTracks().forEach(t => t.stop()); tunerStream = null; }
+  if (tunerAudioCtx) { tunerAudioCtx.close(); tunerAudioCtx = null; }
+  tunerAnalyser = null;
+
+  const btn = $('tuner-start-btn');
+  if (btn) {
+    btn.textContent = 'Start';
+    btn.classList.remove('stopping');
+  }
+  const status = $('tuner-status');
+  if (status) {
+    status.textContent = 'Tap start to begin tuning';
+    status.className = 'tuner-status';
+  }
+  const noteEl = $('tuner-note');
+  if (noteEl) { noteEl.textContent = '—'; noteEl.classList.remove('in-tune'); }
+  const freqEl = $('tuner-frequency');
+  if (freqEl) freqEl.textContent = 'Hz';
+  const centsEl = $('tuner-cents');
+  if (centsEl) { centsEl.textContent = ''; centsEl.className = 'tuner-cents'; }
+  const needle = $('tuner-needle');
+  if (needle) needle.style.transform = 'translateX(-50%) translateX(0px)';
+  document.querySelectorAll('.tuner-string-btn').forEach(btn => btn.classList.remove('near-match'));
+}
+
+function showTunerPanel() {
+  const panel = $('tuner-panel');
+  if (!panel) return;
+  panel.style.display = 'flex';
+  updateTunerTargetDisplay();
+
+  panel.querySelector('.toolbar-sheet-backdrop').onclick = () => {
+    stopTuner();
+    panel.style.display = 'none';
+  };
+}
+
+function updateTunerTargetDisplay() {
+  const freq = STRING_FREQS[tunerTargetNote];
+  const el = $('tuner-target');
+  if (el) el.textContent = `Target: ${tunerTargetNote} (${freq.toFixed(1)} Hz)`;
 }
 
 // Find bar event wiring

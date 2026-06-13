@@ -182,6 +182,7 @@
                 <button class="toolbar-sheet-btn" data-action="history" aria-label="Version history"><span class="sheet-icon">↶</span><span class="sheet-label">History</span></button>
                 <button class="toolbar-sheet-btn" data-action="chord-diagram" aria-label="Chord diagram"><span class="sheet-icon">♫</span><span class="sheet-label">Chords</span></button>
                 <button class="toolbar-sheet-btn" data-action="metronome" aria-label="Metronome"><span class="sheet-icon">⌖</span><span class="sheet-label">Metronome</span></button>
+                <button class="toolbar-sheet-btn" data-action="tuner" aria-label="Tuner"><span class="sheet-icon">♪</span><span class="sheet-label">Tuner</span></button>
                 <button class="toolbar-sheet-btn" data-action="song-stats" aria-label="Song statistics"><span class="sheet-icon">▤</span><span class="sheet-label">Stats</span></button>
               </div>
             </div>
@@ -366,6 +367,46 @@
         </div>
         <div class="stats-body" id="stats-body">
           <div class="stats-loading">Select a song to view stats</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tuner Panel -->
+    <div id="tuner-panel" style="display:none;" role="dialog" aria-label="Tuner">
+      <div class="toolbar-sheet-backdrop"></div>
+      <div class="tuner-content">
+        <div class="toolbar-sheet-handle"></div>
+        <div class="tuner-header">
+          <h3 class="tuner-title">Tuner</h3>
+        </div>
+        <div class="tuner-display" aria-live="polite">
+          <div class="tuner-note" id="tuner-note">—</div>
+          <div class="tuner-frequency" id="tuner-frequency">Hz</div>
+          <div class="tuner-cents" id="tuner-cents"></div>
+        </div>
+        <div class="tuner-meter" role="meter" aria-label="Pitch accuracy" aria-valuemin="-50" aria-valuemax="50" aria-valuenow="0">
+          <div class="tuner-meter-center"></div>
+          <div class="tuner-meter-needle" id="tuner-needle"></div>
+          <div class="tuner-meter-marks">
+            <span class="tuner-mark tuner-mark-neg">−50</span>
+            <span class="tuner-mark tuner-mark-neg">−25</span>
+            <span class="tuner-mark tuner-mark-zero">0</span>
+            <span class="tuner-mark tuner-mark-pos">+25</span>
+            <span class="tuner-mark tuner-mark-pos">+50</span>
+          </div>
+        </div>
+        <div class="tuner-string-buttons" role="radiogroup" aria-label="Instrument strings">
+          <button class="tuner-string-btn active" data-note="E2" role="radio" aria-checked="true">E₂</button>
+          <button class="tuner-string-btn" data-note="A2" role="radio" aria-checked="false">A₂</button>
+          <button class="tuner-string-btn" data-note="D3" role="radio" aria-checked="false">D₃</button>
+          <button class="tuner-string-btn" data-note="G3" role="radio" aria-checked="false">G₃</button>
+          <button class="tuner-string-btn" data-note="B3" role="radio" aria-checked="false">B₃</button>
+          <button class="tuner-string-btn" data-note="E4" role="radio" aria-checked="false">E₄</button>
+        </div>
+        <div class="tuner-target-note" id="tuner-target">Target: E2 (82.4 Hz)</div>
+        <div class="tuner-status" id="tuner-status">Tap start to begin tuning</div>
+        <div class="tuner-controls">
+          <button class="tuner-start-btn" id="tuner-start-btn" aria-label="Start tuner">Start</button>
         </div>
       </div>
     </div>
