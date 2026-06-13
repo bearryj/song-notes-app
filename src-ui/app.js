@@ -455,6 +455,27 @@ function escHtml(s) {
   return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function computeAudioSize(song) {
+  if (!song.audio || !song.audio.length) return 0;
+  let total = 0;
+  song.audio.forEach(rec => {
+    if (rec.data) {
+      // base64 string length * 0.75 gives approximate decoded byte size
+      // but we care about storage size, so use the string length directly
+      total += rec.data.length;
+    }
+  });
+  return total;
+}
+
 // ===== Drag to Dismiss for Bottom Sheets =====
 // Adds touch drag-to-dismiss behavior to a sheet element.
 // The sheet slides down and fades out when dragged downward past a threshold.
@@ -6041,6 +6062,11 @@ function computeStatsHTML(song) {
   html += `<div class="stat-card"><div class="stat-card-value chord">${totalChords}</div><div class="stat-card-label">Chords</div></div>`;
   html += `<div class="stat-card"><div class="stat-card-value section">${totalSections}</div><div class="stat-card-label">Sections</div></div>`;
   html += `<div class="stat-card"><div class="stat-card-value">${totalLines}</div><div class="stat-card-label">Lines</div></div>`;
+  const audioSize = computeAudioSize(song);
+  const audioCount = song.audio ? song.audio.length : 0;
+  if (audioCount > 0) {
+    html += `<div class="stat-card"><div class="stat-card-value recording">${formatBytes(audioSize)}</div><div class="stat-card-label">${audioCount} Recording${audioCount !== 1 ? 's' : ''}</div></div>`;
+  }
   html += '</div></div>';
 
   // Key Detection

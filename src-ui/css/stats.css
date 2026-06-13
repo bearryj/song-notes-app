@@ -91,6 +91,7 @@
 .stat-card-value.accent { color: var(--accent); }
 .stat-card-value.chord { color: var(--chord); }
 .stat-card-value.section { color: var(--section-label); }
+.stat-card-value.recording { color: var(--recording, #f59e0b); }
 
 /* Chord frequency bars */
 .stats-chord-list {
