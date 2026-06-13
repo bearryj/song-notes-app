@@ -1,6 +1,7 @@
 // ===== Song Notes Mobile — Apple Notes Style =====
 
 import { invoke } from '@tauri-apps/api/core';
+import { init as metroInit, isMetroPlaying, getMetroBpm, metroStart, metroStop, metroSetBpm, metroSetTimeSig, showMetronomePanel, handleTapTempo } from './modules/metro.js';
 
 let isTauri = false;
 let songs = [];
@@ -37,18 +38,6 @@ let sessionTotalMs = 0; // accumulated ms from previous sessions (from song.sess
 // ===== Setlist State =====
 let setlists = [];
 let activeSetlistId = null;
-
-// ===== Metronome State =====
-let metroBpm = 120;
-let metroTimeSig = 4;
-let metroPlaying = false;
-let metroInterval = null;
-let metroBeatIndex = 0;
-let metroAudioCtx = null;
-let metroNextNoteTime = 0;
-let metroTimerID = null;
-let metroSchedulerInterval = 25; // ms
-let metroLookahead = 100; // ms
 
 // Chord definitions
 const CHROMATIC = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -2008,7 +1997,7 @@ function switchToSong(targetId, direction) {
   }
   stopSessionTimer();
   // Stop metronome if playing to avoid background interval after navigation
-  if (metroPlaying) metroStop();
+  if (isMetroPlaying()) metroStop();
   // Clear undo buffer from previous song to prevent stale restores
   clearUndo();
   // Apply slide transition on the editor view
@@ -4522,7 +4511,7 @@ function setupEvents() {
       updateSaveDot('saved');
     }
     stopSessionTimer();
-    if (metroPlaying) metroStop();
+    if (isMetroPlaying()) metroStop();
     popView(); renderSongList();
   }
 
@@ -4720,12 +4709,12 @@ function setupEvents() {
 
   // Play/stop
   $('metro-play-btn')?.addEventListener('click', () => {
-    if (metroPlaying) metroStop(); else metroStart();
+    if (isMetroPlaying()) metroStop(); else metroStart();
   });
 
   // BPM up/down
-  $('metro-bpm-down')?.addEventListener('click', () => metroSetBpm(metroBpm - 1));
-  $('metro-bpm-up')?.addEventListener('click', () => metroSetBpm(metroBpm + 1));
+  $('metro-bpm-down')?.addEventListener('click', () => metroSetBpm(getMetroBpm() - 1));
+  $('metro-bpm-up')?.addEventListener('click', () => metroSetBpm(getMetroBpm() + 1));
 
   // BPM slider
   $('metro-bpm-slider')?.addEventListener('input', e => {
@@ -5044,6 +5033,8 @@ function updateInfoBar() {
 
 // Init
 async function init() {
+  // Initialize modules
+  metroInit($);
   // Show skeleton while loading data
   showSongListSkeletonStaggered(6);
   try {
@@ -5171,216 +5162,6 @@ window.addEventListener('pagehide', () => {
     emergencySave();
   }
 });
-
-// ===== Metronome Engine =====
-
-function metroGetCtx() {
-  if (!metroAudioCtx) {
-    metroAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (metroAudioCtx.state === 'suspended') {
-    metroAudioCtx.resume();
-  }
-  return metroAudioCtx;
-}
-
-function metroPlayClick(isAccent) {
-  const ctx = metroGetCtx();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.frequency.value = isAccent ? 1000 : 800;
-  osc.type = 'sine';
-  gain.gain.setValueAtTime(isAccent ? 0.5 : 0.35, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.08);
-}
-
-function metroVibrate(isAccent) {
-  if (navigator.vibrate) {
-    navigator.vibrate(isAccent ? [30, 20, 30] : 15);
-  }
-}
-
-function metroScheduleNote() {
-  const ctx = metroGetCtx();
-  const secondsPerBeat = 60.0 / metroBpm;
-  while (metroNextNoteTime < ctx.currentTime + metroLookahead / 1000) {
-    const isAccent = (metroBeatIndex % metroTimeSig) === 0;
-    metroPlayClick(isAccent);
-
-    // Visual beat
-    const beatTime = metroNextNoteTime;
-    const delay = Math.max(0, (beatTime - ctx.currentTime) * 1000);
-    setTimeout(() => {
-      const circle = $('metro-beat-circle');
-      if (!circle) return;
-      circle.classList.remove('beat', 'beat-accent');
-      void circle.offsetWidth; // force reflow
-      circle.classList.add(isAccent ? 'beat-accent' : 'beat');
-      metroVibrate(isAccent);
-      setTimeout(() => circle.classList.remove('beat', 'beat-accent'), 100);
-    }, delay);
-
-    metroNextNoteTime += secondsPerBeat;
-    metroBeatIndex++;
-  }
-}
-
-function metroStart() {
-  if (metroPlaying) return;
-  metroPlaying = true;
-  metroBeatIndex = 0;
-  const ctx = metroGetCtx();
-  metroNextNoteTime = ctx.currentTime + 0.05;
-  metroTimerID = setInterval(metroScheduleNote, metroSchedulerInterval);
-
-  const playBtn = $('metro-play-btn');
-  if (playBtn) {
-    playBtn.textContent = '■';
-    playBtn.classList.add('playing');
-  }
-}
-
-function metroStop() {
-  metroPlaying = false;
-  if (metroTimerID) {
-    clearInterval(metroTimerID);
-    metroTimerID = null;
-  }
-  // Close AudioContext to avoid hitting browser limit (6 on mobile)
-  if (metroAudioCtx) {
-    try { metroAudioCtx.close(); } catch(e) { /* ignore if already closed */ }
-    metroAudioCtx = null;
-  }
-  const playBtn = $('metro-play-btn');
-  if (playBtn) {
-    playBtn.textContent = '▶';
-    playBtn.classList.remove('playing');
-  }
-  const circle = $('metro-beat-circle');
-  if (circle) circle.classList.remove('beat', 'beat-accent');
-}
-
-function metroSetBpm(val) {
-  metroBpm = Math.max(30, Math.min(240, val));
-  const el = $('metro-bpm-value');
-  if (el) el.textContent = metroBpm;
-  const slider = $('metro-bpm-slider');
-  if (slider) slider.value = metroBpm;
-  // Update preset active state
-  document.querySelectorAll('.metro-preset-btn').forEach(btn => {
-    btn.classList.toggle('active', parseInt(btn.dataset.bpm) === metroBpm);
-  });
-}
-
-function metroSetTimeSig(val) {
-  metroTimeSig = val;
-  document.querySelectorAll('.metro-time-btn').forEach(btn => {
-    btn.classList.toggle('active', parseInt(btn.dataset.sig) === val);
-  });
-}
-
-function showMetronomePanel() {
-  const panel = $('metronome-panel');
-  if (!panel) return;
-  panel.style.display = 'flex';
-  metroSetBpm(metroBpm);
-  metroSetTimeSig(metroTimeSig);
-  resetTapTempo();
-
-  // Close on backdrop tap
-  panel.querySelector('.toolbar-sheet-backdrop').onclick = () => {
-    metroStop();
-    panel.style.display = 'none';
-  };
-}
-
-// ===== Tap Tempo =====
-let tapTimes = [];
-let tapResetTimer = null;
-const TAP_MAX_SAMPLES = 8;
-const TAP_TIMEOUT = 2000; // ms to reset tap sequence
-const TAP_MIN_BPM = 30;
-const TAP_MAX_BPM = 240;
-
-function resetTapTempo() {
-  tapTimes = [];
-  if (tapResetTimer) { clearTimeout(tapResetTimer); tapResetTimer = null; }
-  const result = $('metro-tap-result');
-  if (result) { result.textContent = '—'; result.classList.remove('active'); }
-}
-
-function handleTapTempo() {
-  const now = performance.now();
-  const result = $('metro-tap-result');
-  const btn = $('metro-tap-btn');
-  if (!result) return;
-
-  // Visual feedback
-  if (btn) {
-    btn.classList.remove('tap-flash');
-    void btn.offsetWidth; // force reflow
-    btn.classList.add('tap-flash');
-  }
-
-  // Reset if too long since last tap
-  if (tapTimes.length > 0 && now - tapTimes[tapTimes.length - 1] > TAP_TIMEOUT) {
-    tapTimes = [];
-  }
-
-  tapTimes.push(now);
-
-  // Keep only last N samples
-  if (tapTimes.length > TAP_MAX_SAMPLES) {
-    tapTimes = tapTimes.slice(-TAP_MAX_SAMPLES);
-  }
-
-  // Need at least 2 taps to calculate
-  if (tapTimes.length < 2) {
-    result.textContent = 'tap…';
-    result.classList.remove('active');
-    // Start reset timer
-    if (tapResetTimer) clearTimeout(tapResetTimer);
-    tapResetTimer = setTimeout(resetTapTempo, TAP_TIMEOUT);
-    return;
-  }
-
-  // Calculate intervals
-  const intervals = [];
-  for (let i = 1; i < tapTimes.length; i++) {
-    intervals.push(tapTimes[i] - tapTimes[i - 1]);
-  }
-
-  // Filter out outliers (intervals that are >2x or <0.5x the median)
-  const sorted = [...intervals].sort((a, b) => a - b);
-  const median = sorted[Math.floor(sorted.length / 2)];
-  const filtered = intervals.filter(iv => iv >= median * 0.4 && iv <= median * 2.5);
-
-  if (filtered.length === 0) {
-    result.textContent = 'tap…';
-    result.classList.remove('active');
-    if (tapResetTimer) clearTimeout(tapResetTimer);
-    tapResetTimer = setTimeout(resetTapTempo, TAP_TIMEOUT);
-    return;
-  }
-
-  const avgInterval = filtered.reduce((a, b) => a + b, 0) / filtered.length;
-  let bpm = Math.round(60000 / avgInterval);
-  bpm = Math.max(TAP_MIN_BPM, Math.min(TAP_MAX_BPM, bpm));
-
-  result.textContent = `${bpm} BPM`;
-  result.classList.add('active');
-
-  // Auto-apply to metronome
-  metroSetBpm(bpm);
-
-  // Reset timer
-  if (tapResetTimer) clearTimeout(tapResetTimer);
-  tapResetTimer = setTimeout(resetTapTempo, TAP_TIMEOUT);
-}
 
 // ===== Song Statistics =====
 
