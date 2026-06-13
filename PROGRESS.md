@@ -85,7 +85,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 ## TODOs — Refinement & Bug Fixes
 
 ### UI Polish
-- [ ] Song list play/pause button styling — current pill button (▶ N / ❚❚ N) needs refinement: better sizing, alignment, color, and visual hierarchy with the song title/meta to match Apple Notes aesthetic
+- [x] Song list play/pause button styling — pill button with proper touch targets (26px min-height, 38px min-width), subtle border, accent playing state with opacity pulse animation on the icon (2026-06-13)
 - [ ] Graceful degradation for large songs — songs with 50+ sections can cause jank when rendering the editor. Add lazy rendering for off-screen sections.
 
 ### Bugs / Reliability
