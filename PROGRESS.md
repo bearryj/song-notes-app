@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-13 by OWL (auto-capitalize section headers)
+2026-06-13 by OWL (add chromatic tuner with autocorrelation pitch detection)
 
 ## Build & Test Commands
 ```bash
@@ -80,6 +80,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Duplicate line in editor (⧉ button in chord row, deep copy with chords, undo support via snackbar)
 - [x] Chord sheet display modes (toggle between chords+lyrics, lyrics-only, chords-only; nav bar button + toolbar View section; persisted to localStorage)
 - [x] Strumming pattern notation (per-section text pattern editor, e.g. "D-DU-UDU"; toggle button in section header; included in export, print, and share codes)
+- [x] Chromatic tuner (autocorrelation pitch detection from mic, guitar string selector E2-A2-D3-G3-B3-E4, cents needle meter, sharp/flat/in-tune display)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -137,7 +138,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Chord sheet display modes — "lyrics only", "chords only", "chords + lyrics" toggle for the editor view. Musicians use chord sheets differently in rehearsal vs. performance. (2026-06-12) — displayMode state persisted to localStorage, nav bar button cycles modes (≡/♫/𝄞 icons), toolbar View section button, CSS classes .display-lyrics/.display-chords/.display-both on #song-body
 - [x] Strumming pattern notation — simple text-based pattern editor (e.g. "D-DU-UDU") per section, displayed above the chord ribbon. No audio, just visual reference. (2026-06-13) — toggle button (𝅘𝅥) in section header controls, inline input with clear button, persisted to section data, included in export (txt/markdown/ChordPro), print preview, and share codes
 - [x] Song memo / notes field — a free-text "Notes" area per song (not part of the chord/lyric body) for ideas, reminders, co-writer credits, recording notes. Shown in info panel. (2026-06-13) — bottom sheet panel with song stats (key, BPM, sections, lines, words, chords, unique chords, tags, dates) + editable textarea with 600ms debounced auto-save; included in text, markdown, and chordPro exports; persisted to song.notes field; restored from share codes
-- [ ] Tuner / pitch detection — use `getUserMedia` + AnalyserNode + autocorrelation to detect pitch from mic. Simple chromatic tuner panel (like a guitar tuner app). Already have mic permission flow for recording.
+- [x] Tuner / pitch detection — use `getUserMedia` + AnalyserNode + autocorrelation to detect pitch from mic. Simple chromatic tuner panel (like a guitar tuner app). Already have mic permission flow for recording. (2026-06-13) — autocorrelation engine with parabolic interpolation, 48kHz sample rate, RMS gate, guitar string selector (E2-A2-D3-G3-B3-E4), cents needle meter, sharp/flat/in-tune display, start/stop button, cleanup on nav/back
 - [ ] Capo chord diagram view — when capo is set, optionally show chord diagrams with capo fret indicated and "real" chord names in parentheses.
 
 ### Data & Sync
