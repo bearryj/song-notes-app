@@ -10,6 +10,7 @@ let currentFolder = 'All Songs';
 let currentSongId = null;
 let viewStack = ['folder-view'];
 let autoSaveTimer = null;
+let localStorageWriteTimer = null; // debounced localStorage flush for songs array
 let versionHistory = [];
 let mediaRecorder = null;
 let audioChunks = [];
@@ -212,9 +213,26 @@ async function refreshSongData() {
 }
 
 async function saveSongs() {
-  localStorage.setItem('songs_app', JSON.stringify(songs));
+  queueLocalStorageSave();
   if (isTauri) for (const s of songs) await tauriSaveSong(s);
 }
+
+// Debounced localStorage write — batches rapid saves into a single write
+const LS_WRITE_DELAY = 2000; // 2s debounce window
+function queueLocalStorageSave() {
+  clearTimeout(localStorageWriteTimer);
+  localStorageWriteTimer = setTimeout(() => {
+    localStorageWriteTimer = null;
+    try { localStorage.setItem('songs_app', JSON.stringify(songs)); } catch {}
+  }, LS_WRITE_DELAY);
+}
+// Synchronous flush — call before page unload / emergency save
+function flushLocalStorage() {
+  clearTimeout(localStorageWriteTimer);
+  localStorageWriteTimer = null;
+  try { localStorage.setItem('songs_app', JSON.stringify(songs)); } catch {}
+}
+
 function saveTrash() {
   localStorage.setItem('sn_trash', JSON.stringify(trash));
 }
@@ -222,7 +240,7 @@ async function saveSingleSong(song) {
   if (!song) return;
   const idx = songs.findIndex(s => s.id === song.id);
   if (idx >= 0) songs[idx] = song; else songs.unshift(song);
-  localStorage.setItem('songs_app', JSON.stringify(songs));
+  queueLocalStorageSave();
   if (isTauri) {
     if (isOnline) {
       await tauriSaveSong(song);
@@ -672,7 +690,7 @@ async function deleteSong(id) {
     saveTrash();
   }
   songs = songs.filter(s => s.id !== id);
-  localStorage.setItem('songs_app', JSON.stringify(songs));
+  flushLocalStorage();
   if (isTauri) await tauriDeleteSong(id);
 }
 
@@ -686,7 +704,7 @@ async function restoreSong(id) {
   }
   trash = trash.filter(t => t.song.id !== id);
   saveTrash();
-  localStorage.setItem('songs_app', JSON.stringify(songs));
+  flushLocalStorage();
   if (isTauri) await tauriSaveSong(entry.song);
 }
 
@@ -1223,10 +1241,9 @@ function updateQueueCount() {
 // Wrap saveSingleSong to queue when offline
 async function queueOrSave(song) {
   if (!song) return;
-  // Always save to localStorage immediately (works offline)
   const idx = songs.findIndex(s => s.id === song.id);
   if (idx >= 0) songs[idx] = song; else songs.unshift(song);
-  localStorage.setItem('songs_app', JSON.stringify(songs));
+  queueLocalStorageSave();
 
   if (isOnline) {
     // Online: save to Tauri immediately if available
@@ -6347,11 +6364,9 @@ function emergencySave() {
   // Flush debounced save timer
   clearTimeout(autoSaveTimer);
   // Sync localStorage immediately (reliable in pagehide/visibilitychange)
-  try {
-    const idx = songs.findIndex(s => s.id === song.id);
-    if (idx >= 0) songs[idx] = song; else songs.unshift(song);
-    localStorage.setItem('songs_app', JSON.stringify(songs));
-  } catch {}
+  const idx = songs.findIndex(s => s.id === song.id);
+  if (idx >= 0) songs[idx] = song; else songs.unshift(song);
+  flushLocalStorage();
   // Persist to per-song key as redundant backup (survives full data corruption)
   try { localStorage.setItem(`song_${song.id}`, JSON.stringify(song)); } catch {}
   hasChanges = false;
