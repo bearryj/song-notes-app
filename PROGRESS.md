@@ -86,7 +86,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 
 ### UI Polish
 - [x] Song list play/pause button styling — pill button with proper touch targets (26px min-height, 38px min-width), subtle border, accent playing state with opacity pulse animation on the icon (2026-06-13)
-- [ ] Graceful degradation for large songs — songs with 50+ sections can cause jank when rendering the editor. Add lazy rendering for off-screen sections.
+- [x] Graceful degradation for large songs — songs with 50+ sections can cause jank when rendering the editor. Add lazy rendering for off-screen sections. (2026-06-13 — fixed: `initSectionObserver` was defined but never called; wiring it up plus lowered threshold to 30 sections)
 
 ### Bugs / Reliability
 - (none currently known — all previous bugs resolved)
