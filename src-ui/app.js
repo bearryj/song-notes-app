@@ -5467,6 +5467,16 @@ function setupEvents() {
       if (song) { pushVersion(); song.title = $('song-title').value || 'Untitled'; song.updated_at = new Date().toISOString(); saveSingleSong(song); toast('Saved'); }
     }
     if ((e.ctrlKey || e.metaKey) && e.key === '/') { e.preventDefault(); showShortcuts(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      e.preventDefault();
+      const tag = document.activeElement?.tagName;
+      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+        toggleFindBar();
+      }
+    }
+    if (e.key === 'Escape' && $('find-bar').style.display !== 'none') {
+      hideFindBar();
+    }
     if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       // Only trigger ? when not focused on an input/textarea
       const tag = document.activeElement?.tagName;
@@ -6296,4 +6306,178 @@ document.addEventListener('DOMContentLoaded', () => {
   const backdrop = overlay.querySelector('.shortcuts-backdrop');
   if (closeBtn) closeBtn.addEventListener('click', hideShortcuts);
   if (backdrop) backdrop.addEventListener('click', hideShortcuts);
+});
+
+// ===== Find in Song =====
+let findMatches = [];
+let findCurrentIdx = -1;
+let findQuery = '';
+
+function toggleFindBar() {
+  const bar = $('find-bar');
+  if (bar.style.display !== 'none') {
+    hideFindBar();
+  } else {
+    showFindBar();
+  }
+}
+
+function showFindBar() {
+  const bar = $('find-bar');
+  bar.style.display = 'block';
+  const input = $('find-input');
+  input.value = '';
+  input.focus();
+  findMatches = [];
+  findCurrentIdx = -1;
+  findQuery = '';
+  updateFindCount();
+}
+
+function hideFindBar() {
+  const bar = $('find-bar');
+  bar.style.display = 'none';
+  clearFindHighlights();
+  findMatches = [];
+  findCurrentIdx = -1;
+  findQuery = '';
+}
+
+function clearFindHighlights() {
+  const body = $('song-body');
+  if (!body) return;
+  body.querySelectorAll('.find-highlight, .find-highlight-active').forEach(el => {
+    const parent = el.parentNode;
+    parent.replaceChild(document.createTextNode(el.textContent), el);
+    parent.normalize();
+  });
+}
+
+function highlightAllMatches() {
+  clearFindHighlights();
+  if (!findQuery) return;
+  const body = $('song-body');
+  if (!body) return;
+
+  const song = getSong(currentSongId);
+  if (!song) return;
+
+  // Collect all text nodes in the editor body
+  const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, null, false);
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  const query = findQuery.toLowerCase();
+  findMatches = [];
+
+  textNodes.forEach(node => {
+    const text = node.textContent;
+    const lower = text.toLowerCase();
+    let start = 0;
+    while (true) {
+      const idx = lower.indexOf(query, start);
+      if (idx === -1) break;
+      findMatches.push({ node, start: idx, end: idx + query.length });
+      start = idx + query.length;
+    }
+  });
+
+  // Highlight matches (process in reverse to preserve offsets)
+  findMatches.reverse().forEach(match => {
+    const { node, start, end } = match;
+    const range = document.createRange();
+    range.setStart(node, start);
+    range.setEnd(node, end);
+    const span = document.createElement('span');
+    span.className = 'find-highlight';
+    try { range.surroundContents(span); } catch(e) { /* skip if split across elements */ }
+  });
+
+  if (findMatches.length > 0) {
+    findCurrentIdx = findMatches.length - 1; // last because we reversed
+    updateActiveHighlight();
+    scrollToMatch(findCurrentIdx);
+  }
+  updateFindCount();
+}
+
+function updateActiveHighlight() {
+  const body = $('song-body');
+  if (!body) return;
+  body.querySelectorAll('.find-highlight-active').forEach(el => el.className = 'find-highlight');
+  if (findCurrentIdx >= 0 && findCurrentIdx < findMatches.length) {
+    const highlights = body.querySelectorAll('.find-highlight');
+    const hl = highlights[findMatches.length - 1 - findCurrentIdx];
+    if (hl) hl.className = 'find-highlight-active';
+  }
+}
+
+function scrollToMatch(idx) {
+  const body = $('song-body');
+  if (!body || idx < 0 || idx >= findMatches.length) return;
+  const highlights = body.querySelectorAll('.find-highlight');
+  const hl = highlights[findMatches.length - 1 - idx];
+  if (hl) {
+    hl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+}
+
+function updateFindCount() {
+  const el = $('find-count');
+  if (!el) return;
+  if (!findQuery) { el.textContent = ''; return; }
+  if (findMatches.length === 0) { el.textContent = '0/0'; return; }
+  el.textContent = `${findCurrentIdx + 1}/${findMatches.length}`;
+}
+
+function findNext() {
+  if (!findQuery) return;
+  if (findMatches.length === 0) { highlightAllMatches(); return; }
+  findCurrentIdx = (findCurrentIdx + 1) % findMatches.length;
+  updateActiveHighlight();
+  scrollToMatch(findCurrentIdx);
+  updateFindCount();
+}
+
+function findPrev() {
+  if (!findQuery) return;
+  if (findMatches.length === 0) { highlightAllMatches(); return; }
+  findCurrentIdx = (findCurrentIdx - 1 + findMatches.length) % findMatches.length;
+  updateActiveHighlight();
+  scrollToMatch(findCurrentIdx);
+  updateFindCount();
+}
+
+// Find bar event wiring
+document.addEventListener('DOMContentLoaded', () => {
+  const input = $('find-input');
+  if (!input) return;
+  let debounce = null;
+  input.addEventListener('input', () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => {
+      findQuery = input.value.trim();
+      if (findQuery) {
+        highlightAllMatches();
+      } else {
+        clearFindHighlights();
+        findMatches = [];
+        findCurrentIdx = -1;
+        updateFindCount();
+      }
+    }, 150);
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (e.shiftKey) findPrev(); else findNext();
+    }
+    if (e.key === 'Escape') hideFindBar();
+  });
+  const prevBtn = $('find-prev');
+  const nextBtn = $('find-next');
+  const closeBtn = $('find-close');
+  if (prevBtn) prevBtn.addEventListener('click', findPrev);
+  if (nextBtn) nextBtn.addEventListener('click', findNext);
+  if (closeBtn) closeBtn.addEventListener('click', hideFindBar);
 });

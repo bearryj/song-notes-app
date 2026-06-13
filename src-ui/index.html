@@ -86,6 +86,18 @@
       <div id="song-body" class="editor-body" role="main" tabindex="0" aria-label="Song content"></div>
       <div id="info-bar" class="info-bar" style="display:none;"></div>
 
+      <!-- Find Bar -->
+      <div id="find-bar" class="find-bar" style="display:none;" role="search" aria-label="Find in song">
+        <div class="find-bar-inner">
+          <span class="find-icon">⌕</span>
+          <input type="text" id="find-input" class="find-input" placeholder="Find in song…" aria-label="Find in song" autocomplete="off" spellcheck="false" />
+          <span id="find-count" class="find-count"></span>
+          <button id="find-prev" class="find-nav-btn" aria-label="Previous match" title="Previous match (Shift+Enter)">▲</button>
+          <button id="find-next" class="find-nav-btn" aria-label="Next match" title="Next match (Enter)">▼</button>
+          <button id="find-close" class="find-close-btn" aria-label="Close find">✕</button>
+        </div>
+      </div>
+
       <!-- Mobile Toolbar -->
       <div class="mobile-toolbar" id="mobile-toolbar" role="toolbar" aria-label="Editor tools">
         <div class="toolbar-primary">
@@ -458,6 +470,7 @@
           <div class="shortcut-row"><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>Z</kbd></span><span class="shortcut-desc">Undo last change</span></div>
           <div class="shortcut-row"><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>/</kbd></span><span class="shortcut-desc">Show shortcuts</span></div>
           <div class="shortcut-row"><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>N</kbd></span><span class="shortcut-desc">New song</span></div>
+          <div class="shortcut-row"><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>F</kbd></span><span class="shortcut-desc">Find in song</span></div>
         </div>
         <div class="shortcuts-group">
           <div class="shortcuts-group-label">Navigation</div>

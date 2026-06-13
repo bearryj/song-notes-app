@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-13 by OWL (song list play button monochrome refinement)
+2026-06-13 by OWL (adjustable editor font size)
 
 ## Build & Test Commands
 ```bash
@@ -146,9 +146,9 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [ ] Duplicate song detection — warn when creating/importing a song with the same title as an existing one.
 
 ### Editor Quality of Life
-- [ ] Adjustable editor font size — pinch-to-zoom or A-/A+ buttons for lyrics and chord text. Critical for live performance readability on small screens.
+- [x] Adjustable editor font size — A-/A+ buttons in editor nav bar (13-24px), CSS custom property --editor-font-size scales lyrics, chords, section headers. Persisted to localStorage. (2026-06-13)
 - [ ] Section templates beyond song structure — "Pre-Chorus", "Bridge", "Tag", "Coda", "Outro", "Intro" as one-tap section types with appropriate default labels.
-- [ ] Line/section find — Ctrl+F to search within the current song's lyrics, not just the song list.
+- [x] Line/section find — Ctrl+F to search within the current song's lyrics. Find bar at bottom of editor with match count, prev/next navigation, Enter/Shift+Enter to cycle, debounced highlight, Escape to close. (2026-06-13)
 - [ ] Auto-capitalize section headers — when typing "verse 1" auto-suggest "Verse 1" (matching existing section type labels).
 
 ### Onboarding & Discovery
