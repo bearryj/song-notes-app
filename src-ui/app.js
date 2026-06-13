@@ -6211,6 +6211,13 @@ function setupEvents() {
       e.preventDefault(); const song = getSong(currentSongId);
       if (song) { pushVersion(); song.title = $('song-title').value || 'Untitled'; song.updated_at = new Date().toISOString(); saveSingleSong(song); toast('Saved'); }
     }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+      e.preventDefault();
+      const tag = document.activeElement?.tagName;
+      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+        if (typeof showSongPrintPreview === 'function') showSongPrintPreview();
+      }
+    }
     if ((e.ctrlKey || e.metaKey) && e.key === '/') { e.preventDefault(); showShortcuts(); }
     if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
       e.preventDefault();
@@ -6231,6 +6238,16 @@ function setupEvents() {
     }
     if (e.key === 'Escape' && $('shortcuts-overlay').style.display !== 'none') {
       hideShortcuts();
+    }
+    // Arrow key song navigation (only when not in an input and editor is visible)
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+      const tag = document.activeElement?.tagName;
+      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+        if (viewStack[viewStack.length - 1] === 'editor-view') {
+          if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prevSong(); }
+          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); nextSong(); }
+        }
+      }
     }
   });
 
