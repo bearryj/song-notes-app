@@ -75,6 +75,7 @@
         </div>
         <button id="prev-song-btn" class="nav-btn song-switcher-btn" aria-label="Previous song" title="Previous song">‹‹</button>
         <button id="next-song-btn" class="nav-btn song-switcher-btn" aria-label="Next song" title="Next song">››</button>
+        <button id="display-mode-btn" class="nav-btn" aria-label="Display mode" title="Display mode: Chords + Lyrics">≡</button>
         <button id="focus-btn" class="nav-btn" aria-label="Focus mode" title="Focus mode">◉</button>
         <button id="undo-btn" class="nav-btn" aria-label="Undo" disabled>↶</button>
         <button id="save-btn" class="nav-btn nav-btn-primary" aria-label="Save" disabled>Done</button>
@@ -164,10 +165,10 @@
             <div class="sheet-section">
               <div class="sheet-section-label">View</div>
               <div class="sheet-section-grid">
+                <button class="toolbar-sheet-btn" data-action="display-mode" aria-label="Display mode"><span class="sheet-icon">≡</span><span class="sheet-label">Display</span></button>
                 <button class="toolbar-sheet-btn" data-action="theme-toggle" aria-label="Toggle theme"><span class="sheet-icon">○</span><span class="sheet-label">Theme</span></button>
                 <button class="toolbar-sheet-btn" data-action="info" aria-label="Song info"><span class="sheet-icon">ℹ</span><span class="sheet-label">Info</span></button>
                 <button class="toolbar-sheet-btn sheet-danger" data-action="delete" aria-label="Delete song"><span class="sheet-icon">✕</span><span class="sheet-label">Delete</span></button>
-                <div class="sheet-placeholder"></div>
               </div>
             </div>
 

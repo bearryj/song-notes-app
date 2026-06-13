@@ -991,6 +991,20 @@ body.multi-select-mode #song-list {
   pointer-events: none;
 }
 
+/* ===== Display Mode Toggles ===== */
+/* Lyrics only: hide chord rows entirely */
+.display-lyrics .chord-row {
+  display: none;
+}
+/* Chords only: hide lyric text, keep chord rows visible */
+.display-chords .chord-line .lyric-text {
+  display: none;
+}
+/* Chords only: tighten spacing between chord lines since no lyrics */
+.display-chords .chord-line {
+  margin-bottom: 0;
+}
+
 /* ===== Add Line Button ===== */
 .add-line-btn {
   display: block;

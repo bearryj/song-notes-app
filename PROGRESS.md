@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (round 2 review — 26 new TODOs: musician workflow, data/sync, editor QoL, onboarding, performance, platform)
+2026-06-12 by OWL (round 3 — chord sheet display modes)
 
 ## Build & Test Commands
 ```bash
@@ -77,7 +77,8 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Duplicate song from swipe action (⧉ button in swipe-to-action bar, deep copy with new id and title suffix)
 - Enhanced empty states (SVG illustrations, floating animation, fade-in, CTA button for new users)
 - Individual song print chord chart (print preview overlay with chord/lyric layout, window.print() integration, @media print styles)
-- Duplicate line in editor (⧉ button in chord row, deep copy with chords, undo support via snackbar)
+- [x] Duplicate line in editor (⧉ button in chord row, deep copy with chords, undo support via snackbar)
+- [x] Chord sheet display modes (toggle between chords+lyrics, lyrics-only, chords-only; nav bar button + toolbar View section; persisted to localStorage)
 
 ## TODOs (priority order)
 1. [x] Touch-friendly chord editor — drag, long-press, double-tap (2026-06-11)
@@ -131,7 +132,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 
 ## Next Up — Round 2 (2026-06-12 — OWL review)
 ### Musician Workflow
-- [ ] Chord sheet display modes — "lyrics only", "chords only", "chords + lyrics" toggle for the editor view. Musicians use chord sheets differently in rehearsal vs. performance.
+- [x] Chord sheet display modes — "lyrics only", "chords only", "chords + lyrics" toggle for the editor view. Musicians use chord sheets differently in rehearsal vs. performance. (2026-06-12) — displayMode state persisted to localStorage, nav bar button cycles modes (≡/♫/𝄞 icons), toolbar View section button, CSS classes .display-lyrics/.display-chords/.display-both on #song-body
 - [ ] Strumming pattern notation — simple text-based pattern editor (e.g. "D-DU-UDU") per section, displayed above the chord ribbon. No audio, just visual reference.
 - [ ] Song memo / notes field — a free-text "Notes" area per song (not part of the chord/lyric body) for ideas, reminders, co-writer credits, recording notes. Shown in info panel.
 - [ ] Tuner / pitch detection — use `getUserMedia` + AnalyserNode + autocorrelation to detect pitch from mic. Simple chromatic tuner panel (like a guitar tuner app). Already have mic permission flow for recording.

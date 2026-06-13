@@ -21,6 +21,7 @@ let hasChanges = false;
 let galleryMode = localStorage.getItem('sn_gallery_mode') === 'true';
 let chordRibbonCollapsed = localStorage.getItem('chordRibbonCollapsed') === 'true';
 let focusMode = localStorage.getItem('sn_focusMode') === 'true';
+let displayMode = localStorage.getItem('sn_displayMode') || 'both'; // 'both' | 'lyrics' | 'chords'
 
 // ===== Offline / Sync Queue State =====
 let isOnline = navigator.onLine;
@@ -1983,6 +1984,26 @@ function renderEditorBody(song) {
     el.appendChild(sectionEl);
   });
   renderChordRibbon(song);
+  applyDisplayMode();
+}
+
+function applyDisplayMode() {
+  const body = $('song-body');
+  if (!body) return;
+  body.classList.remove('display-both', 'display-lyrics', 'display-chords');
+  if (displayMode === 'lyrics') body.classList.add('display-lyrics');
+  else if (displayMode === 'chords') body.classList.add('display-chords');
+  else body.classList.add('display-both');
+}
+
+function cycleDisplayMode() {
+  const modes = ['both', 'lyrics', 'chords'];
+  const idx = modes.indexOf(displayMode);
+  displayMode = modes[(idx + 1) % modes.length];
+  localStorage.setItem('sn_displayMode', displayMode);
+  applyDisplayMode();
+  const labels = { both: 'Chords + Lyrics', lyrics: 'Lyrics Only', chords: 'Chords Only' };
+  toast(labels[displayMode]);
 }
 
 function renderChordRibbon(song) {
@@ -4883,6 +4904,24 @@ function setupEvents() {
     }, 50);
   });
 
+  // Display mode button
+  const displayModeBtn = $('display-mode-btn');
+  if (displayModeBtn) {
+    displayModeBtn.addEventListener('click', () => {
+      cycleDisplayMode();
+      const icons = { both: '≡', lyrics: '♫', chords: '𝄞' };
+      const titles = { both: 'Display: Chords + Lyrics', lyrics: 'Display: Lyrics Only', chords: 'Display: Chords Only' };
+      displayModeBtn.textContent = icons[displayMode];
+      displayModeBtn.title = titles[displayMode];
+      displayModeBtn.setAttribute('aria-label', titles[displayMode]);
+    });
+    // Set initial icon/title
+    const initIcons = { both: '≡', lyrics: '♫', chords: '𝄞' };
+    const initTitles = { both: 'Display: Chords + Lyrics', lyrics: 'Display: Lyrics Only', chords: 'Display: Chords Only' };
+    displayModeBtn.textContent = initIcons[displayMode];
+    displayModeBtn.title = initTitles[displayMode];
+  }
+
   // Recording
   $('record-btn').addEventListener('click', async () => {
     if (isRecording) { stopRecording(); return; }
@@ -4997,6 +5036,16 @@ function setupEvents() {
           bar.style.display = 'flex';
         } else {
           bar.style.display = 'none';
+        }
+      } else if (a === 'display-mode') {
+        cycleDisplayMode();
+        const dmb = $('display-mode-btn');
+        if (dmb) {
+          const icons = { both: '≡', lyrics: '♫', chords: '𝄞' };
+          const titles = { both: 'Display: Chords + Lyrics', lyrics: 'Display: Lyrics Only', chords: 'Display: Chords Only' };
+          dmb.textContent = icons[displayMode];
+          dmb.title = titles[displayMode];
+          dmb.setAttribute('aria-label', titles[displayMode]);
         }
       }
     });
