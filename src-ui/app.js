@@ -26,6 +26,15 @@ let currentPlayingSongId = null;
 let displayMode = localStorage.getItem('sn_displayMode') || 'both'; // 'both' | 'lyrics' | 'chords'
 let editorFontSize = parseInt(localStorage.getItem('sn_editorFontSize')) || 17; // lyric font size in px, range 13-24
 
+// ===== Feature Discovery Hints =====
+// Tracks which one-time hints have been shown. Persisted to localStorage.
+let featureHints = {};
+try { featureHints = JSON.parse(localStorage.getItem('sn_feature_hints') || '{}'); } catch {}
+function markHintShown(name) {
+  featureHints[name] = true;
+  localStorage.setItem('sn_feature_hints', JSON.stringify(featureHints));
+}
+
 // ===== Offline / Sync Queue State =====
 let isOnline = navigator.onLine;
 let syncQueue = []; // queued save operations while offline
@@ -1446,6 +1455,14 @@ function renderFolders() {
       currentFolder = item.dataset.folder;
       $('folder-title').textContent = currentFolder;
       renderSongList(); pushView('song-list-view');
+      // Show gallery view hint on first visit to song list
+      if (!featureHints['gallery-view']) {
+        markHintShown('gallery-view');
+        setTimeout(() => {
+          const btn = $('view-toggle');
+          if (btn) showFeatureHint(btn, 'Tap to toggle gallery view', 'bottom');
+        }, 600);
+      }
     });
     const dots = item.querySelector('.folder-dots');
     if (dots) dots.addEventListener('click', e => { e.stopPropagation(); showFolderActions(item.dataset.folder, dots); });
@@ -4944,6 +4961,14 @@ function showSongPrintPreview() {
       if (songId) {
         if (navigator.vibrate) navigator.vibrate(30);
         enterMultiSelectMode(songId);
+        // Show long-press hint on first multi-select
+        if (!featureHints['longpress-multiselect']) {
+          markHintShown('longpress-multiselect');
+          setTimeout(() => {
+            const bar = document.querySelector('.multi-select-bar');
+            if (bar) showFeatureHint(bar, 'Long-press any song to multi-select', 'top');
+          }, 300);
+        }
       }
       st.isSwiping = true; // prevent click
     }, 500);
@@ -4998,10 +5023,15 @@ function showSongPrintPreview() {
         }
       } else {
         if (diffX > SWIPE_THRESHOLD) {
-          content.style.transform = `translateX(${-MAX_OPEN}px)`;
-          st.isOpen = true;
-          item.classList.add('swiped');
-        } else {
+            content.style.transform = `translateX(${-MAX_OPEN}px)`;
+            st.isOpen = true;
+            item.classList.add('swiped');
+            // Show swipe-to-action hint on first swipe
+            if (!featureHints['swipe-actions']) {
+              markHintShown('swipe-actions');
+              showFeatureHint(item, 'Swipe left for quick actions', 'left');
+            }
+          } else {
           content.style.transform = 'translateX(0)';
           st.isOpen = false;
           item.classList.remove('swiped');
@@ -7347,3 +7377,69 @@ document.addEventListener('DOMContentLoaded', () => {
   if (nextBtn) nextBtn.addEventListener('click', findNext);
   if (closeBtn) closeBtn.addEventListener('click', hideFindBar);
 });
+
+// ===== Feature Discovery Hint System =====
+// Shows a subtle, dismissible tooltip the first time a user encounters a power feature.
+// Hints auto-dismiss on tap-outside or after 4s. Each hint is shown at most once.
+function showFeatureHint(targetEl, text, side = 'bottom') {
+  if (!targetEl) return;
+  // Remove any existing hint
+  const existing = document.querySelector('.feature-hint');
+  if (existing) existing.remove();
+
+  const hint = document.createElement('div');
+  hint.className = `feature-hint feature-hint-${side}`;
+  hint.setAttribute('role', 'tooltip');
+  hint.innerHTML = `<span class="feature-hint-text">${esc(text)}<span class="feature-hint-arrow"></span></span><button class="feature-hint-dismiss" aria-label="Dismiss">✕</button>`;
+  document.body.appendChild(hint);
+
+  // Position relative to target
+  const rect = targetEl.getBoundingClientRect();
+  const hintRect = hint.getBoundingClientRect();
+  let top, left;
+  if (side === 'bottom') {
+    top = rect.bottom + 8;
+    left = rect.left + rect.width / 2 - hintRect.width / 2;
+  } else if (side === 'top') {
+    top = rect.top - hintRect.height - 8;
+    left = rect.left + rect.width / 2 - hintRect.width / 2;
+  } else if (side === 'left') {
+    top = rect.top + rect.height / 2 - hintRect.height / 2;
+    left = rect.left - hintRect.width - 8;
+  } else {
+    top = rect.top + rect.height / 2 - hintRect.height / 2;
+    left = rect.right + 8;
+  }
+  // Clamp to viewport
+  left = Math.max(8, Math.min(left, window.innerWidth - hintRect.width - 8));
+  top = Math.max(8, top);
+  hint.style.top = `${top}px`;
+  hint.style.left = `${left}px`;
+
+  // Animate in
+  requestAnimationFrame(() => hint.classList.add('feature-hint-visible'));
+
+  // Dismiss handlers
+  let dismissed = false;
+  function dismiss() {
+    if (dismissed) return;
+    dismissed = true;
+    hint.classList.remove('feature-hint-visible');
+    setTimeout(() => hint.remove(), 250);
+  }
+  hint.querySelector('.feature-hint-dismiss').addEventListener('click', dismiss);
+  // Tap outside to dismiss
+  const outsideHandler = (e) => {
+    if (!hint.contains(e.target) && !targetEl.contains(e.target)) {
+      dismiss();
+      document.removeEventListener('touchstart', outsideHandler);
+      document.removeEventListener('click', outsideHandler);
+    }
+  };
+  setTimeout(() => {
+    document.addEventListener('touchstart', outsideHandler, { passive: true });
+    document.addEventListener('click', outsideHandler);
+  }, 100);
+  // Auto-dismiss after 4s
+  setTimeout(dismiss, 4000);
+}
