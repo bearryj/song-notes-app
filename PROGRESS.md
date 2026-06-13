@@ -155,7 +155,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 ### Onboarding & Discovery
 - [x] First-run onboarding — 3-4 swipeable cards explaining: create a song, add chords, use the toolbar, setlist mode. Shown only on first launch. (2026-06-13) — 4-card swipeable walkthrough with dot navigation, skip/next buttons, swipe gestures, bounce animation, Apple Notes dark theme, persisted via sn_onboarding_seen localStorage key
 - [x] Interactive tutorial song — "Welcome to Song Notes" sample song with pre-filled chords and annotations explaining features (tap this chord, swipe here, etc.). (2026-06-13) — ★ Welcome to Song Notes pinned tutorial song with 5 annotated sections (Intro/Verse/Chorus/Bridge/Outro), tutorial badge in list + gallery views, auto-pinned on first launch
-- [ ] Feature discovery hints — subtle one-time tooltips for power features (swipe-to-action, long-press multi-select, gallery view toggle) that dismiss after first use.
+- [x] Feature discovery hints — subtle one-time tooltips for power features (swipe-to-action, long-press multi-select, gallery view toggle) that dismiss after first use. (2026-06-13) — showFeatureHint() system with viewport-clamped positioning, dark theme support, 4s auto-dismiss, tap-outside-to-close, ✕ dismiss button; persisted via sn_feature_hints localStorage key
 
 ### Performance & Robustness
 - [ ] Virtual scrolling for song list — with hundreds of songs, rendering all DOM nodes is slow. Virtualize the list to only render visible items.
