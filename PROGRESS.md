@@ -95,8 +95,8 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [ ] iOS build (requires macOS + Xcode) — blocked on hardware
 - [ ] Android: test on a real device — touch gestures, audio recording, localStorage limits
 - [ ] Android: build and test APK on real device — the symlink workaround may not hold on all devices
+- [x] Keyboard shortcuts for desktop — Ctrl+S (save), Ctrl+Z (undo), Ctrl+F (find), Ctrl+P (print), arrow keys for song navigation. (2026-06-13)
 - [ ] Desktop Tauri build — the app is mobile-only in tauri.conf.json; enable desktop targets for Windows/Mac/Linux distribution
-- [ ] Keyboard shortcuts for desktop — Ctrl+S (save), Ctrl+Z (undo), Ctrl+F (find), Ctrl+P (print), arrow keys for song navigation.
 
 ## Architecture Quick Ref
 - **Frontend:** Vanilla JS (src-ui/app.js ~170K), CSS (styles.css ~72K), HTML (index.html)
