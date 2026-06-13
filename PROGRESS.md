@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-13 by OWL (add chromatic tuner with autocorrelation pitch detection)
+2026-06-13 by OWL (add cloud backup — export all / import backup JSON)
 
 ## Build & Test Commands
 ```bash
@@ -142,7 +142,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Capo chord diagram view — when capo is set, optionally show chord diagrams with capo fret indicated and "real" chord names in parentheses. (2026-06-13) — song.capo field, +/− buttons in Song Settings sheet, capo fret indicator (blue bar + "C" label) on fretboard SVG, "Capo N — sounds as X" label in diagram panel, capo displayed in editor nav badge (key · bpm · capo N)
 
 ### Data & Sync
-- [ ] Cloud backup / sync — songs stored only in localStorage are lost on device change. Add optional cloud sync (e.g. a simple REST API, or even just export/import a full backup JSON). At minimum: "Export All Songs" and "Import Backup" buttons.
+- [x] Cloud backup / sync — songs stored only in localStorage are lost on device change. Add optional cloud sync (e.g. a simple REST API, or even just export/import a full backup JSON). At minimum: "Export All Songs" and "Import Backup" buttons. (2026-06-13) — exportAllSongs() downloads full JSON backup (songs + folders + setlists + trash) with timestamp; importBackup() merges from JSON file, skipping duplicate titles; both accessible from toolbar sheet (Backup ⊞ in Export, Restore ⊟ in Organize)
 - [ ] Song-level auto-backup — keep last N auto-saved snapshots separate from version history, so a user can recover from a bad edit even after auto-save overwrites.
 - [x] Duplicate song detection — warn when creating/importing a song with the same title as an existing one. (2026-06-13) — isDuplicateTitle() helper, blocks creation with error toast, skips file imports with count, blocks share code import with guidance
 
