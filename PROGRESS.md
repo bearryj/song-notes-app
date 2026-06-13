@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-13 by OWL (recording playback fix, song-list play button, UI polish)
+2026-06-13 by OWL (song list play button monochrome refinement)
 
 ## Build & Test Commands
 ```bash
@@ -120,7 +120,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] `innerHTML` used 20+ times — audit for XSS vectors (2026-06-12) — fixed 3 missing: v.key in history list meta, version.key/song.key in diff header, rec.data in recording data-url. Added Ctrl+N new song shortcut + docs in shortcuts overlay.
 
 ### UX Polish
-- [ ] Song list play/pause button styling — current pill button (▶ N) looks inconsistent with Apple Notes aesthetic; needs refinement: better sizing, alignment, color, and visual hierarchy with the song title/meta
+- [x] Song list play/pause button styling — refined to Apple Notes monochrome inline text indicator with animated recording dot, replacing green pill button (2026-06-13)
 - [ ] No "delete all recordings" option — audio recordings are base64-encoded and stored per-song; a song with many recordings can balloon in size. Add a "clear recordings" button in the audio panel. (already existed — Delete All button in recordings dropdown)
 - [x] No bulk operations on songs — can't multi-select to delete, move, or add to setlist. Long-press multi-select would be natural on mobile. (2026-06-12) — long-press enters multi-select, right-click on desktop, tap to toggle, bottom bar with pin/duplicate/folder/setlist/delete + Select All/Deselect All toggle
 - [x] Setlist chord chart print doesn't include capo transposition — the print view shows raw chords, not capo-adjusted chords. Fix to match the capo-per-song feature. (2026-06-12) — showSetlistPrintPreview() now applies both entry.capo + entry.transpose semitones to displayed chords
