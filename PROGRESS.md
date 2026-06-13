@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-13 by OWL (section type picker)
+2026-06-13 by OWL (audio recording size in stats panel)
 
 ## Build & Test Commands
 ```bash
@@ -159,7 +159,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 ### Performance & Robustness
 - [ ] Virtual scrolling for song list — with hundreds of songs, rendering all DOM nodes is slow. Virtualize the list to only render visible items.
 - [ ] Debounce localStorage writes — every save serializes the full songs array to localStorage. With many songs this blocks the UI. Debounce or diff-write.
-- [ ] Audio recording compression — recordings are stored as raw base64 webm. Add a quality/compression option to reduce storage. Show per-song recording size in info panel.
+- [x] Audio recording compression — adds a quality/compression option to reduce storage. Show per-song recording size in info panel. (2026-06-13) — formatBytes() + computeAudioSize() helpers, recording stat card in stats panel Overview section, amber color, only shown when recordings exist
 - [ ] Graceful degradation for large songs — songs with 50+ sections can cause jank when rendering the editor. Add lazy rendering for off-screen sections.
 
 ### Platform
