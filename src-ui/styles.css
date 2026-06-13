@@ -353,26 +353,51 @@ html, body {
   flex-shrink: 0;
 }
 .song-play-rec-btn {
-  background: var(--chord);
-  color: var(--bg);
+  background: none;
   border: none;
+  color: var(--fg-tertiary);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
-  padding: 4px 10px;
-  border-radius: 12px;
+  padding: 2px 6px 2px 0;
   flex-shrink: 0;
   line-height: 1;
-  transition: opacity 0.15s;
+  transition: color 0.15s;
   margin-left: auto;
   font-family: var(--font);
   letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-radius: 4px;
+  min-width: 0;
+}
+.song-play-rec-btn:hover {
+  color: var(--fg-secondary);
 }
 .song-play-rec-btn:active {
-  opacity: 0.6;
+  color: var(--fg);
+}
+.song-play-rec-btn .rec-count {
+  font-size: 11px;
+  opacity: 0.7;
 }
 .song-play-rec-btn.playing {
-  background: var(--section-label);
+  color: var(--accent);
+}
+.song-play-rec-btn.playing::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 2px;
+  animation: rec-pulse 1.2s ease-in-out infinite;
+}
+@keyframes rec-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
 }
 /* Two-line list item with preview (song list only) */
 .swipe-content.list-item {
