@@ -23,6 +23,7 @@ let chordRibbonCollapsed = localStorage.getItem('chordRibbonCollapsed') === 'tru
 let focusMode = localStorage.getItem('sn_focusMode') === 'true';
 let currentPlayingSongId = null;
 let displayMode = localStorage.getItem('sn_displayMode') || 'both'; // 'both' | 'lyrics' | 'chords'
+let editorFontSize = parseInt(localStorage.getItem('sn_editorFontSize')) || 17; // lyric font size in px, range 13-24
 
 // ===== Offline / Sync Queue State =====
 let isOnline = navigator.onLine;
@@ -2102,6 +2103,7 @@ function renderEditorBody(song) {
   });
   renderChordRibbon(song);
   applyDisplayMode();
+  applyEditorFontSize();
 }
 
 function applyDisplayMode() {
@@ -2121,6 +2123,26 @@ function cycleDisplayMode() {
   applyDisplayMode();
   const labels = { both: 'Chords + Lyrics', lyrics: 'Lyrics Only', chords: 'Chords Only' };
   toast(labels[displayMode]);
+}
+
+function applyEditorFontSize() {
+  const body = $('song-body');
+  if (!body) return;
+  body.style.setProperty('--editor-font-size', editorFontSize + 'px');
+  // Also update chord ribbon item names to scale
+  const ribbonItems = document.querySelectorAll('.chord-ribbon-item .chord-name');
+  ribbonItems.forEach(el => {
+    el.style.fontSize = `calc(var(--editor-font-size) * 0.77)`;
+  });
+}
+
+function adjustFontSize(delta) {
+  const newSize = Math.max(13, Math.min(24, editorFontSize + delta));
+  if (newSize === editorFontSize) return;
+  editorFontSize = newSize;
+  localStorage.setItem('sn_editorFontSize', editorFontSize);
+  applyEditorFontSize();
+  toast(`Font size: ${editorFontSize}px`);
 }
 
 function renderChordRibbon(song) {
@@ -5069,6 +5091,12 @@ function setupEvents() {
     displayModeBtn.textContent = initIcons[displayMode];
     displayModeBtn.title = initTitles[displayMode];
   }
+
+  // Font size buttons
+  const fontDecBtn = $('font-dec-btn');
+  const fontIncBtn = $('font-inc-btn');
+  if (fontDecBtn) fontDecBtn.addEventListener('click', () => adjustFontSize(-1));
+  if (fontIncBtn) fontIncBtn.addEventListener('click', () => adjustFontSize(1));
 
   // Recording
   $('record-btn').addEventListener('click', async () => {

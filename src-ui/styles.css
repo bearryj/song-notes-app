@@ -899,6 +899,7 @@ body.multi-select-mode #song-list {
   overflow-y: auto;
   padding: 16px;
   -webkit-overflow-scrolling: touch;
+  --editor-font-size: 17px;
 }
 
 /* ===== Section ===== */
@@ -910,7 +911,7 @@ body.multi-select-mode #song-list {
   margin-bottom: 6px;
 }
 .section-type {
-  font-size: 13px;
+  font-size: calc(var(--editor-font-size) * 0.76);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.8px;
@@ -958,7 +959,7 @@ body.multi-select-mode #song-list {
 .chord-row .chord-marker {
   position: absolute;
   bottom: 0;
-  font-size: 12px;
+  font-size: calc(var(--editor-font-size) * 0.71);
   font-weight: 700;
   font-family: var(--mono);
   color: var(--chord);
@@ -1016,7 +1017,7 @@ body.multi-select-mode #song-list {
   color: var(--accent);
 }
 .chord-line .lyric-text {
-  font-size: 17px;
+  font-size: var(--editor-font-size);
   font-family: var(--mono);
   color: var(--fg);
   background: transparent;
