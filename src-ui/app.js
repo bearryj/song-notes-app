@@ -3894,6 +3894,82 @@ function importFiles(fileList) {
   })();
 }
 
+// ===== Backup / Restore =====
+
+function exportAllSongs() {
+  const backup = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    app: 'song-notes',
+    songs: songs,
+    folders: folders,
+    setlists: setlists,
+    trash: trash,
+  };
+  const json = JSON.stringify(backup, null, 2);
+  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  downloadFile(json, `song-notes-backup-${ts}.json`, 'application/json');
+  toast(`Exported ${songs.length} song${songs.length !== 1 ? 's' : ''}`);
+}
+
+function importBackup() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.json';
+  inp.onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const backup = JSON.parse(text);
+      if (!backup || backup.app !== 'song-notes' || !Array.isArray(backup.songs)) {
+        toast('Invalid backup file', 'error');
+        return;
+      }
+      const incomingSongs = backup.songs;
+      // Merge: skip duplicates by title, add new ones
+      let added = 0, skipped = 0;
+      const existingTitles = new Set(songs.map(s => (s.title || '').trim().toLowerCase()));
+      for (const s of incomingSongs) {
+        const t = (s.title || '').trim().toLowerCase();
+        if (t && existingTitles.has(t)) { skipped++; continue; }
+        if (t) existingTitles.add(t);
+        songs.unshift(s);
+        added++;
+      }
+      // Merge folders (union, keeping 'All Songs' first)
+      if (Array.isArray(backup.folders)) {
+        const existing = new Set(folders);
+        for (const f of backup.folders) {
+          if (!existing.has(f)) { folders.push(f); existing.add(f); }
+        }
+      }
+      // Merge setlists (union by id)
+      if (Array.isArray(backup.setlists)) {
+        const existing = new Set(setlists.map(s => s.id));
+        for (const s of backup.setlists) {
+          if (!existing.has(s.id)) { setlists.push(s); existing.add(s.id); }
+        }
+      }
+      // Merge trash
+      if (Array.isArray(backup.trash)) {
+        const existing = new Set(trash.map(t => t.song?.id));
+        for (const t of backup.trash) {
+          if (t.song?.id && !existing.has(t.song.id)) { trash.push(t); existing.add(t.song.id); }
+        }
+      }
+      await saveSongs();
+      localStorage.setItem('folders_app', JSON.stringify(folders));
+      localStorage.setItem('sn_setlists', JSON.stringify(setlists));
+      saveTrash();
+      renderSongList();
+      toast(`Imported ${added} song${added !== 1 ? 's' : ''}${skipped ? ` (${skipped} duplicate${skipped !== 1 ? 's' : ''} skipped)` : ''}`);
+    } catch (err) {
+      toast('Failed to import backup', 'error');
+    }
+  };
+  inp.click();
+}
 
 function parseChordPro(title, content) {
   const id = generateId();
@@ -5395,6 +5471,12 @@ function setupEvents() {
         });
       } else if (a === 'import-txt') {
         importFiles();
+      } else if (a === 'export-all') {
+        hideToolbarSheet();
+        exportAllSongs();
+      } else if (a === 'import-backup') {
+        hideToolbarSheet();
+        importBackup();
       } else if (a === 'export-txt') {
         if (!song) return; downloadFile(buildExportText(song), `${song.title || 'song'}.txt`, 'text/plain'); toast('Exported');
       } else if (a === 'export-md') {
