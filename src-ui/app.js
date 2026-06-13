@@ -1962,6 +1962,7 @@ function renderSongList(filter = '') {
     sorted.forEach((s, i) => {
       const pinned = s.pinned ? '<span class="card-pin">★</span>' : '';
       const keyBadge = s.key ? `<span class="card-key">${esc(s.key)}</span>` : '';
+      const tutorialBadge = s.tutorial ? '<span class="tutorial-badge">Tutorial</span>' : '';
       const secCount = s.sections?.length || 0;
       const secLabel = secCount === 1 ? 'section' : 'sections';
       // Extract unique chords for preview (up to 6)
@@ -1986,6 +1987,7 @@ function renderSongList(filter = '') {
           ${pinned}
           <span class="card-title">${esc(s.title || 'Untitled')}</span>
           ${keyBadge}
+          ${tutorialBadge}
         </div>
         ${chordPreview}
         <div class="gallery-card-bottom">
@@ -2053,6 +2055,7 @@ function renderSongList(filter = '') {
     const hasRec = s.audio && s.audio.length > 0;
     const isThisPlaying = currentPlayingSongId === s.id;
     const recBadge = hasRec ? `<button class="song-play-rec-btn${isThisPlaying ? ' playing' : ''}" data-id="${s.id}" aria-label="${isThisPlaying ? 'Pause' : 'Play'} recording" title="${isThisPlaying ? 'Pause' : 'Play'} latest recording (${s.audio.length})"><span>${isThisPlaying ? '❚❚' : '▶'}</span><span class="rec-count">${s.audio.length}</span></button>` : '';
+    const tutorialBadge = s.tutorial ? '<span class="tutorial-badge">Tutorial</span>' : '';
 
     html += `<div class="swipe-item${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}">
       <div class="swipe-bg">
@@ -2063,7 +2066,7 @@ function renderSongList(filter = '') {
       <div class="swipe-content list-item">
         <div class="list-item-main">
           ${pinned}
-          <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}</span>
+          <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}${tutorialBadge}</span>
           ${tagHtml}
           <span class="item-meta">${fmtDate(s.updated_at)}</span>
           ${recBadge}
@@ -4312,11 +4315,40 @@ function addSampleSongs() {
     { title: 'New Song', key: 'G', bpm: 120, sections: [
       { type: 'Verse', lines: [{ text: 'Write your lyrics here', chords: [{ x: 10, name: 'G' }] }, { text: 'Tap above to add chords', chords: [{ x: 60, name: 'C' }] }] },
       { type: 'Chorus', lines: [{ text: 'This is the chorus', chords: [{ x: 10, name: 'G' }, { x: 120, name: 'Em' }] }, { text: 'Catchy and repeatable', chords: [{ x: 10, name: 'C' }, { x: 150, name: 'D' }] }] }
+    ]},
+    { title: '★ Welcome to Song Notes', key: 'G', bpm: 100, tutorial: true, sections: [
+      { type: 'Intro', lines: [
+        { text: '👋 This is your tutorial song!', chords: [] },
+        { text: 'Tap the ✎ button below to edit any line.', chords: [{ x: 10, name: 'G' }] },
+        { text: 'Tap above a line to add chords like this →', chords: [{ x: 10, name: 'C' }, { x: 280, name: 'G' }] }
+      ]},
+      { type: 'Verse', lines: [
+        { text: 'Swipe left on any song → pin or delete it', chords: [{ x: 10, name: 'Em' }] },
+        { text: 'Long-press a song to multi-select', chords: [{ x: 10, name: 'C' }] },
+        { text: 'Tap ⋯ for tools: transpose, metronome, tuner', chords: [{ x: 10, name: 'G' }, { x: 200, name: 'D' }] }
+      ]},
+      { type: 'Chorus', lines: [
+        { text: 'Try the ▤ gallery view in the toolbar!', chords: [{ x: 10, name: 'Am' }] },
+        { text: 'Build setlists for gigs with ▤ → Setlists', chords: [{ x: 10, name: 'F' }, { x: 220, name: 'C' }] },
+        { text: 'Export as text, markdown, or ChordPro format', chords: [{ x: 10, name: 'G' }, { x: 180, name: 'D' }] }
+      ]},
+      { type: 'Bridge', lines: [
+        { text: 'Record audio, detect your key, use the tuner', chords: [{ x: 10, name: 'Em' }, { x: 200, name: 'Am' }] },
+        { text: 'Set capo, view chord diagrams, tap tempo', chords: [{ x: 10, name: 'C' }, { x: 180, name: 'G' }] },
+        { text: 'Search chords, add tags, create folders', chords: [{ x: 10, name: 'D' }, { x: 160, name: 'Em' }] }
+      ]},
+      { type: 'Outro', lines: [
+        { text: 'You are ready to write your first song! 🎵', chords: [{ x: 10, name: 'C' }] },
+        { text: 'Tap + to create a new song and start writing.', chords: [{ x: 10, name: 'G' }, { x: 240, name: 'D' }] },
+        { text: 'This tutorial song will stay pinned up here.', chords: [{ x: 10, name: 'C' }, { x: 220, name: 'G' }] }
+      ]}
     ]}
   ];
   data.forEach(d => {
     const song = createSong(d.title);
     song.key = d.key || ''; song.bpm = d.bpm || null;
+    if (d.tutorial) song.tutorial = true;
+    if (d.tutorial) song.pinned = true;
     song.sections = d.sections.map(s => ({ type: s.type, lines: s.lines.map(l => ({ text: l.text, chords: l.chords.map(c => ({ x: c.x, name: c.name })) })) }));
     songs.push(song);
   });
