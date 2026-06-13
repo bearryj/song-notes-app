@@ -238,7 +238,7 @@ function createSong(title) {
     id: generateId(), title: title || 'Untitled', key: '', bpm: null, time_sig: null,
     tags: [], folder: currentFolder === 'All Songs' ? null : currentFolder,
     sections: [{ type: 'Verse', strumming: null, lines: [{ text: '', chords: [] }] }],
-    audio: [], pinned: false,
+    audio: [], pinned: false, notes: '',
     created_at: new Date().toISOString(), updated_at: new Date().toISOString()
   };
 }
@@ -3021,6 +3021,7 @@ function initMobileKeyboard() {
 function buildExportText(song) {
   let text = `${song.title}\n${'='.repeat(song.title.length)}\n\n`;
   if (song.key) text += `Key: ${song.key}\n\n`;
+  if (song.notes) text += `Notes:\n${song.notes}\n\n`;
   song.sections.forEach(section => {
     text += `[${section.type}]\n`;
     if (section.strumming) text += `♫ ${section.strumming}\n`;
@@ -3040,6 +3041,7 @@ function buildExportText(song) {
 function buildExportMarkdown(song) {
   let md = `# ${song.title}\n\n`;
   if (song.key) md += `_Key: ${song.key}_\n\n`;
+  if (song.notes) md += `> **Notes:** ${song.notes}\n\n`;
   song.sections.forEach(section => {
     md += `## ${section.type}\n\n`;
     if (section.strumming) md += `> ♫ ${section.strumming}\n\n`;
@@ -3058,6 +3060,7 @@ function buildExportChordPro(song) {
   out += `{title: ${song.title || 'Untitled'}}`;
   if (song.key) out += `\n{key: ${song.key}}`;
   if (song.bpm) out += `\n{tempo: ${song.bpm}}`;
+  if (song.notes) out += `\n{comment: ${song.notes}}`;
   out += '\n';
 
   const sectionTypeMap = {
@@ -3111,6 +3114,7 @@ function encodeSongToShareCode(song) {
     t: song.title || 'Untitled',
     k: song.key || '',
     b: song.bpm || null,
+    n: song.notes || '',
     s: (song.sections || []).map(sec => ({
       y: sec.type,
       u: sec.strumming || undefined,
@@ -3156,6 +3160,7 @@ function decodeShareCodeToSong(code) {
       folder: null,
       sections,
       audio: [],
+      notes: d.n || '',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -5173,13 +5178,7 @@ function setupEvents() {
         hideToolbarSheet();
         showSongPrintPreview();
       } else if (a === 'info') {
-        const bar = $('info-bar');
-        if (bar.style.display === 'none' || !bar.style.display) {
-          updateInfoBar();
-          bar.style.display = 'flex';
-        } else {
-          bar.style.display = 'none';
-        }
+        showSongNotesPanel();
       } else if (a === 'display-mode') {
         cycleDisplayMode();
         const dmb = $('display-mode-btn');
@@ -5527,8 +5526,133 @@ function updateInfoBar() {
   const created = song.created_at ? new Date(song.created_at).toLocaleDateString() : '—';
   const updated = song.updated_at ? fmtDate(song.updated_at) : '—';
   
-  bar.innerHTML = `<span>${lineCount} lines · ${wordCount} words · ${chordCount} chords</span><span>Created ${created} · Modified ${updated}</span>`;
+  bar.innerHTML = `<span>${lineCount} lines · ${wordCount} words · ${chordCount} chords</span><span>Created ${created} · Modified ${updated}</span}`;
 };
+
+// ===== Song Notes / Memo Panel =====
+function showSongNotesPanel() {
+  const song = getSong(currentSongId);
+  if (!song) return;
+
+  // Remove existing panel
+  const existing = $('song-notes-panel');
+  if (existing) existing.remove();
+
+  const panel = document.createElement('div');
+  panel.id = 'song-notes-panel';
+  panel.className = 'song-notes-panel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-label', 'Song Info');
+  panel.setAttribute('aria-modal', 'true');
+
+  const notesVal = song.notes || '';
+  panel.innerHTML = `
+    <div class="song-notes-backdrop"></div>
+    <div class="song-notes-content">
+      <div class="toolbar-sheet-handle"></div>
+      <div class="song-notes-header">
+        <h3 class="song-notes-title">Song Info</h3>
+      </div>
+      <div class="song-notes-body">
+        <div class="song-notes-stats" id="song-notes-stats"></div>
+        <div class="song-notes-divider"></div>
+        <div class="song-notes-label">Notes</div>
+        <textarea class="song-notes-textarea" id="song-notes-textarea" placeholder="Add ideas, reminders, co-writer credits, recording notes…" spellcheck="true" aria-label="Song notes">${escHtml(notesVal)}</textarea>
+        <div class="song-notes-footer">
+          <span class="song-notes-save-hint" id="song-notes-save-hint"></span>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(panel);
+
+  enableDragToDismiss(panel, { contentSelector: '.song-notes-content', backdropSelector: '.song-notes-backdrop' });
+
+  const close = () => {
+    saveNotesFromPanel(panel, song);
+    panel.remove();
+  };
+
+  panel.querySelector('.song-notes-backdrop').onclick = close;
+
+  // Populate stats
+  updateNotesStats(song);
+
+  // Auto-save notes on input with debounce
+  const textarea = panel.querySelector('#song-notes-textarea');
+  const hint = panel.querySelector('#song-notes-save-hint');
+  let notesTimer = null;
+
+  textarea.addEventListener('input', () => {
+    if (notesTimer) clearTimeout(notesTimer);
+    hint.textContent = 'Saving…';
+    notesTimer = setTimeout(() => {
+      if (!getSong(currentSongId)) return;
+      song.notes = textarea.value;
+      song.updated_at = new Date().toISOString();
+      saveSingleSong(song);
+      hint.textContent = 'Saved';
+      updateInfoBar();
+    }, 600);
+  });
+
+  // Also save on close via handleclick
+  const origClose = close;
+  panel.querySelector('.toolbar-sheet-handle').addEventListener('dblclick', origClose);
+}
+
+function saveNotesFromPanel(panel, song) {
+  const textarea = panel.querySelector('#song-notes-textarea');
+  if (textarea && song.notes !== textarea.value) {
+    song.notes = textarea.value;
+    song.updated_at = new Date().toISOString();
+    saveSingleSong(song);
+    updateInfoBar();
+  }
+}
+
+function updateNotesStats(song) {
+  const statsEl = $('song-notes-stats');
+  if (!statsEl || !song) return;
+
+  let wordCount = 0, lineCount = 0, chordCount = 0, sectionCount = 0;
+  const chordSet = new Set();
+  song.sections?.forEach(sec => {
+    sectionCount++;
+    sec.lines?.forEach(l => {
+      if (l.text) {
+        wordCount += l.text.split(/\s+/).filter(Boolean).length;
+        lineCount++;
+      }
+      (l.chords || []).forEach(c => {
+        chordCount++;
+        chordSet.add(c.name);
+      });
+    });
+  });
+
+  const created = song.created_at ? new Date(song.created_at).toLocaleDateString() : '—';
+  const updated = song.updated_at ? fmtDate(song.updated_at) : '—';
+  const uniqueChords = Array.from(chordSet).sort();
+  const tags = (song.tags || []).length > 0 ? song.tags.join(', ') : '—';
+  const key = song.key || '—';
+  const bpm = song.bpm ? `${song.bpm} BPM` : '—';
+
+  let html = '';
+  html += `<div class="song-stat-row"><span class="song-stat-label">Key</span><span class="song-stat-value">${esc(key)}</span></div>`;
+  html += `<div class="song-stat-row"><span class="song-stat-label">BPM</span><span class="song-stat-value">${esc(bpm)}</span></div>`;
+  html += `<div class="song-stat-row"><span class="song-stat-label">Sections</span><span class="song-stat-value">${sectionCount}</span></div>`;
+  html += `<div class="song-stat-row"><span class="song-stat-label">Lines</span><span class="song-stat-value">${lineCount} · ${wordCount} words</span></div>`;
+  html += `<div class="song-stat-row"><span class="song-stat-label">Chords</span><span class="song-stat-value">${chordCount} (${uniqueChords.length} unique)</span></div>`;
+  if (uniqueChords.length > 0 && uniqueChords.length <= 12) {
+    html += `<div class="song-stat-row"><span class="song-stat-label">Used</span><span class="song-stat-value">${esc(uniqueChords.join(' · '))}</span></div>`;
+  }
+  html += `<div class="song-stat-row"><span class="song-stat-label">Tags</span><span class="song-stat-value">${esc(tags)}</span></div>`;
+  html += `<div class="song-stat-row"><span class="song-stat-label">Created</span><span class="song-stat-value">${created}</span></div>`;
+  html += `<div class="song-stat-row"><span class="song-stat-label">Modified</span><span class="song-stat-value">${updated}</span></div>`;
+
+  statsEl.innerHTML = html;
+}
 
 // Init
 async function init() {
