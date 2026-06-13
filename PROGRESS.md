@@ -128,7 +128,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 ### Platform
 - [ ] iOS build (requires macOS + Xcode) — blocked on hardware
 - [ ] Android: test on a real device — the emulator may not reveal touch/gesture issues, audio recording problems, or localStorage quota limits
-- [ ] PWA manifest missing — no `manifest.json` or service worker; can't "Add to Home Screen" on Android/iOS. Add for installability.
+- [x] PWA manifest + service worker (2026-06-12) — manifest.json with standalone display + maskable icons, 192/512 SVG icons (♫ in white on black), service worker with network-first strategy + offline caching, meta tags for apple-mobile-web-app/mobile-web-app-capable, safe-area-inset for notched devices, overscroll-behavior in standalone mode
 
 ## Newly Discovered TODOs
 - [x] Add loading spinner/skeleton screens for song list (2026-06-11) — shimmer skeleton with staggered animation on init + refresh

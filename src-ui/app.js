@@ -5411,6 +5411,15 @@ function computeStatsHTML(song) {
 
 init();
 
+// ===== Service Worker (PWA) =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn('SW registration failed:', err);
+    });
+  });
+}
+
 // ===== Tag Management =====
 
 // Collect all unique tags across all songs
