@@ -3445,6 +3445,10 @@ function showShareSheet() {
     const code2 = raw.startsWith('SN:') ? raw : 'SN:' + raw;
     const imported = decodeShareCodeToSong(code2);
     if (!imported) { toast('Invalid share code'); return; }
+    if (isDuplicateTitle(imported.title)) {
+      toast(`"${imported.title}" already exists — rename it first`, 'error');
+      return;
+    }
     songs.unshift(imported);
     await saveSongs();
     renderSongList();
@@ -3789,15 +3793,20 @@ function importFiles(fileList) {
   })();
   if (!files) return;
   (async () => {
-    let n = 0;
+    let n = 0, dups = 0;
     for (const file of files) {
       try {
         const content = await file.text();
         const name = file.name.replace(/\.[^.]+$/, '');
-        songs.unshift(parseImported(name, content)); n++;
+        const imported = parseImported(name, content);
+        if (isDuplicateTitle(imported.title)) { dups++; continue; }
+        songs.unshift(imported); n++;
       } catch (err) {}
     }
-    await saveSongs(); renderSongList(); toast(`Imported ${n} song${n !== 1 ? 's' : ''}`);
+    await saveSongs(); renderSongList();
+    let msg = `Imported ${n} song${n !== 1 ? 's' : ''}`;
+    if (dups) msg += ` (${dups} duplicate${dups !== 1 ? 's' : ''} skipped)`;
+    toast(msg);
   })();
 }
 
@@ -3963,6 +3972,13 @@ function parseImported(title, content) {
   return { id, title, key, bpm: null, time_sig: null, tags: [], folder: null, sections, audio: [], created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
 }
 
+// Duplicate title detection
+function isDuplicateTitle(title, excludeId = null) {
+  if (!title || !title.trim()) return false;
+  const normalized = title.trim().toLowerCase();
+  return songs.some(s => s.id !== excludeId && s.title && s.title.trim().toLowerCase() === normalized);
+}
+
 // Toast
 function toast(msg, type = 'info') {
   const existing = document.querySelector('.toast');
@@ -4074,6 +4090,11 @@ function showNewSongMenu() {
   // Create
   const doCreate = () => {
     const title = input.value.trim() || 'Untitled';
+    if (isDuplicateTitle(title)) {
+      toast(`"${title}" already exists — use a different title`, 'error');
+      input.focus();
+      return;
+    }
     const song = createSong(title);
     const template = SONG_TEMPLATES[selectedTemplate];
     if (template) {
