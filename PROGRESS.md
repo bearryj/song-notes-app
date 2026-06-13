@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-12 by OWL (code review — added Next Up section with bugs, perf, UX, platform items)
+2026-06-12 by OWL (PWA manifest + service worker)
 
 ## Build & Test Commands
 ```bash
