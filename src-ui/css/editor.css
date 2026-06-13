@@ -136,6 +136,50 @@
 }
 .section-controls button:active { background: var(--bg-tertiary); color: var(--fg); }
 .delete-section { color: var(--danger) !important; }
+.section-controls .toggle-strumming.active { color: var(--accent); }
+
+/* ===== Strumming Pattern ===== */
+.section-strumming {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 6px;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+}
+.strumming-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--fg-tertiary);
+  white-space: nowrap;
+}
+.strumming-input {
+  flex: 1;
+  font-size: 13px;
+  font-family: var(--mono);
+  color: var(--fg);
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 2px 0;
+  min-width: 0;
+}
+.strumming-input::placeholder { color: var(--fg-quaternary); }
+.strumming-clear {
+  background: none;
+  border: none;
+  color: var(--fg-tertiary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.strumming-clear:active { background: var(--bg-elevated); color: var(--fg); }
 
 /* ===== Chord Line (two rows: chord markers + lyric text) ===== */
 .chord-line {

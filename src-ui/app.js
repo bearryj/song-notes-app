@@ -21,6 +21,7 @@ let hasChanges = false;
 let galleryMode = localStorage.getItem('sn_gallery_mode') === 'true';
 let chordRibbonCollapsed = localStorage.getItem('chordRibbonCollapsed') === 'true';
 let focusMode = localStorage.getItem('sn_focusMode') === 'true';
+let currentPlayingSongId = null;
 let displayMode = localStorage.getItem('sn_displayMode') || 'both'; // 'both' | 'lyrics' | 'chords'
 
 // ===== Offline / Sync Queue State =====
@@ -236,7 +237,7 @@ function createSong(title) {
   return {
     id: generateId(), title: title || 'Untitled', key: '', bpm: null, time_sig: null,
     tags: [], folder: currentFolder === 'All Songs' ? null : currentFolder,
-    sections: [{ type: 'Verse', lines: [{ text: '', chords: [] }] }],
+    sections: [{ type: 'Verse', strumming: null, lines: [{ text: '', chords: [] }] }],
     audio: [], pinned: false,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString()
   };
@@ -784,28 +785,59 @@ function computeDiff(oldLines, newLines) {
 // Audio
 async function startRecording() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: false,
+        sampleRate: 48000,
+        channelCount: 1
+      }
+    });
+    // Try supported formats in order of preference
+    let mimeType = '';
+    const candidates = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/wav'];
+    for (const c of candidates) {
+      if (MediaRecorder.isTypeSupported(c)) {
+        mimeType = c;
+        break;
+      }
+    }
+    console.log('Using mimeType:', mimeType || '(browser default)');
+    const opts = mimeType ? { mimeType } : {};
+    mediaRecorder = new MediaRecorder(stream, opts);
     audioChunks = [];
-    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data) };
     mediaRecorder.onstop = () => {
-      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      const actualType = mediaRecorder.mimeType || 'audio/webm';
+      const blob = new Blob(audioChunks, { type: actualType });
+      console.log('Recording blob type:', blob.type, 'size:', blob.size, 'chunks:', audioChunks.length);
       const reader = new FileReader();
       reader.onloadend = async () => {
+        const dataUrl = reader.result;
+        console.log('Data URL prefix:', dataUrl.substring(0, 60));
         const song = getSong(currentSongId);
         if (!song) return;
         if (!song.audio) song.audio = [];
-        song.audio.push({ data: reader.result, ts: Date.now() });
+        song.audio.push({ data: dataUrl, ts: Date.now() });
         await saveSingleSong(song); updateRecordUI();
         toast(`Recording saved (${song.audio.length})`);
       };
       reader.readAsDataURL(blob);
-      stream.getTracks().forEach(t => t.stop());
+      // Test playback immediately
+      const testUrl = URL.createObjectURL(blob);
+      const testPlayer = new Audio(testUrl);
+      testPlayer.onerror = (e) => console.error('Test playback error:', e);
+      testPlayer.play().then(() => {
+        console.log('Test playback succeeded');
+        setTimeout(() => { testPlayer.pause(); URL.revokeObjectURL(testUrl); }, 100);
+      }).catch(e => console.error('Test playback failed:', e.name, e.message));
     };
-    mediaRecorder.start();
+    mediaRecorder.start(100); // collect data every 100ms
     isRecording = true;
     updateRecordUI();
   } catch (e) {
+    console.error('Recording start failed:', e);
     toast('Microphone access denied', 'error');
   }
 }
@@ -826,27 +858,68 @@ function updateRecordUI() {
 
 function playRecording(dataUrl) {
   if (!dataUrl) return;
-  if (!audioPlayer.paused) { audioPlayer.pause(); audioPlayer.currentTime = 0; }
-  audioPlayer.src = dataUrl; audioPlayer.play();
-  document.querySelectorAll('.rec-item.recording-playing').forEach(i => i.classList.remove('recording-playing'));
-  const item = document.querySelector(`.rec-item[data-url="${dataUrl}"]`);
-  if (item) item.classList.add('recording-playing');
-  audioPlayer.onended = () => document.querySelectorAll('.rec-item.recording-playing').forEach(i => i.classList.remove('recording-playing'));
+  console.log('playRecording called, prefix:', dataUrl.substring(0, 50), 'length:', dataUrl.length);
+  // Stop any current playback
+  try { if (!audioPlayer.paused) { audioPlayer.pause(); audioPlayer.currentTime = 0; } } catch(e) {}
+  // Create a fresh audio element each time
+  const player = new Audio();
+  player.src = dataUrl;
+  player.onerror = (e) => { console.error('Audio error:', e); toast('Audio error', 'error'); };
+  player.oncanplay = () => console.log('Audio can play');
+  player.play().then(() => {
+    console.log('Playback started');
+    toast('Playing...');
+  }).catch(e => {
+    console.error('Playback failed:', e.name, e.message);
+    toast('Playback failed: ' + e.name, 'error');
+  });
+  player.onended = () => {
+    document.querySelectorAll('.rec-item.recording-playing').forEach(i => i.classList.remove('recording-playing'));
+    if (currentPlayingSongId) {
+      currentPlayingSongId = null;
+      renderSongList($('search-input')?.value || '');
+    }
+  };
+  audioPlayer = player;
 }
 
 function toggleRecordingsDropdown() {
+  console.log('toggleRecordingsDropdown called');
   const dd = $('recordings-dropdown');
+  console.log('dropdown el:', dd, 'current display:', dd?.style.display);
   if (dd.style.display !== 'none') { dd.style.display = 'none'; return; }
   const song = getSong(currentSongId);
+  console.log('song:', song?.title, 'recordings:', song?.audio?.length);
   const recordings = song?.audio || [];
   if (!recordings.length) { toast('No recordings'); return; }
   const recList = $('rec-list');
   recList.innerHTML = [...recordings].reverse().map((rec, i) => {
     const idx = recordings.length - 1 - i;
-    return `<div class="rec-item" data-url="${esc(rec.data)}"><span>Recording ${idx + 1} · ${new Date(rec.ts).toLocaleTimeString()}</span><button class="rec-play-btn">▶</button></div>`;
+    return `<div class="rec-item" data-idx="${idx}"><span>Recording ${idx + 1} · ${new Date(rec.ts).toLocaleTimeString()}</span><button class="rec-play-btn">▶</button></div>`;
   }).join('');
-  recList.querySelectorAll('.rec-play-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); playRecording(b.closest('.rec-item')?.dataset?.url); }));
-  recList.querySelectorAll('.rec-item').forEach(item => item.addEventListener('click', () => playRecording(item.dataset.url)));
+  recList.querySelectorAll('.rec-play-btn').forEach(b => {
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      const item = b.closest('.rec-item');
+      const idx = parseInt(item.dataset.idx);
+      console.log('Play btn clicked, idx:', idx, 'recordings length:', recordings.length);
+      if (recordings[idx]) {
+        playRecording(recordings[idx].data);
+      } else {
+        console.error('No recording at index', idx);
+      }
+    });
+  });
+  recList.querySelectorAll('.rec-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      const idx = parseInt(item.dataset.idx);
+      console.log('Rec item clicked, idx:', idx);
+      if (recordings[idx]) {
+        playRecording(recordings[idx].data);
+      }
+    });
+  });
   $('delete-all-recordings').onclick = () => {
     showConfirmSheet({
       title: 'Delete Recordings',
@@ -1120,7 +1193,7 @@ function renderFolders() {
                   f === 'Recently Deleted' ? trash.length :
                   songs.filter(s => s.folder === f).length;
     const cls = f === currentFolder ? 'list-item active' : 'list-item';
-    const icon = f === 'All Songs' ? '♫' : f === 'Recently Edited' ? '↻' : f === 'Recently Deleted' ? '🗑' : '♪';
+    const icon = f === 'All Songs' ? '♫' : f === 'Recently Edited' ? '↻' : f === 'Recently Deleted' ? '✕' : '♪';
     return `<div class="${cls}" data-folder="${esc(f)}"><span class="item-icon">${icon}</span><span class="item-title">${esc(f === 'Recently Edited' ? 'Recently Edited' : f)}</span><span class="item-meta">${count}</span>${!smartFolders.includes(f) ? '<span class="folder-dots">⋯</span>' : ''}</div>`;
   }).join('');
   el.querySelectorAll('.list-item[data-folder]').forEach(item => {
@@ -1733,6 +1806,10 @@ function renderSongList(filter = '') {
       }
     }
 
+    const hasRec = s.audio && s.audio.length > 0;
+    const isThisPlaying = currentPlayingSongId === s.id;
+    const recBadge = hasRec ? `<button class="song-play-rec-btn${isThisPlaying ? ' playing' : ''}" data-id="${s.id}" aria-label="${isThisPlaying ? 'Pause' : 'Play'} recording" title="${isThisPlaying ? 'Pause' : 'Play'} latest recording (${s.audio.length})">${isThisPlaying ? '❚❚' : '▶'} ${s.audio.length}</button>` : '';
+
     html += `<div class="swipe-item${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}">
       <div class="swipe-bg">
         <button class="swipe-pin-btn" data-action="pin" aria-label="${s.pinned ? 'Unpin' : 'Pin'} song">${pinLabel}</button>
@@ -1745,6 +1822,7 @@ function renderSongList(filter = '') {
           <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}</span>
           ${tagHtml}
           <span class="item-meta">${fmtDate(s.updated_at)}</span>
+          ${recBadge}
         </div>
         ${previewHtml}
       </div>
@@ -1951,6 +2029,45 @@ function renderEditorBody(song) {
       song.sections.splice(si + 1, 0, copy);
       saveSingleSong(song); renderEditorBody(song);
     });
+
+    // Strumming pattern toggle + input
+    const strummingDiv = tmpl.querySelector('.section-strumming');
+    const strummingInput = tmpl.querySelector('.strumming-input');
+    const strummingClear = tmpl.querySelector('.strumming-clear');
+    const toggleStrumBtn = tmpl.querySelector('.toggle-strumming');
+    if (strummingDiv && strummingInput && toggleStrumBtn) {
+      // Initialize from data
+      if (section.strumming) {
+        strummingDiv.style.display = 'flex';
+        strummingInput.value = section.strumming;
+        toggleStrumBtn.classList.add('active');
+      }
+      toggleStrumBtn.addEventListener('click', () => {
+        const visible = strummingDiv.style.display !== 'none';
+        strummingDiv.style.display = visible ? 'none' : 'flex';
+        toggleStrumBtn.classList.toggle('active', !visible);
+        if (!visible) { strummingInput.focus(); strummingInput.select(); }
+        if (visible) {
+          // Hiding — clear value
+          strummingInput.value = '';
+          section.strumming = null;
+          triggerAutoSave(song);
+        }
+      });
+      strummingInput.addEventListener('input', () => {
+        const val = strummingInput.value.trim();
+        section.strumming = val || null;
+        triggerAutoSave(song);
+      });
+      if (strummingClear) {
+        strummingClear.addEventListener('click', () => {
+          strummingInput.value = '';
+          section.strumming = null;
+          triggerAutoSave(song);
+          strummingInput.focus();
+        });
+      }
+    }
 
     // Drag to reorder
     sectionEl.draggable = true;
@@ -2906,6 +3023,7 @@ function buildExportText(song) {
   if (song.key) text += `Key: ${song.key}\n\n`;
   song.sections.forEach(section => {
     text += `[${section.type}]\n`;
+    if (section.strumming) text += `♫ ${section.strumming}\n`;
     section.lines.forEach(line => {
       if (line.chords.length) {
         let cl = '', lx = 0;
@@ -2924,6 +3042,7 @@ function buildExportMarkdown(song) {
   if (song.key) md += `_Key: ${song.key}_\n\n`;
   song.sections.forEach(section => {
     md += `## ${section.type}\n\n`;
+    if (section.strumming) md += `> ♫ ${section.strumming}\n\n`;
     section.lines.forEach(line => {
       const cs = line.chords.sort((a,b) => a.x-b.x).map(c => c.name).join(' ');
       if (cs) md += `  ${cs}  \n`;
@@ -2952,6 +3071,7 @@ function buildExportChordPro(song) {
     const baseType = section.type.replace(/\s+\d+$/, '');
     const sectionDirective = sectionTypeMap[baseType] || baseType.toLowerCase();
     out += `\n{start_of_${sectionDirective}}\n`;
+    if (section.strumming) out += `{comment: ♫ ${section.strumming}}\n`;
 
     section.lines.forEach(line => {
       if (line.chords && line.chords.length) {
@@ -2993,6 +3113,7 @@ function encodeSongToShareCode(song) {
     b: song.bpm || null,
     s: (song.sections || []).map(sec => ({
       y: sec.type,
+      u: sec.strumming || undefined,
       l: (sec.lines || []).map(ln => ({
         x: ln.text || '',
         c: (ln.chords || []).map(c => ({ p: c.x, n: c.name }))
@@ -3018,6 +3139,7 @@ function decodeShareCodeToSong(code) {
     const id = generateId();
     const sections = (d.s || []).map(sec => ({
       type: sec.y || 'Verse',
+      strumming: sec.u || null,
       lines: (sec.l || []).map(ln => ({
         text: ln.x || '',
         chords: (ln.c || []).map(c => ({ x: c.p || 0, name: c.n || '' }))
@@ -4200,6 +4322,7 @@ function showSetlistPrintPreview() {
 
     displaySong.sections.forEach(section => {
       html += `<div class="pp-section-type">${esc(section.type)}</div>`;
+      if (section.strumming) html += `<div class="pp-strumming">♫ ${esc(section.strumming)}</div>`;
       section.lines.forEach(line => {
         if (line.chords && line.chords.length) {
           let chordLine = '';
@@ -4239,7 +4362,8 @@ function showSongPrintPreview() {
   song.sections?.forEach(section => {
     html += `<div class="pp-song-block">`;
     html += `<div class="pp-section-type">${esc(section.type)}</div>`;
-    section.lines?.forEach(line => {
+      if (section.strumming) html += `<div class="pp-strumming">♫ ${esc(section.strumming)}</div>`;
+      section.lines?.forEach(line => {
       if (line.chords?.length) {
         let chordLine = '';
         let lx = 0;
@@ -4449,6 +4573,25 @@ function showSongPrintPreview() {
             toast('Moved to trash');
           }
         });
+      }
+      return;
+    }
+
+    // Play recording button — toggle play/pause
+    const playRecBtn = e.target.closest('.song-play-rec-btn');
+    if (playRecBtn) {
+      const s = getSong(songId);
+      if (s && s.audio && s.audio.length > 0) {
+        if (currentPlayingSongId === songId && !audioPlayer.paused) {
+          audioPlayer.pause();
+          currentPlayingSongId = null;
+        } else {
+          if (!audioPlayer.paused) { audioPlayer.pause(); }
+          const lastRec = s.audio[s.audio.length - 1];
+          playRecording(lastRec.data);
+          currentPlayingSongId = songId;
+        }
+        renderSongList($('search-input')?.value || '');
       }
       return;
     }
@@ -4930,7 +5073,7 @@ function setupEvents() {
     await startRecording();
   });
 
-  $('recordings-btn').addEventListener('click', toggleRecordingsDropdown);
+  $('recordings-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleRecordingsDropdown(); });
   $('close-hist').addEventListener('click', () => $('history-panel').style.display = 'none');
 
   // Add section
@@ -5277,7 +5420,7 @@ function setupEvents() {
 
   // Close popovers on bg tap
   document.addEventListener('click', e => {
-    if (!e.target.closest('.popover') && !e.target.closest('#toolbar-more-btn')) {
+    if (!e.target.closest('.popover') && !e.target.closest('#toolbar-more-btn') && !e.target.closest('#recordings-btn') && !e.target.closest('#record-btn')) {
       document.querySelectorAll('.popover').forEach(m => m.style.display = 'none');
     }
   });
@@ -5350,7 +5493,7 @@ function setupEvents() {
     galleryMode = !galleryMode;
     const list = $('song-list');
     list.classList.toggle('gallery', galleryMode);
-    viewToggleEl.textContent = galleryMode ? '☰' : '⊞';
+    viewToggleEl.textContent = galleryMode ? '▦' : '⊞';
     localStorage.setItem('sn_gallery_mode', galleryMode);
     // Re-render so gallery cards get proper markup
     renderSongList($('search-input')?.value || '');

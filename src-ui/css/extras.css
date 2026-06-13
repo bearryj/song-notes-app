@@ -232,6 +232,7 @@
   }
   .print-content .pp-chord-line { color: #0066cc; }
   .print-content .pp-section-type { color: #333; }
+  .print-content .pp-strumming { color: #666; font-style: italic; }
   .print-content .pp-lyric-line { color: #000; }
   .print-preview-nav, #setlist-print-overlay .print-preview-nav { display: none !important; }
 }

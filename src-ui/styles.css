@@ -352,6 +352,28 @@ html, body {
   margin-left: 8px;
   flex-shrink: 0;
 }
+.song-play-rec-btn {
+  background: var(--chord);
+  color: var(--bg);
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: opacity 0.15s;
+  margin-left: auto;
+  font-family: var(--font);
+  letter-spacing: 0;
+}
+.song-play-rec-btn:active {
+  opacity: 0.6;
+}
+.song-play-rec-btn.playing {
+  background: var(--section-label);
+}
 /* Two-line list item with preview (song list only) */
 .swipe-content.list-item {
   flex-direction: column;
