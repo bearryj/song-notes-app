@@ -642,7 +642,7 @@ function toggleHistory() {
 function renderHistoryList() {
   const list = $('hist-list');
   if (!versionHistory.length) { list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--fg-tertiary);font-size:13px;">No versions yet</div>'; return; }
-  list.innerHTML = [...versionHistory].reverse().map(v => `<div class="hist-item" data-ts="${v.ts}"><div class="hist-time">${new Date(v.ts).toLocaleTimeString()}</div><div class="hist-meta">${v.key || '—'} · ${v.sections.reduce((a,s) => a + s.lines.length, 0)} lines</div></div>`).join('');
+  list.innerHTML = [...versionHistory].reverse().map(v => `<div class="hist-item" data-ts="${v.ts}"><div class="hist-time">${new Date(v.ts).toLocaleTimeString()}</div><div class="hist-meta">${esc(v.key || '—')} · ${v.sections.reduce((a,s) => a + s.lines.length, 0)} lines</div></div>`).join('');
   list.querySelectorAll('.hist-item').forEach(el => {
     el.addEventListener('click', () => {
       const v = versionHistory.find(x => x.ts === parseInt(el.dataset.ts));
@@ -670,7 +670,7 @@ function showVersionDiff(version) {
       <div class="diff-header">
         <div class="diff-title">Version Diff</div>
         <div class="diff-subtitle">${new Date(version.ts).toLocaleString()} → Now</div>
-        <div class="diff-key-changes">${version.key || '—'} → ${song.key || '—'}</div>
+        <div class="diff-key-changes">${esc(version.key || '—')} → ${esc(song.key || '—')}</div>
       </div>
       <div class="diff-body" id="diff-body">${diff}</div>
       <div class="diff-actions">
@@ -838,7 +838,7 @@ function toggleRecordingsDropdown() {
   const recList = $('rec-list');
   recList.innerHTML = [...recordings].reverse().map((rec, i) => {
     const idx = recordings.length - 1 - i;
-    return `<div class="rec-item" data-url="${rec.data}"><span>Recording ${idx + 1} · ${new Date(rec.ts).toLocaleTimeString()}</span><button class="rec-play-btn">▶</button></div>`;
+    return `<div class="rec-item" data-url="${esc(rec.data)}"><span>Recording ${idx + 1} · ${new Date(rec.ts).toLocaleTimeString()}</span><button class="rec-play-btn">▶</button></div>`;
   }).join('');
   recList.querySelectorAll('.rec-play-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); playRecording(b.closest('.rec-item')?.dataset?.url); }));
   recList.querySelectorAll('.rec-item').forEach(item => item.addEventListener('click', () => playRecording(item.dataset.url)));
@@ -4942,6 +4942,13 @@ function setupEvents() {
   // Keyboard
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undoVersion(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+      e.preventDefault();
+      const tag = document.activeElement?.tagName;
+      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+        if (typeof showNewSongMenu === 'function') showNewSongMenu();
+      }
+    }
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault(); const song = getSong(currentSongId);
       if (song) { pushVersion(); song.title = $('song-title').value || 'Untitled'; song.updated_at = new Date().toISOString(); saveSingleSong(song); toast('Saved'); }
