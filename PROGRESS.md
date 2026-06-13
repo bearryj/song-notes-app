@@ -112,7 +112,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] `undoTimer` (line 1129) not cleared on song switch — stale undo buffer from a previous song could restore wrong data. Clear on `switchToSong()`. (2026-06-12) — clearUndo() called in switchToSong()
 
 ### Performance / Code Health
-- [ ] `app.js` is 5,698 lines / ~170KB — extract modules (e.g. `metro.js`, `editor.js`, `songlist.js`, `export.js`) to reduce main file and improve maintainability. Vite handles bundling.
+- [x] `app.js` is 5,639 lines / ~170KB — extract modules (e.g. `metro.js`, `editor.js`, `songlist.js`, `export.js`) to reduce main file and improve maintainability. Vite handles bundling. (2026-06-12) — extracted `modules/metro.js` (metronome engine + tap tempo, 219 lines); app.js down from 5,858 lines
 - [ ] `styles.css` is 4,191 lines / ~72KB — split into feature-scoped files (e.g. `editor.css`, `toolbar.css`, `metronome.css`) and import in `index.html`.
 - [ ] 178 `addEventListener` calls with only a handful of `removeEventListener` — audit for leaked listeners on re-rendered DOM elements (especially song list items, toolbar buttons, and sheet modals).
 - [ ] `innerHTML` used 20+ times — audit for XSS vectors. Song titles, chord names, and section types are user-controlled. The `esc()` helper exists but isn't consistently applied at every insertion point.
