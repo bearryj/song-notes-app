@@ -128,6 +128,26 @@
         </div>
       </div>
 
+      <!-- Section Type Picker Popover -->
+      <div id="section-picker" style="display:none;" role="dialog" aria-label="Add section">
+        <div class="section-picker-backdrop"></div>
+        <div class="section-picker-content">
+          <div class="section-picker-handle"></div>
+          <div class="section-picker-title">Add Section</div>
+          <div class="section-picker-grid">
+            <button class="section-picker-btn" data-type="Verse">Verse</button>
+            <button class="section-picker-btn" data-type="Verse 2">Verse 2</button>
+            <button class="section-picker-btn" data-type="Chorus">Chorus</button>
+            <button class="section-picker-btn" data-type="Pre-Chorus">Pre-Chorus</button>
+            <button class="section-picker-btn" data-type="Bridge">Bridge</button>
+            <button class="section-picker-btn" data-type="Tag">Tag</button>
+            <button class="section-picker-btn" data-type="Coda">Coda</button>
+            <button class="section-picker-btn" data-type="Outro">Outro</button>
+            <button class="section-picker-btn" data-type="Intro">Intro</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Toolbar Bottom Sheet — grouped sections -->
       <div id="toolbar-sheet" style="display:none;" role="dialog" aria-label="Tools menu">
         <div class="toolbar-sheet-backdrop"></div>
@@ -435,6 +455,8 @@
           <option value="Chorus" selected>Chorus</option>
           <option value="Pre-Chorus">Pre-Chorus</option>
           <option value="Bridge">Bridge</option>
+          <option value="Tag">Tag</option>
+          <option value="Coda">Coda</option>
           <option value="Outro">Outro</option>
           <option value="Intro">Intro</option>
         </select>

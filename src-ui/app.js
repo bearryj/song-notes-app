@@ -561,6 +561,65 @@ function enableDragToDismiss(sheet, { contentSelector = null, backdropSelector =
   content.addEventListener('touchend', onTouchEnd, { passive: true });
 }
 
+function showSectionPicker(e) {
+  e.stopPropagation();
+  const picker = $('section-picker');
+  if (!picker) return;
+
+  const btns = picker.querySelectorAll('.section-picker-btn');
+  const backdrop = picker.querySelector('.section-picker-backdrop');
+  const content = picker.querySelector('.section-picker-content');
+
+  // Close handler
+  const close = () => {
+    content.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+    content.style.transform = 'translateY(20px)';
+    content.style.opacity = '0';
+    backdrop.style.transition = 'opacity 0.2s ease';
+    backdrop.style.opacity = '0';
+    setTimeout(() => {
+      picker.style.display = 'none';
+      content.style.transition = '';
+      content.style.transform = '';
+      content.style.opacity = '';
+      backdrop.style.transition = '';
+      backdrop.style.opacity = '';
+    }, 200);
+  };
+
+  // Button handlers
+  btns.forEach(btn => {
+    btn.onclick = () => {
+      const type = btn.dataset.type;
+      const song = getSong(currentSongId);
+      if (!song) { close(); return; }
+      pushVersion();
+      song.sections.push({ type, strumming: null, lines: [{ text: '', chords: [] }] });
+      saveSingleSong(song);
+      renderEditorBody(song);
+      const body = $('song-body');
+      if (body) body.scrollTop = body.scrollHeight;
+      close();
+    };
+  });
+
+  // Backdrop dismiss
+  backdrop.onclick = close;
+
+  // Show
+  picker.style.display = 'flex';
+  // Trigger reflow for animation
+  void content.offsetHeight;
+  content.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+  content.style.transform = 'translateY(0)';
+  content.style.opacity = '1';
+  backdrop.style.transition = 'opacity 0.25s ease';
+  backdrop.style.opacity = '1';
+
+  // Enable drag to dismiss
+  enableDragToDismiss(picker, { contentSelector: '.section-picker-content', backdropSelector: '.section-picker-backdrop' });
+}
+
 async function deleteSong(id) {
   const song = songs.find(s => s.id === id);
   if (song) {
@@ -3090,6 +3149,7 @@ function buildExportChordPro(song) {
     'Intro': 'intro', 'Outro': 'outro', 'Hook': 'hook',
     'Refrain': 'refrain', 'Pre-Chorus': 'pre-chorus',
     'Interlude': 'interlude', 'Solo': 'solo', 'Instrumental': 'instrumental',
+    'Tag': 'tag', 'Coda': 'coda',
   };
 
   song.sections.forEach(section => {
@@ -3685,6 +3745,7 @@ function parseChordPro(title, content) {
     'start_of_outro': 'Outro', 'soo': 'Outro', 'start_of_hook': 'Hook', 'soh': 'Hook',
     'start_of_refrain': 'Refrain', 'sor': 'Refrain', 'start_of_pre-chorus': 'Pre-Chorus',
     'start_of_interlude': 'Interlude', 'start_of_solo': 'Solo', 'start_of_instrumental': 'Instrumental',
+    'start_of_tag': 'Tag', 'sot': 'Tag', 'start_of_coda': 'Coda', 'socd': 'Coda',
     'end_of_chorus': null, 'eoc': null, 'end_of_bridge': null, 'eob': null,
     'end_of_verse': null, 'eov': null, 'end_of_outro': null, 'eoo': null,
   };
@@ -5109,14 +5170,9 @@ function setupEvents() {
   $('recordings-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleRecordingsDropdown(); });
   $('close-hist').addEventListener('click', () => $('history-panel').style.display = 'none');
 
-  // Add section
-  $('add-section-btn').addEventListener('click', () => {
-    const song = getSong(currentSongId);
-    if (!song) return;
-    pushVersion();
-    song.sections.push({ type: 'Chorus', lines: [{ text: '', chords: [] }] });
-    saveSingleSong(song); renderEditorBody(song);
-    $('song-body').scrollTop = $('song-body').scrollHeight;
+  // Add section — show type picker
+  $('add-section-btn').addEventListener('click', (e) => {
+    showSectionPicker(e);
   });
 
   // Transpose
