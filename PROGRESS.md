@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (show writing time in song list rows)
+2026-06-14 by OWL (typewriter scroll centering in editor)
 
 ## Build & Test Commands
 ```bash
@@ -75,10 +75,11 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Auto-save timer flush on song switch + back navigation (prevents stale debounced writes from corrupting state when quick-switching songs or going back)
 - Swipe gesture to switch songs in editor (swipe left → next, swipe right → prev, with haptic feedback)
 - Song content preview in list view (chord chips + first lyric line snippet under each title)
-|- Tap tempo (tap-to-detect BPM with outlier filtering, auto-applies to metronome, 2s auto-reset)
+- Tap tempo (tap-to-detect BPM with outlier filtering, auto-applies to metronome, 2s auto-reset)
 - Duplicate song from swipe action (⧉ button in swipe-to-action bar, deep copy with new id and title suffix)
 - Enhanced empty states (SVG illustrations, floating animation, fade-in, CTA button for new users)
 - Individual song print chord chart (print preview overlay with chord/lyric layout, window.print() integration, @media print styles)
+- Typewriter scroll centering (keeps active lyric line centered while typing, debounced smooth scroll, toggle in toolbar View section, persisted to localStorage)
 - [x] Duplicate line in editor (⧉ button in chord row, deep copy with chords, undo support via snackbar)
 - [x] Chord sheet display modes (toggle between chords+lyrics, lyrics-only, chords-only; nav bar button + toolbar View section; persisted to localStorage)
 - [x] Strumming pattern notation (per-section text pattern editor, e.g. "D-DU-UDU"; toggle button in section header; included in export, print, and share codes)

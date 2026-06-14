@@ -450,6 +450,10 @@
 .toolbar-sheet-btn.sheet-danger {
   color: var(--danger);
 }
+.toolbar-sheet-btn.sheet-active {
+  color: var(--accent);
+  background: var(--bg-surface);
+}
 .sheet-icon {
   font-size: 18px;
   line-height: 1;

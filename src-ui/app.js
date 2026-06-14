@@ -25,6 +25,7 @@ let focusMode = localStorage.getItem('sn_focusMode') === 'true';
 let currentPlayingSongId = null;
 let displayMode = localStorage.getItem('sn_displayMode') || 'both'; // 'both' | 'lyrics' | 'chords'
 let editorFontSize = parseInt(localStorage.getItem('sn_editorFontSize')) || 17; // lyric font size in px, range 13-24
+let typewriterScroll = localStorage.getItem('sn_typewriterScroll') === 'true'; // keep active line centered while typing
 
 // ===== Feature Discovery Hints =====
 // Tracks which one-time hints have been shown. Persisted to localStorage.
@@ -3655,6 +3656,26 @@ function initMobileKeyboard() {
     }
   });
 
+  // Typewriter scroll: keep the active lyric line centered while typing
+  let typewriterScrollTimer = null;
+  document.addEventListener('input', e => {
+    if (!typewriterScroll) return;
+    if (!e.target.matches('.lyric-text[contenteditable="true"]')) return;
+    // Debounce to avoid jank during fast typing
+    if (typewriterScrollTimer) clearTimeout(typewriterScrollTimer);
+    typewriterScrollTimer = setTimeout(() => {
+      const lineEl = e.target.closest('.chord-line');
+      if (!lineEl) return;
+      const body = $('song-body');
+      if (!body) return;
+      const bodyRect = body.getBoundingClientRect();
+      const lineRect = lineEl.getBoundingClientRect();
+      // Center the line within the song-body scroll container
+      const targetScroll = body.scrollTop + (lineRect.top - bodyRect.top) - (bodyRect.height / 2) + (lineRect.height / 2);
+      body.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+    }, 120);
+  }, { passive: true });
+
   // Prevent zoom on double-tap for inputs
   let lastTouchEnd = 0;
   document.addEventListener('touchend', e => {
@@ -6010,6 +6031,11 @@ function setupEvents() {
           dmb.title = titles[displayMode];
           dmb.setAttribute('aria-label', titles[displayMode]);
         }
+      } else if (a === 'typewriter-scroll') {
+        typewriterScroll = !typewriterScroll;
+        localStorage.setItem('sn_typewriterScroll', typewriterScroll);
+        btn.classList.toggle('sheet-active', typewriterScroll);
+        toast(typewriterScroll ? 'Typewriter scroll on' : 'Typewriter scroll off');
       }
     });
   });
@@ -6244,7 +6270,12 @@ function setupEvents() {
 
   function showToolbarSheet() {
     const sheet = $('toolbar-sheet');
-    if (sheet) sheet.style.display = 'flex';
+    if (sheet) {
+      sheet.style.display = 'flex';
+      // Sync toggle button states
+      const twBtn = sheet.querySelector('[data-action="typewriter-scroll"]');
+      if (twBtn) twBtn.classList.toggle('sheet-active', typewriterScroll);
+    }
   }
   function hideToolbarSheet() {
     const sheet = $('toolbar-sheet');
