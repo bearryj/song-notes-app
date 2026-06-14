@@ -2413,6 +2413,7 @@ body.ios-device .toolbar-sheet-content {
   cursor: pointer;
   border-bottom: 1px solid var(--separator);
   gap: 10px;
+  box-sizing: border-box;
 }
 .song-picker-item:active {
   background: var(--bg-surface);

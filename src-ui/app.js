@@ -5038,6 +5038,10 @@ function showSongPicker() {
   const searchInput = $('song-picker-search');
   if (!sheet || !list) return;
 
+  // Virtual scroll constants
+  const ITEM_HEIGHT = 52; // px per song row (padding + font + meta + border)
+  const BUFFER_ITEMS = 8; // extra items above/below viewport
+
   const renderList = (filter = '') => {
     const q = filter.toLowerCase().trim();
     const filtered = q
@@ -5046,31 +5050,73 @@ function showSongPicker() {
 
     if (!filtered.length) {
       list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--fg-tertiary);font-size:14px;">No matching songs</div>';
+      // Clean up any existing scroll handler
+      if (list._virtualScrollHandler) {
+        list.removeEventListener('scroll', list._virtualScrollHandler);
+        list._virtualScrollHandler = null;
+      }
       return;
     }
 
-    list.innerHTML = filtered.map(s => {
-      const alreadyIn = setlist.songs.some(ss => ss.songId === s.id);
-      const lineCount = (s.sections||[]).reduce((a, sec) => a + sec.lines.length, 0);
-      return `<div class="song-picker-item${alreadyIn ? ' already-in' : ''}" data-id="${s.id}">
+    // Store filtered data for virtual scrolling
+    list._filteredSongs = filtered;
+
+    // Set up the scroll container with a spacer for total height
+    list.innerHTML = `<div class="virtual-scroll-spacer" style="position:relative;height:${filtered.length * ITEM_HEIGHT}px;"></div>`;
+    const spacer = list.querySelector('.virtual-scroll-spacer');
+
+    // Render visible items
+    const renderVisible = () => {
+      const scrollTop = list.scrollTop;
+      const viewportH = list.clientHeight;
+      const startIdx = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - BUFFER_ITEMS);
+      const endIdx = Math.min(filtered.length, Math.ceil((scrollTop + viewportH) / ITEM_HEIGHT) + BUFFER_ITEMS);
+
+      // Build HTML for visible slice
+      let html = '';
+      for (let i = startIdx; i < endIdx; i++) {
+        const s = filtered[i];
+        const alreadyIn = setlist.songs.some(ss => ss.songId === s.id);
+        const lineCount = (s.sections||[]).reduce((a, sec) => a + sec.lines.length, 0);
+        const top = i * ITEM_HEIGHT;
+        html += `<div class="song-picker-item${alreadyIn ? ' already-in' : ''}" data-id="${s.id}" style="position:absolute;top:${top}px;left:0;right:0;height:${ITEM_HEIGHT}px;">
       <div style="flex:1;min-width:0;">
         <div class="song-picker-title">${esc(s.title || 'Untitled')}</div>
         <div class="song-picker-meta">${s.key || 'No key'} · ${lineCount} lines</div>
       </div>
       ${alreadyIn ? '<span style="color:var(--fg-tertiary);font-size:13px;">Added</span>' : ''}
     </div>`;
-    }).join('');
+      }
+      spacer.innerHTML = html;
 
-    list.querySelectorAll('.song-picker-item:not(.already-in)').forEach(item => {
-      item.addEventListener('click', () => {
-        const songId = item.dataset.id;
-        setlist.songs.push({ songId, capo: 0, transpose: 0 });
-        saveSetlists();
-        renderSetlistSongs();
-        sheet.style.display = 'none';
-        toast('Added to setlist');
+      // Attach click handlers
+      spacer.querySelectorAll('.song-picker-item:not(.already-in)').forEach(item => {
+        item.addEventListener('click', () => {
+          const songId = item.dataset.id;
+          setlist.songs.push({ songId, capo: 0, transpose: 0 });
+          saveSetlists();
+          renderSetlistSongs();
+          sheet.style.display = 'none';
+          toast('Added to setlist');
+        });
       });
-    });
+    };
+
+    renderVisible();
+
+    // Debounced scroll handler
+    if (list._virtualScrollHandler) {
+      list.removeEventListener('scroll', list._virtualScrollHandler);
+    }
+    let scrollRAF = null;
+    list._virtualScrollHandler = () => {
+      if (scrollRAF) return;
+      scrollRAF = requestAnimationFrame(() => {
+        scrollRAF = null;
+        renderVisible();
+      });
+    };
+    list.addEventListener('scroll', list._virtualScrollHandler);
   };
 
   renderList();

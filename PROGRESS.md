@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (keyboard shortcut hint badge for new song button)
+2026-06-14 by OWL (virtual scrolling for setlist song picker)
 
 ## Build & Test Commands
 ```bash
@@ -105,7 +105,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 
 ### Performance
 - [x] Add a keyboard shortcut to create new song from any view (Ctrl+N already works, but no visual hint exists outside shortcuts overlay) — added ⌘N badge on new song nav button, visible only on desktop via `@media (hover: hover)` (2026-06-14)
-- [ ] Virtual scrolling for setlist song picker (song list in setlist add modal renders all songs at once)
+- [x] Virtual scrolling for setlist song picker (song list in setlist add modal renders all songs at once — now uses lightweight virtual scroll with 52px fixed-height items, 8-item buffer, and rAF-debounced scroll handler) (2026-06-14)
 
 ### Platform
 - [ ] iOS build (requires macOS + Xcode) — blocked on hardware
