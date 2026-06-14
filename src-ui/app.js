@@ -2082,6 +2082,14 @@ function buildSongRowHTML(s, offset, height) {
   const recBadge = hasRec ? `<button class="song-play-rec-btn${isThisPlaying ? ' playing' : ''}" data-id="${s.id}" aria-label="${isThisPlaying ? 'Pause' : 'Play'} recording" title="${isThisPlaying ? 'Pause' : 'Play'} latest recording (${s.audio.length})"><span class="rec-icon">${isThisPlaying ? '❚❚' : '▶'}</span><span class="rec-count">${s.audio.length}</span></button>` : '';
   const tutorialBadge = s.tutorial ? '<span class="tutorial-badge">Tutorial</span>' : '';
 
+  // Writing time (compact format for list row)
+  const wtMs = s.session_ms || 0;
+  const wtH = Math.floor(wtMs / 3600000);
+  const wtM = Math.floor((wtMs % 3600000) / 60000);
+  const writingTimeHtml = wtMs > 0
+    ? `<span class="item-writing-time" title="Writing time">${wtH > 0 ? wtH + 'h ' + wtM + 'm' : wtM + 'm'}</span>`
+    : '';
+
   return `<div class="swipe-item${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}" style="position:absolute;top:${offset}px;left:0;right:0;height:${height}px">
       <div class="swipe-bg">
         <button class="swipe-pin-btn" data-action="pin" aria-label="${s.pinned ? 'Unpin' : 'Pin'} song">${pinLabel}</button>
@@ -2094,6 +2102,7 @@ function buildSongRowHTML(s, offset, height) {
           <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}${tutorialBadge}</span>
           ${tagHtml}
           <span class="item-meta">${fmtDate(s.updated_at)}</span>
+          ${writingTimeHtml}
           ${recBadge}
         </div>
         ${previewHtml}
@@ -2222,6 +2231,12 @@ function renderSongList(filter = '') {
       const chordPreview = chordSet.length ? `<div class="card-chords">${chordSet.map(c => `<span class="card-chord-chip">${esc(c)}</span>`).join('')}</div>` : '';
       const tagHtml = (s.tags && s.tags.length) ? `<div class="card-tags">${s.tags.slice(0, 3).map(t => `<span class="card-tag">${esc(t)}</span>`).join('')}${s.tags.length > 3 ? `<span class="card-tag-more">+${s.tags.length - 3}</span>` : ''}</div>` : '';
       const pinLabel = s.pinned ? '☆' : '★';
+      // Writing time for gallery card
+      const gwtH = Math.floor((s.session_ms || 0) / 3600000);
+      const gwtM = Math.floor(((s.session_ms || 0) % 3600000) / 60000);
+      const galleryWritingTime = (s.session_ms || 0) > 0
+        ? `<span class="card-writing-time" title="Writing time">${gwtH > 0 ? gwtH + 'h ' + gwtM + 'm' : gwtM + 'm'}</span>`
+        : '';
       html += `<div class="gallery-card${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}" style="animation-delay:${i * 30}ms">
         <div class="gallery-card-top">
           ${pinned}
@@ -2233,6 +2248,7 @@ function renderSongList(filter = '') {
         <div class="gallery-card-bottom">
           <span class="card-meta">${secCount} ${secLabel}</span>
           <span class="card-date">${fmtDate(s.updated_at)}</span>
+          ${galleryWritingTime}
         </div>
         ${tagHtml}
         <div class="gallery-card-actions">
