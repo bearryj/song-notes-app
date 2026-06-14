@@ -286,6 +286,20 @@ function createSong(title) {
 
 function getSong(id) { return songs.find(s => s.id === id); }
 
+// ===== HTML Template Helpers =====
+// Reusable empty-state renderer — replaces ad-hoc innerHTML concatenation
+function emptyStateHTML({ iconSvg, title, desc, cta }) {
+  return `<div class="empty-state"><div class="empty-icon">${iconSvg}</div><h2>${escHtml(title)}</h2><p>${escHtml(desc)}</p>${cta || ''}</div>`;
+}
+
+// SVG icon constants — shared across empty states
+const ICONS = {
+  music: '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M58 18v32c0 6-5 11-11 11s-11-5-11-11 5-11 11-11c2 0 4 .5 6 1.5V18L30 24v32c0 6-5 11-11 11S8 62 8 56s5-11 11-11c2 0 4 .5 6 1.5V24l33-6z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="19" cy="56" r="2" fill="currentColor" opacity="0.5"/><circle cx="47" cy="44" r="2" fill="currentColor" opacity="0.5"/></svg>',
+  search: '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="36" cy="36" r="22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="52" y1="52" x2="68" y2="68" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M26 36h20M36 26v20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/></svg>',
+  setlist: '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="12" y="14" width="56" height="8" rx="2" stroke="currentColor" stroke-width="2" opacity="0.4"/><rect x="12" y="30" width="40" height="8" rx="2" stroke="currentColor" stroke-width="2" opacity="0.6"/><rect x="12" y="46" width="48" height="8" rx="2" stroke="currentColor" stroke-width="2" opacity="0.5"/><rect x="12" y="62" width="30" height="8" rx="2" stroke="currentColor" stroke-width="2" opacity="0.3"/><circle cx="60" cy="34" r="10" stroke="currentColor" stroke-width="2" opacity="0.5"/><path d="M56 34h8M60 30v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/></svg>',
+  setlistAdd: '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M28 20v40M52 20v40M28 20c0 0 8-4 12-4s12 4 12 4M28 60c0 0 8 4 12 4s12-4 12-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/><circle cx="40" cy="40" r="8" stroke="currentColor" stroke-width="2" opacity="0.5"/><path d="M37 40h6M40 37v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/></svg>',
+};
+
 // ===== Input Sheet (replaces prompt()) =====
 // Usage: showInputSheet({ title, placeholder, initialValue, onConfirm(value) })
 // Returns a Promise that resolves to the entered value or null if cancelled
@@ -2181,13 +2195,11 @@ function renderSongList(filter = '') {
 
   if (!list.length) {
     const isFilter = !!filter;
-    const iconSvg = isFilter
-      ? '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="36" cy="36" r="22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="52" y1="52" x2="68" y2="68" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M26 36h20M36 26v20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/></svg>'
-      : '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M58 18v32c0 6-5 11-11 11s-11-5-11-11 5-11 11-11c2 0 4 .5 6 1.5V18L30 24v32c0 6-5 11-11 11S8 62 8 56s5-11 11-11c2 0 4 .5 6 1.5V24l33-6z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="19" cy="56" r="2" fill="currentColor" opacity="0.5"/><circle cx="47" cy="44" r="2" fill="currentColor" opacity="0.5"/></svg>';
+    const iconSvg = isFilter ? ICONS.search : ICONS.music;
     const title = isFilter ? 'No Results' : 'No Songs Yet';
     const desc = isFilter ? 'Try a different search term' : 'Create your first song to get started';
     const cta = isFilter ? '' : '<button class="empty-cta" id="empty-create-btn">Create Song</button>';
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">' + iconSvg + '</div><h2>' + title + '</h2><p>' + desc + '</p>' + cta + '</div>';
+    el.innerHTML = emptyStateHTML({ iconSvg, title, desc, cta });
     const ctaBtn = $('empty-create-btn');
     if (ctaBtn) ctaBtn.addEventListener('click', () => { if (typeof showNewSongSheet === 'function') showNewSongSheet(); });
     return;
@@ -4795,8 +4807,7 @@ function renderSetlistList() {
   const el = $('setlist-list');
   if (!el) return;
   if (!setlists.length) {
-    const iconSvg = '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="12" y="14" width="56" height="8" rx="2" stroke="currentColor" stroke-width="2" opacity="0.4"/><rect x="12" y="30" width="40" height="8" rx="2" stroke="currentColor" stroke-width="2" opacity="0.6"/><rect x="12" y="46" width="48" height="8" rx="2" stroke="currentColor" stroke-width="2" opacity="0.5"/><rect x="12" y="62" width="30" height="8" rx="2" stroke="currentColor" stroke-width="2" opacity="0.3"/><circle cx="60" cy="34" r="10" stroke="currentColor" stroke-width="2" opacity="0.5"/><path d="M56 34h8M60 30v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/></svg>';
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">' + iconSvg + '</div><h2>No Setlists</h2><p>Organize songs into setlists for performances</p></div>';
+    el.innerHTML = emptyStateHTML({ iconSvg: ICONS.setlist, title: 'No Setlists', desc: 'Organize songs into setlists for performances' });
     return;
   }
   el.innerHTML = setlists.map(sl => {
@@ -4888,8 +4899,7 @@ function renderSetlistSongs() {
   if (countEl) countEl.textContent = `${setlist.songs.length} song${setlist.songs.length !== 1 ? 's' : ''}`;
 
   if (!setlist.songs.length) {
-    const iconSvg = '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M28 20v40M52 20v40M28 20c0 0 8-4 12-4s12 4 12 4M28 60c0 0 8 4 12 4s12-4 12-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/><circle cx="40" cy="40" r="8" stroke="currentColor" stroke-width="2" opacity="0.5"/><path d="M37 40h6M40 37v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/></svg>';
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">' + iconSvg + '</div><h2>Empty Setlist</h2><p>Tap + to add songs from your library</p></div>';
+    container.innerHTML = emptyStateHTML({ iconSvg: ICONS.setlistAdd, title: 'Empty Setlist', desc: 'Tap + to add songs from your library' });
     return;
   }
 
@@ -5049,7 +5059,7 @@ function showSongPicker() {
       : songs;
 
     if (!filtered.length) {
-      list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--fg-tertiary);font-size:14px;">No matching songs</div>';
+      list.innerHTML = `<div style="padding:24px;text-align:center;color:var(--fg-tertiary);font-size:14px;">No matching songs</div>`;
       // Clean up any existing scroll handler
       if (list._virtualScrollHandler) {
         list.removeEventListener('scroll', list._virtualScrollHandler);
@@ -5682,28 +5692,28 @@ function showBulkMoveToFolderSheet(songIds) {
   sheet.setAttribute('aria-label', 'Move to folder');
 
   const customFolders = folders.filter(f => f !== 'All Songs' && f !== 'Recently Edited');
-  let folderListHtml = '<button class="folder-picker-item selected" data-folder="">' +
-    '<span class="folder-picker-icon">♫</span>' +
-    '<span class="folder-picker-name">All Songs</span>' +
-    '<span class="folder-picker-check">✓</span></button>';
+  let folderListHtml = `<button class="folder-picker-item selected" data-folder="">
+    <span class="folder-picker-icon">♫</span>
+    <span class="folder-picker-name">All Songs</span>
+    <span class="folder-picker-check">✓</span></button>`;
 
   customFolders.forEach(f => {
-    folderListHtml += '<button class="folder-picker-item" data-folder="' + escHtml(f) + '">' +
-      '<span class="folder-picker-icon">♪</span>' +
-      '<span class="folder-picker-name">' + escHtml(f) + '</span></button>';
+    folderListHtml += `<button class="folder-picker-item" data-folder="${escHtml(f)}">
+      <span class="folder-picker-icon">♪</span>
+      <span class="folder-picker-name">${escHtml(f)}</span></button>`;
   });
 
   if (!customFolders.length) {
     folderListHtml += '<div class="folder-picker-empty">No custom folders yet</div>';
   }
 
-  sheet.innerHTML = '<div class="confirm-sheet-backdrop"></div>' +
-    '<div class="confirm-sheet-content" style="max-height:60vh;">' +
-    '<div class="confirm-sheet-handle"></div>' +
-    '<div class="confirm-sheet-title">Move ' + songIds.length + ' Song' + (songIds.length !== 1 ? 's' : '') + ' to Folder</div>' +
-    '<div class="folder-picker-list">' + folderListHtml + '</div>' +
-    '<div class="confirm-sheet-actions">' +
-    '<button class="confirm-sheet-cancel">Cancel</button></div></div>';
+  sheet.innerHTML = `<div class="confirm-sheet-backdrop"></div>
+    <div class="confirm-sheet-content" style="max-height:60vh;">
+    <div class="confirm-sheet-handle"></div>
+    <div class="confirm-sheet-title">Move ${songIds.length} Song${songIds.length !== 1 ? 's' : ''} to Folder</div>
+    <div class="folder-picker-list">${folderListHtml}</div>
+    <div class="confirm-sheet-actions">
+    <button class="confirm-sheet-cancel">Cancel</button></div></div>`;
 
   document.body.appendChild(sheet);
   const close = () => sheet.remove();
@@ -5752,21 +5762,21 @@ function showBulkAddToSetlistSheet(songIds) {
 
   let setlistHtml = '';
   setlists.forEach(sl => {
-    setlistHtml += '<button class="folder-picker-item" data-setlist-id="' + sl.id + '">' +
-      '<span class="folder-picker-icon">≡</span>' +
-      '<span class="folder-picker-name">' + escHtml(sl.name) + '</span>' +
-      '<span class="folder-picker-count">' + sl.songs.length + '</span></button>';
+    setlistHtml += `<button class="folder-picker-item" data-setlist-id="${sl.id}">
+      <span class="folder-picker-icon">≡</span>
+      <span class="folder-picker-name">${escHtml(sl.name)}</span>
+      <span class="folder-picker-count">${sl.songs.length}</span></button>`;
   });
 
-  sheet.innerHTML = '<div class="confirm-sheet-backdrop"></div>' +
-    '<div class="confirm-sheet-content" style="max-height:60vh;">' +
-    '<div class="confirm-sheet-handle"></div>' +
-    '<div class="confirm-sheet-title">Add to Setlist</div>' +
-    '<div class="folder-picker-list">' + setlistHtml + '</div>' +
-    '<div class="confirm-sheet-or">— or —</div>' +
-    '<button class="confirm-sheet-create" id="ms-new-setlist">+ New Setlist</button>' +
-    '<div class="confirm-sheet-actions">' +
-    '<button class="confirm-sheet-cancel">Cancel</button></div></div>';
+  sheet.innerHTML = `<div class="confirm-sheet-backdrop"></div>
+    <div class="confirm-sheet-content" style="max-height:60vh;">
+    <div class="confirm-sheet-handle"></div>
+    <div class="confirm-sheet-title">Add to Setlist</div>
+    <div class="folder-picker-list">${setlistHtml}</div>
+    <div class="confirm-sheet-or">— or —</div>
+    <button class="confirm-sheet-create" id="ms-new-setlist">+ New Setlist</button>
+    <div class="confirm-sheet-actions">
+    <button class="confirm-sheet-cancel">Cancel</button></div></div>`;
 
   document.body.appendChild(sheet);
   const close = () => sheet.remove();
@@ -7002,7 +7012,7 @@ function showSongStatsPanel() {
   if (!body) return;
 
   if (!song) {
-    body.innerHTML = '<div class="stats-empty"><div class="stats-empty-icon">▤</div><div>Select a song to view statistics</div></div>';
+    body.innerHTML = `<div class="stats-empty"><div class="stats-empty-icon">▤</div><div>Select a song to view statistics</div></div>`;
   } else {
     body.innerHTML = computeStatsHTML(song);
   }
