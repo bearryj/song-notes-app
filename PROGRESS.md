@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (virtual scrolling for setlist song picker)
+2026-06-14 by OWL (feature discovery hint CSS styles)
 
 ## Build & Test Commands
 ```bash
@@ -89,6 +89,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Prefers-reduced-motion support (disables all CSS animations/transitions for users with motion sensitivity, sets data-reduced-motion attribute on <html>)
 - [x] Session timer pause/resume (timer pauses when app backgrounds/tabs away and resumes on return, so background time doesn't count as writing time)
 - [x] Search/filter in setlist song picker (live search by title, key, or tag when adding songs to a setlist; auto-focuses input; shows "No matching songs" empty state) (2026-06-14)
+- [x] Feature discovery hint system CSS — showFeatureHint() was called from 3 places (gallery toggle, multi-select bar, swipe actions) but had zero CSS styles, rendering hints invisible. Added complete styles: positioned tooltip bubble with ::before arrows for all 4 directions, dismiss button, entrance animation, tap-outside-to-dismiss, auto-dismiss after 4s, and prefers-reduced-motion support. (2026-06-14)
 
 ## TODOs — Refinement & Bug Fixes
 

@@ -7814,7 +7814,7 @@ function showFeatureHint(targetEl, text, side = 'bottom') {
   const hint = document.createElement('div');
   hint.className = `feature-hint feature-hint-${side}`;
   hint.setAttribute('role', 'tooltip');
-  hint.innerHTML = `<span class="feature-hint-text">${esc(text)}<span class="feature-hint-arrow"></span></span><button class="feature-hint-dismiss" aria-label="Dismiss">✕</button>`;
+  hint.innerHTML = `<span class="feature-hint-text">${esc(text)}</span><button class="feature-hint-dismiss" aria-label="Dismiss">✕</button>`;
   document.body.appendChild(hint);
 
   // Position relative to target
