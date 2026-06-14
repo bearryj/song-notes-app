@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (feat: recent chords quick-access row in chord edit popup)
+2026-06-14 by OWL (feat: save status timestamp in editor nav bar)
 
 ## Build & Test Commands
 ```bash
@@ -95,7 +95,8 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Mini chord diagram in chord edit popup — added `renderMiniFretboard()` function that generates a compact 120×148px SVG fretboard diagram. The diagram appears in the chord edit bottom sheet between the input and quick-select buttons, updating in real-time as the user types or taps root/suffix buttons. Shows finger positions, open/muted strings, barre chords, fret numbers, and string labels. Hidden when the chord name doesn't match a known shape. Increased popup max-height from 70vh to 80vh to accommodate the diagram. (2026-06-14)
 - [x] Swipe fretboard to cycle through song's unique chords — added `getSongUniqueChords()` helper that extracts unique chords in order of first appearance from the current song. Swipe left/right on the fretboard area cycles through only the song's chords (not the full dictionary). Prev/next buttons also use the song chord list when ≥2 chords exist. Shows a "3 / 7" counter below the chord name. Includes a "‹ swipe ›" hint on touch devices (`@media (pointer: coarse)`), `touch-action: pan-y` to allow vertical scroll, grab cursor, and a translateX bounce animation on swipe. Counter updates on every chord change including manual input. (2026-06-14)
 - [x] Chord progression suggestions in edit popup — added `getChordSuggestions()` function that uses music theory (diatonic chords from the song's key, relative minor/major, dominant 7th, subdominant) to suggest 4-6 common next chords. Suggestions appear as tappable pill buttons in the chord edit bottom sheet, between the fretboard diagram and the quick-select grid. Pills update in real-time as the user types. Uses the song's key if set, otherwise infers from the current chord. Styled with Apple Notes aesthetic: muted label, rounded pills, accent hover/active states, prefers-reduced-motion support. (2026-06-14)
-- [x] Recent chords quick-access row in chord edit popup — added `getRecentChords()` and `addRecentChord()` helpers that persist the last 8 unique confirmed chords to localStorage (`sn_recent_chords`). A "Recent" pill row appears between the input and diagram in the chord edit bottom sheet, showing accent-colored tappable pills. Most-recent first, excludes the current chord. Styled with Apple Notes aesthetic: green accent pills with subtle background, hover/active states, prefers-reduced-motion support. (2026-06-14)
+- [x] Recent chords quick-access row in chord edit popup
+- [x] Save status timestamp in editor nav bar (shows "Saved"/"Editing…"/"Saving…" with relative time, auto-hides after 6s, updates every 15s) (2026-06-14)
 
 ## TODOs — Refinement & Bug Fixes
 
