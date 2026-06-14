@@ -2855,16 +2855,62 @@ function renderLine(container, song, si, li, line) {
     triggerAutoSave(song);
   });
 
+  // Measure pixel width of text up to a given character offset in the lyric input
+  // Uses Range.getBoundingClientRect() for accurate measurement regardless of font/size
+  function measureTextWidthUpTo(offset) {
+    if (!offset) return 0;
+    const textNode = lyricInput.firstChild;
+    if (!textNode) return 0;
+    // Clamp offset to text length to avoid Range exceptions
+    const len = textNode.textContent.length;
+    const clamped = Math.min(offset, len);
+    if (clamped <= 0) return 0;
+    try {
+      const range = document.createRange();
+      range.setStart(textNode, 0);
+      range.setEnd(textNode, clamped);
+      const rect = range.getBoundingClientRect();
+      // Use the right edge relative to the lyric input's left edge
+      const inputRect = lyricInput.getBoundingClientRect();
+      return Math.max(0, Math.round(rect.right - inputRect.left));
+    } catch {
+      // Fallback: estimate from computed character width
+      const cs = getComputedStyle(lyricInput);
+      const fontSize = parseFloat(cs.fontSize) || editorFontSize;
+      return Math.round(offset * fontSize * 0.55);
+    }
+  }
+
+  // Measure pixel width of a line's text using a temporary canvas (works for any line, not just the active input)
+  function measureTextFromLine(line) {
+    if (!line || !line.text) return 0;
+    try {
+      const cs = getComputedStyle(lyricInput);
+      const fontSize = parseFloat(cs.fontSize) || editorFontSize;
+      const fontFamily = cs.fontFamily || 'var(--font)';
+      // Use canvas 2D context for fast text measurement without DOM manipulation
+      if (!measureTextFromLine._ctx) {
+        const canvas = document.createElement('canvas');
+        measureTextFromLine._ctx = canvas.getContext('2d');
+      }
+      measureTextFromLine._ctx.font = `${fontSize}px ${fontFamily}`;
+      return Math.round(measureTextFromLine._ctx.measureText(line.text).width);
+    } catch {
+      return line.text.length * 8; // last-resort fallback
+    }
+  }
+
   // Enter = split line, preserving chords
   lyricInput.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       e.stopPropagation();
       const sel = window.getSelection();
-      const textBefore = lyricInput.textContent.substring(0, sel?.focusOffset || 0);
-      const textAfter = lyricInput.textContent.substring(sel?.focusOffset || 0);
+      const focusOffset = sel?.focusOffset || 0;
+      const textBefore = lyricInput.textContent.substring(0, focusOffset);
+      const textAfter = lyricInput.textContent.substring(focusOffset);
       lyricInput.textContent = textBefore;
-      const cursorX = (sel?.focusOffset || 0) * 8;
+      const cursorX = measureTextWidthUpTo(focusOffset);
       // Chords before cursor stay, chords after move to new line
       const chordsBefore = line.chords.filter(c => c.x < cursorX);
       const chordsAfter = line.chords.filter(c => c.x >= cursorX).map(c => ({ ...c, x: c.x - cursorX }));
@@ -2897,13 +2943,14 @@ function renderLine(container, song, si, li, line) {
             prevLine = prevSection.lines[prevLi];
           }
           if (prevLine) {
-            const prevLineLen = prevLine.text.length;
+            // Measure actual pixel width of previous line's text for accurate chord offset
+            const prevLineWidth = measureTextFromLine(prevLine);
             // Append current line text to previous line
             prevLine.text += lyricInput.textContent;
-            // Merge chords: offset current chords by previous line text length
+            // Merge chords: offset current chords by measured previous line text width
             const mergedChords = [
               ...(prevLine.chords || []),
-              ...(line.chords || []).map(c => ({ ...c, x: c.x + prevLineLen * 8 }))
+              ...(line.chords || []).map(c => ({ ...c, x: c.x + prevLineWidth }))
             ];
             prevLine.chords = mergedChords;
             // Remove current line from section
