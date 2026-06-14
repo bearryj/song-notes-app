@@ -5035,30 +5035,55 @@ function showSongPicker() {
 
   const sheet = $('song-picker-sheet');
   const list = $('song-picker-list');
+  const searchInput = $('song-picker-search');
   if (!sheet || !list) return;
 
-  list.innerHTML = songs.map(s => {
-    const alreadyIn = setlist.songs.some(ss => ss.songId === s.id);
-    const lineCount = (s.sections||[]).reduce((a, sec) => a + sec.lines.length, 0);
-    return `<div class="song-picker-item${alreadyIn ? ' already-in' : ''}" data-id="${s.id}">
+  const renderList = (filter = '') => {
+    const q = filter.toLowerCase().trim();
+    const filtered = q
+      ? songs.filter(s => (s.title || '').toLowerCase().includes(q) || (s.key || '').toLowerCase().includes(q) || (s.tags || []).some(t => t.toLowerCase().includes(q)))
+      : songs;
+
+    if (!filtered.length) {
+      list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--fg-tertiary);font-size:14px;">No matching songs</div>';
+      return;
+    }
+
+    list.innerHTML = filtered.map(s => {
+      const alreadyIn = setlist.songs.some(ss => ss.songId === s.id);
+      const lineCount = (s.sections||[]).reduce((a, sec) => a + sec.lines.length, 0);
+      return `<div class="song-picker-item${alreadyIn ? ' already-in' : ''}" data-id="${s.id}">
       <div style="flex:1;min-width:0;">
         <div class="song-picker-title">${esc(s.title || 'Untitled')}</div>
         <div class="song-picker-meta">${s.key || 'No key'} · ${lineCount} lines</div>
       </div>
       ${alreadyIn ? '<span style="color:var(--fg-tertiary);font-size:13px;">Added</span>' : ''}
     </div>`;
-  }).join('');
+    }).join('');
 
-  list.querySelectorAll('.song-picker-item:not(.already-in)').forEach(item => {
-    item.addEventListener('click', () => {
-      const songId = item.dataset.id;
-      setlist.songs.push({ songId, capo: 0, transpose: 0 });
-      saveSetlists();
-      renderSetlistSongs();
-      sheet.style.display = 'none';
-      toast('Added to setlist');
+    list.querySelectorAll('.song-picker-item:not(.already-in)').forEach(item => {
+      item.addEventListener('click', () => {
+        const songId = item.dataset.id;
+        setlist.songs.push({ songId, capo: 0, transpose: 0 });
+        saveSetlists();
+        renderSetlistSongs();
+        sheet.style.display = 'none';
+        toast('Added to setlist');
+      });
     });
-  });
+  };
+
+  renderList();
+
+  // Live search filter
+  if (searchInput) {
+    searchInput.value = '';
+    searchInput.addEventListener('input', () => {
+      renderList(searchInput.value);
+    });
+    // Focus search input after sheet opens
+    setTimeout(() => searchInput.focus(), 150);
+  }
 
   sheet.style.display = 'flex';
   sheet.querySelector('.toolbar-sheet-backdrop').onclick = () => { sheet.style.display = 'none'; };

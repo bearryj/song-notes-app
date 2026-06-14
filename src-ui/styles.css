@@ -2407,6 +2407,30 @@ body.ios-device .toolbar-sheet-content {
   margin-top: 2px;
 }
 
+/* ===== Song Picker Search ===== */
+.song-picker-search-wrap {
+  padding: 0 12px 8px;
+}
+.song-picker-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--separator);
+  background: var(--bg-surface);
+  color: var(--fg-primary);
+  font-size: 15px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.song-picker-search:focus {
+  border-color: var(--fg-tertiary);
+}
+.song-picker-search::placeholder {
+  color: var(--fg-tertiary);
+}
+
 /* ===== Setlist Print Overlay ===== */
 #setlist-print-overlay {
   position: fixed;
