@@ -36,7 +36,7 @@ let featureHints = {};
 try { featureHints = JSON.parse(localStorage.getItem('sn_feature_hints') || '{}'); } catch {}
 function markHintShown(name) {
   featureHints[name] = true;
-  localStorage.setItem('sn_feature_hints', JSON.stringify(featureHints));
+  safeStorageSet('sn_feature_hints', JSON.stringify(featureHints));
 }
 
 // ===== Offline / Sync Queue State =====
@@ -183,7 +183,7 @@ function popView() {
   // Exit focus mode when leaving editor
   if (focusMode) {
     focusMode = false;
-    localStorage.setItem('sn_focusMode', 'false');
+    safeStorageSet('sn_focusMode', 'false');
     applyFocusMode();
   }
 }
@@ -245,18 +245,36 @@ function queueLocalStorageSave() {
   clearTimeout(localStorageWriteTimer);
   localStorageWriteTimer = setTimeout(() => {
     localStorageWriteTimer = null;
-    try { localStorage.setItem('songs_app', JSON.stringify(songs)); } catch {}
+    safeStorageSet('songs_app', JSON.stringify(songs));
   }, LS_WRITE_DELAY);
 }
 // Synchronous flush — call before page unload / emergency save
 function flushLocalStorage() {
   clearTimeout(localStorageWriteTimer);
   localStorageWriteTimer = null;
-  try { localStorage.setItem('songs_app', JSON.stringify(songs)); } catch {}
+  safeStorageSet('songs_app', JSON.stringify(songs));
+}
+
+// Safe localStorage write — wraps setItem in try/catch with quota detection.
+// Shows a single toast per session when quota is exceeded so the user knows
+// to delete old recordings or exported data.
+let _quotaWarned = false;
+function safeStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    const isQuota = e.name === 'QuotaExceededError' ||
+      e.code === 22 || e.code === 1014 ||
+      /quota/i.test(e.message || '');
+    if (isQuota && !_quotaWarned) {
+      _quotaWarned = true;
+      toast('Storage full — delete old recordings to free space', 'error');
+    }
+  }
 }
 
 function saveTrash() {
-  localStorage.setItem('sn_trash', JSON.stringify(trash));
+  safeStorageSet('sn_trash', JSON.stringify(trash));
 }
 async function saveSingleSong(song) {
   if (!song) return;
@@ -1206,7 +1224,7 @@ function loadAutoBackups() {
 }
 
 function saveAutoBackups(data) {
-  localStorage.setItem('sn_auto_backups', JSON.stringify(data));
+  safeStorageSet('sn_auto_backups', JSON.stringify(data));
 }
 
 function pushAutoBackup(song) {
@@ -1297,7 +1315,7 @@ function enqueueSync(operation, song) {
   }
   // Persist queue to localStorage for survival across page reloads
   try {
-    localStorage.setItem('sn_sync_queue', JSON.stringify(syncQueue.map(q => ({ operation: q.operation, songId: q.songId }))));
+    safeStorageSet('sn_sync_queue', JSON.stringify(syncQueue.map(q => ({ operation: q.operation, songId: q.songId }))));
   } catch {}
   updateQueueCount();
 }
@@ -1420,7 +1438,7 @@ function updateSessionTimerDisplay() {
 // ===== Focus Mode =====
 function toggleFocusMode() {
   focusMode = !focusMode;
-  localStorage.setItem('sn_focusMode', focusMode ? 'true' : 'false');
+  safeStorageSet('sn_focusMode', focusMode ? 'true' : 'false');
   applyFocusMode();
 }
 
@@ -1550,7 +1568,7 @@ function showSortPopover(anchorEl) {
       const newMode = btn.dataset.mode;
       if (newMode === activeSortMode) { hideSortPopover(); return; }
       activeSortMode = newMode;
-      localStorage.setItem('sn_app_sort', activeSortMode);
+      safeStorageSet('sn_app_sort', activeSortMode);
       hideSortPopover();
       updateSortBtn();
       renderSongList($('search-input')?.value || '');
@@ -1617,7 +1635,7 @@ function setupFolderActions() {
 }
 
 async function persistFolders() {
-  localStorage.setItem('folders_app', JSON.stringify(folders));
+  safeStorageSet('folders_app', JSON.stringify(folders));
   if (isTauri) await tauriSaveFolders(folders);
 }
 
@@ -2371,7 +2389,7 @@ function switchToSong(targetId, direction) {
   setTimeout(onEnd, 380);
   // Now load the new song
   currentSongId = targetId;
-  localStorage.setItem('songs_app_last', currentSongId);
+  safeStorageSet('songs_app_last', currentSongId);
   openEditor(targetId);
   updateSwitcherButtons();
 }
@@ -2724,7 +2742,7 @@ function cycleDisplayMode() {
   const modes = ['both', 'lyrics', 'chords'];
   const idx = modes.indexOf(displayMode);
   displayMode = modes[(idx + 1) % modes.length];
-  localStorage.setItem('sn_displayMode', displayMode);
+  safeStorageSet('sn_displayMode', displayMode);
   applyDisplayMode();
   const labels = { both: 'Chords + Lyrics', lyrics: 'Lyrics Only', chords: 'Chords Only' };
   toast(labels[displayMode]);
@@ -2745,7 +2763,7 @@ function adjustFontSize(delta) {
   const newSize = Math.max(13, Math.min(24, editorFontSize + delta));
   if (newSize === editorFontSize) return;
   editorFontSize = newSize;
-  localStorage.setItem('sn_editorFontSize', editorFontSize);
+  safeStorageSet('sn_editorFontSize', editorFontSize);
   applyEditorFontSize();
   toast(`Font size: ${editorFontSize}px`);
 }
@@ -2776,7 +2794,7 @@ function renderChordRibbon(song) {
   toggle.setAttribute('aria-label', chordRibbonCollapsed ? 'Expand chord ribbon' : 'Collapse chord ribbon');
   toggle.addEventListener('click', () => {
     chordRibbonCollapsed = !chordRibbonCollapsed;
-    localStorage.setItem('chordRibbonCollapsed', chordRibbonCollapsed);
+    safeStorageSet('chordRibbonCollapsed', chordRibbonCollapsed);
     toggle.textContent = chordRibbonCollapsed ? '▸' : '▾';
     toggle.setAttribute('aria-label', chordRibbonCollapsed ? 'Expand chord ribbon' : 'Collapse chord ribbon');
     ribbon.classList.toggle('collapsed', chordRibbonCollapsed);
@@ -4088,7 +4106,7 @@ function getPlugins() {
 
 function savePlugins(plugins) {
   try {
-    localStorage.setItem('sn_export_plugins', JSON.stringify(plugins));
+    safeStorageSet('sn_export_plugins', JSON.stringify(plugins));
   } catch (e) {}
 }
 
@@ -4423,8 +4441,8 @@ function importBackup() {
         }
       }
       await saveSongs();
-      localStorage.setItem('folders_app', JSON.stringify(folders));
-      localStorage.setItem('sn_setlists', JSON.stringify(setlists));
+      safeStorageSet('folders_app', JSON.stringify(folders));
+      safeStorageSet('sn_setlists', JSON.stringify(setlists));
       saveTrash();
       renderSongList();
       toast(`Imported ${added} song${added !== 1 ? 's' : ''}${skipped ? ` (${skipped} duplicate${skipped !== 1 ? 's' : ''} skipped)` : ''}`);
@@ -4775,7 +4793,7 @@ function loadSetlists() {
 }
 
 function saveSetlists() {
-  localStorage.setItem('sn_setlists', JSON.stringify(setlists));
+  safeStorageSet('sn_setlists', JSON.stringify(setlists));
 }
 
 function getTransposedKey(key, semitones) {
@@ -5523,7 +5541,7 @@ function showSongPrintPreview() {
     if (e.target.closest('.gallery-card-actions') || e.target.closest('.swipe-bg')) return;
 
     currentSongId = songId;
-    localStorage.setItem('songs_app_last', currentSongId);
+    safeStorageSet('songs_app_last', currentSongId);
     openEditor(currentSongId);
     pushView('editor-view');
   });
@@ -5745,9 +5763,9 @@ function showBulkAddToSetlistSheet(songIds) {
       onConfirm: async (name) => {
         const sl = { id: generateId(), name, songs: [], created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
         setlists.push(sl);
-        localStorage.setItem('sn_setlists', JSON.stringify(setlists));
+        safeStorageSet('sn_setlists', JSON.stringify(setlists));
         for (const id of songIds) sl.songs.push({ id, capo: null, transpose: 0 });
-        localStorage.setItem('sn_setlists', JSON.stringify(setlists));
+        safeStorageSet('sn_setlists', JSON.stringify(setlists));
         toast('Created "' + name + '" with ' + songIds.length + ' song' + (songIds.length !== 1 ? 's' : ''));
         exitMultiSelectMode();
       }
@@ -5793,7 +5811,7 @@ function showBulkAddToSetlistSheet(songIds) {
         if (!sl.songs.some(e => e.id === id)) sl.songs.push({ id, capo: null, transpose: 0 });
       }
       sl.updated_at = new Date().toISOString();
-      localStorage.setItem('sn_setlists', JSON.stringify(setlists));
+      safeStorageSet('sn_setlists', JSON.stringify(setlists));
       toast('Added to "' + sl.name + '"');
       close();
       exitMultiSelectMode();
@@ -6099,7 +6117,7 @@ function setupEvents() {
         const current = document.documentElement.getAttribute('data-theme') || 'dark';
         const next = current === 'dark' ? 'light' : 'dark';
         applyTheme(next);
-        localStorage.setItem('sn_app_theme', next);
+        safeStorageSet('sn_app_theme', next);
       } else if (a === 'print-song') {
         hideToolbarSheet();
         showSongPrintPreview();
@@ -6117,7 +6135,7 @@ function setupEvents() {
         }
       } else if (a === 'typewriter-scroll') {
         typewriterScroll = !typewriterScroll;
-        localStorage.setItem('sn_typewriterScroll', typewriterScroll);
+        safeStorageSet('sn_typewriterScroll', typewriterScroll);
         btn.classList.toggle('sheet-active', typewriterScroll);
         toast(typewriterScroll ? 'Typewriter scroll on' : 'Typewriter scroll off');
       }
@@ -6447,7 +6465,7 @@ function setupEvents() {
       const current = document.documentElement.getAttribute('data-theme') || 'dark';
       const next = current === 'dark' ? 'light' : 'dark';
       applyTheme(next);
-      localStorage.setItem('sn_app_theme', next);
+      safeStorageSet('sn_app_theme', next);
     });
   }
   
@@ -6477,7 +6495,7 @@ function setupEvents() {
     const list = $('song-list');
     list.classList.toggle('gallery', galleryMode);
     viewToggleEl.textContent = galleryMode ? '▦' : '⊞';
-    localStorage.setItem('sn_gallery_mode', galleryMode);
+    safeStorageSet('sn_gallery_mode', galleryMode);
     // Re-render so gallery cards get proper markup
     renderSongList($('search-input')?.value || '');
   });
@@ -6664,7 +6682,7 @@ function hideOnboarding() {
   const el = $('onboarding');
   if (!el) return;
   el.style.display = 'none';
-  localStorage.setItem('sn_onboarding_seen', 'true');
+  safeStorageSet('sn_onboarding_seen', 'true');
 }
 
 function updateOnboardingCards() {
@@ -6841,7 +6859,7 @@ function emergencySave() {
   if (idx >= 0) songs[idx] = song; else songs.unshift(song);
   flushLocalStorage();
   // Persist to per-song key as redundant backup (survives full data corruption)
-  try { localStorage.setItem(`song_${song.id}`, JSON.stringify(song)); } catch {}
+  safeStorageSet(`song_${song.id}`, JSON.stringify(song));
   hasChanges = false;
   if ($('save-btn')) $('save-btn').disabled = true;
   updateSaveDot('saved');
