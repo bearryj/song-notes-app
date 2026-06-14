@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-13 by OWL (show key change in transpose toast)
+2026-06-14 by OWL (show writing time in song list rows)
 
 ## Build & Test Commands
 ```bash
@@ -71,6 +71,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Keyboard shortcuts help overlay (Ctrl+/ or ? to show grouped shortcuts in Apple Notes-style modal)
 - Pagehide save handler (reliable save on mobile app kill/swipe-away where beforeunload doesn't fire, extracted emergencySave())
 - Song Info panel: capo + writing time stats (shows capo setting and accumulated session time with live update when song is open)
+- Writing time in song list (compact "Xh Xm" or "Xm" badge on each row in both list and gallery views, using existing session_ms data)
 - Auto-save timer flush on song switch + back navigation (prevents stale debounced writes from corrupting state when quick-switching songs or going back)
 - Swipe gesture to switch songs in editor (swipe left → next, swipe right → prev, with haptic feedback)
 - Song content preview in list view (chord chips + first lyric line snippet under each title)
