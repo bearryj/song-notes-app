@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (safe localStorage writes with quota handling)
+2026-06-14 by OWL (fix: accurate chord positioning on line split/merge using text measurement)
 
 ## Build & Test Commands
 ```bash
@@ -91,6 +91,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Search/filter in setlist song picker (live search by title, key, or tag when adding songs to a setlist; auto-focuses input; shows "No matching songs" empty state) (2026-06-14)
 - [x] Feature discovery hint system CSS — showFeatureHint() was called from 3 places (gallery toggle, multi-select bar, swipe actions) but had zero CSS styles, rendering hints invisible. Added complete styles: positioned tooltip bubble with ::before arrows for all 4 directions, dismiss button, entrance animation, tap-outside-to-dismiss, auto-dismiss after 4s, and prefers-reduced-motion support. (2026-06-14)
 - [x] Safe localStorage writes — added safeStorageSet() helper with try/catch and quota-exceeded detection (matches QuotaExceededError by name, code 22/1014, and message). Replaced all 20+ raw localStorage.setItem calls (only 3 were previously wrapped). Shows a single per-session toast ("Storage full — delete old recordings to free space") so users know when audio recordings have filled localStorage. (2026-06-14)
+- [x] Accurate chord positioning on line split/merge — replaced hardcoded `focusOffset * 8` pixel estimation with proper text measurement using Range.getBoundingClientRect() (for split) and Canvas2D measureText() (for merge). Fixes chord misalignment when using non-default font sizes or non-mono fonts. (2026-06-14)
 
 ## TODOs — Refinement & Bug Fixes
 
