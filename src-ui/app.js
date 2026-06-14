@@ -1530,20 +1530,24 @@ function applyFocusMode() {
 }
 
 // Folders
+function getFolderCount(f) {
+  if (f === 'All Songs') return songs.length;
+  if (f === 'Recently Edited') return songs.filter(s => {
+    const d = new Date(s.updated_at || s.created_at || 0);
+    return Date.now() - d.getTime() < 7 * 86400000;
+  }).length;
+  if (f === 'Recently Deleted') return trash.length;
+  return songs.filter(s => s.folder === f).length;
+}
+
 function renderFolders() {
   const el = $('folder-list');
   // Smart folders always at top
   const smartFolders = ['All Songs', 'Recently Edited', 'Recently Deleted'];
   const customFolders = folders.filter(f => !smartFolders.includes(f));
-  
+
   el.innerHTML = [...smartFolders, ...customFolders].map(f => {
-    const count = f === 'All Songs' ? songs.length : 
-                  f === 'Recently Edited' ? songs.filter(s => {
-                    const d = new Date(s.updated_at || s.created_at || 0);
-                    return Date.now() - d.getTime() < 7 * 86400000;
-                  }).length :
-                  f === 'Recently Deleted' ? trash.length :
-                  songs.filter(s => s.folder === f).length;
+    const count = getFolderCount(f);
     const cls = f === currentFolder ? 'list-item active' : 'list-item';
     const icon = f === 'All Songs' ? '♫' : f === 'Recently Edited' ? '↻' : f === 'Recently Deleted' ? '✕' : '♪';
     return `<div class="${cls}" data-folder="${esc(f)}"><span class="item-icon">${icon}</span><span class="item-title">${esc(f === 'Recently Edited' ? 'Recently Edited' : f)}</span><span class="item-meta">${count}</span>${!smartFolders.includes(f) ? '<span class="folder-dots">⋯</span>' : ''}</div>`;
@@ -1552,7 +1556,8 @@ function renderFolders() {
     item.addEventListener('click', e => {
       if (e.target.closest('.folder-dots')) return;
       currentFolder = item.dataset.folder;
-      $('folder-title').textContent = currentFolder;
+      const cnt = getFolderCount(currentFolder);
+      $('folder-title').textContent = currentFolder + ' · ' + cnt;
       renderSongList(); pushView('song-list-view');
       // Show gallery view hint on first visit to song list
       if (!featureHints['gallery-view']) {
@@ -1566,6 +1571,10 @@ function renderFolders() {
     const dots = item.querySelector('.folder-dots');
     if (dots) dots.addEventListener('click', e => { e.stopPropagation(); showFolderActions(item.dataset.folder, dots); });
   });
+  // Keep folder title count in sync
+  const _cnt = getFolderCount(currentFolder);
+  const _ft = $('folder-title');
+  if (_ft) _ft.textContent = currentFolder + ' · ' + _cnt;
 }
 
 let activeFolderName = '';
