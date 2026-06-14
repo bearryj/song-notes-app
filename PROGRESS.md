@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (feat: mini chord diagram preview in chord edit popup)
+2026-06-14 by OWL (feat: swipe fretboard to cycle through song's unique chords)
 
 ## Build & Test Commands
 ```bash
@@ -93,13 +93,14 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Safe localStorage writes — added safeStorageSet() helper with try/catch and quota-exceeded detection (matches QuotaExceededError by name, code 22/1014, and message). Replaced all 20+ raw localStorage.setItem calls (only 3 were previously wrapped). Shows a single per-session toast ("Storage full — delete old recordings to free space") so users know when audio recordings have filled localStorage. (2026-06-14)
 - [x] Accurate chord positioning on line split/merge — replaced hardcoded `focusOffset * 8` pixel estimation with proper text measurement using Range.getBoundingClientRect() (for split) and Canvas2D measureText() (for merge). Fixes chord misalignment when using non-default font sizes or non-mono fonts. (2026-06-14)
 - [x] Mini chord diagram in chord edit popup — added `renderMiniFretboard()` function that generates a compact 120×148px SVG fretboard diagram. The diagram appears in the chord edit bottom sheet between the input and quick-select buttons, updating in real-time as the user types or taps root/suffix buttons. Shows finger positions, open/muted strings, barre chords, fret numbers, and string labels. Hidden when the chord name doesn't match a known shape. Increased popup max-height from 70vh to 80vh to accommodate the diagram. (2026-06-14)
+- [x] Swipe fretboard to cycle through song's unique chords — added `getSongUniqueChords()` helper that extracts unique chords in order of first appearance from the current song. Swipe left/right on the fretboard area cycles through only the song's chords (not the full dictionary). Prev/next buttons also use the song chord list when ≥2 chords exist. Shows a "3 / 7" counter below the chord name. Includes a "‹ swipe ›" hint on touch devices (`@media (pointer: coarse)`), `touch-action: pan-y` to allow vertical scroll, grab cursor, and a translateX bounce animation on swipe. Counter updates on every chord change including manual input. (2026-06-14)
 
 ## TODOs — Refinement & Bug Fixes
 
 ### UI Polish
 - [x] Song list play/pause button styling — pill button with proper touch targets (26px min-height, 38px min-width), subtle border, accent playing state with opacity pulse animation on the icon (2026-06-13)
 - [x] Graceful degradation for large songs — songs with 50+ sections can cause jank when rendering the editor. Add lazy rendering for off-screen sections. (2026-06-13 — fixed: `initSectionObserver` was defined but never called; wiring it up plus lowered threshold to 30 sections)
-- [ ] Chord diagram panel: swipe left/right on the fretboard area to cycle through all unique chords in the current song
+- [x] Chord diagram panel: swipe left/right on the fretboard area to cycle through all unique chords in the current song (2026-06-14)
 
 ### Bugs / Reliability
 
