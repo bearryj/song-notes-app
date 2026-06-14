@@ -18,6 +18,9 @@ let isRecording = false;
 let audioPlayer = new Audio();
 let hasChanges = false;
 
+// ===== Reduced Motion =====
+const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
+
 // ===== View State =====
 let galleryMode = localStorage.getItem('sn_gallery_mode') === 'true';
 let chordRibbonCollapsed = localStorage.getItem('chordRibbonCollapsed') === 'true';
@@ -6653,6 +6656,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Init
 async function init() {
+  // Set reduced-motion attribute on <html> for CSS targeting
+  if (prefersReducedMotion) document.documentElement.setAttribute('data-reduced-motion', 'true');
   // Initialize modules
   metroInit($);
   // Show skeleton while loading data

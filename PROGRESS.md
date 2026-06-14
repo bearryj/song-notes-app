@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (typewriter scroll centering in editor)
+2026-06-14 by OWL (prefers-reduced-motion accessibility)
 
 ## Build & Test Commands
 ```bash
@@ -58,8 +58,8 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Song statistics (chord frequency, word count, key detection with Krumhansl-Schmuckler, section breakdown, chord progression)
 - Tag management (add/edit/remove tags, filter songs by tag, display tags in song list)
 - New song creation sheet (title input + visual template picker, replacing raw prompt() dialogs)
-61|- Polished bottom sheets replacing all raw browser prompt()/confirm() dialogs (input sheet + confirm sheet)
-62|- Visual key picker for transposition (circle-of-fifths grid, 12 keys, quick ♭/♯ buttons)
+- Polished bottom sheets replacing all raw browser prompt()/confirm() dialogs (input sheet + confirm sheet)
+- Visual key picker for transposition (circle-of-fifths grid, 12 keys, quick ♭/♯ buttons)
 - Duplicate song (deep copy from toolbar sheet, auto-suffixes title with " (Copy)")
 - Song list sort (4 modes: recent, A→Z, Z→A, Key — pinned always first, persisted)
 - Swipe-to-action on song list (swipe left to reveal pin ★ and delete ✕ buttons, snap animation, tap-outside-to-close)
@@ -79,13 +79,14 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Duplicate song from swipe action (⧉ button in swipe-to-action bar, deep copy with new id and title suffix)
 - Enhanced empty states (SVG illustrations, floating animation, fade-in, CTA button for new users)
 - Individual song print chord chart (print preview overlay with chord/lyric layout, window.print() integration, @media print styles)
+- Trash bulk actions (Restore All + Empty Trash buttons in Recently Deleted view with confirmation sheets)
+- Transpose toast shows old → new key (e.g., "G → F♯")
+- Duplicate line in editor (⧉ button in chord row, deep copy with chords, undo support via snackbar)
+- Chord sheet display modes (toggle between chords+lyrics, lyrics-only, chords-only; nav bar button + toolbar View section; persisted to localStorage)
+- Strumming pattern notation (per-section text pattern editor, e.g. "D-DU-UDU"; toggle button in section header; included in export, print, and share codes)
+- Chromatic tuner (autocorrelation pitch detection from mic, guitar string selector E2-A2-D3-G3-B3-E4, cents needle meter, sharp/flat/in-tune display)
 - Typewriter scroll centering (keeps active lyric line centered while typing, debounced smooth scroll, toggle in toolbar View section, persisted to localStorage)
-- [x] Duplicate line in editor (⧉ button in chord row, deep copy with chords, undo support via snackbar)
-- [x] Chord sheet display modes (toggle between chords+lyrics, lyrics-only, chords-only; nav bar button + toolbar View section; persisted to localStorage)
-- [x] Strumming pattern notation (per-section text pattern editor, e.g. "D-DU-UDU"; toggle button in section header; included in export, print, and share codes)
-- [x] Chromatic tuner (autocorrelation pitch detection from mic, guitar string selector E2-A2-D3-G3-B3-E4, cents needle meter, sharp/flat/in-tune display)
-- [x] Trash bulk actions (Restore All + Empty Trash buttons in Recently Deleted view with confirmation sheets)
-- [x] Transpose toast shows old → new key (e.g., "G → F♯")
+- Prefers-reduced-motion support (disables all CSS animations/transitions for users with motion sensitivity, sets data-reduced-motion attribute on <html>)
 
 ## TODOs — Refinement & Bug Fixes
 
