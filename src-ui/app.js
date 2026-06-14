@@ -6422,10 +6422,14 @@ function updateNotesStats(song) {
   const tags = (song.tags || []).length > 0 ? song.tags.join(', ') : '—';
   const key = song.key || '—';
   const bpm = song.bpm ? `${song.bpm} BPM` : '—';
+  const capo = (song.capo || 0) ? `Capo ${song.capo}` : '—';
+  const totalMs = song.session_ms || 0;
+  const sessionTime = totalMs > 0 ? formatSessionTime(totalMs + (sessionStartTime && currentSongId === song.id ? Date.now() - sessionStartTime : 0)) : '—';
 
   let html = '';
   html += `<div class="song-stat-row"><span class="song-stat-label">Key</span><span class="song-stat-value">${esc(key)}</span></div>`;
   html += `<div class="song-stat-row"><span class="song-stat-label">BPM</span><span class="song-stat-value">${esc(bpm)}</span></div>`;
+  html += `<div class="song-stat-row"><span class="song-stat-label">Capo</span><span class="song-stat-value">${esc(capo)}</span></div>`;
   html += `<div class="song-stat-row"><span class="song-stat-label">Sections</span><span class="song-stat-value">${sectionCount}</span></div>`;
   html += `<div class="song-stat-row"><span class="song-stat-label">Lines</span><span class="song-stat-value">${lineCount} · ${wordCount} words</span></div>`;
   html += `<div class="song-stat-row"><span class="song-stat-label">Chords</span><span class="song-stat-value">${chordCount} (${uniqueChords.length} unique)</span></div>`;
@@ -6435,6 +6439,7 @@ function updateNotesStats(song) {
   html += `<div class="song-stat-row"><span class="song-stat-label">Tags</span><span class="song-stat-value">${esc(tags)}</span></div>`;
   html += `<div class="song-stat-row"><span class="song-stat-label">Created</span><span class="song-stat-value">${created}</span></div>`;
   html += `<div class="song-stat-row"><span class="song-stat-label">Modified</span><span class="song-stat-value">${updated}</span></div>`;
+  html += `<div class="song-stat-row"><span class="song-stat-label">Writing time</span><span class="song-stat-value">${esc(sessionTime)}</span></div>`;
 
   statsEl.innerHTML = html;
 }
