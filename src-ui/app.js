@@ -7227,6 +7227,50 @@ function setupEvents() {
 
   // Tag editor events
   setupTagEditorEvents();
+
+  // Edge-swipe-to-go-back gesture
+  // Swipe right from left edge (within 40px) to navigate back on song-list and editor views
+  (function initEdgeSwipeBack() {
+    const EDGE_THRESHOLD = 40;   // px from left edge to activate
+    const SWIPE_MIN_DIST = 60;   // px horizontal travel to trigger back
+    let startX = 0, startY = 0;
+    let tracking = false;
+
+    document.addEventListener('touchstart', e => {
+      const view = viewStack[viewStack.length - 1];
+      if (view === 'folder-view') return; // no back target
+      const t = e.touches[0];
+      if (t.clientX <= EDGE_THRESHOLD) {
+        startX = t.clientX;
+        startY = t.clientY;
+        tracking = true;
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchmove', e => {
+      if (!tracking) return;
+      const t = e.touches[0];
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      // Cancel if user swipes vertically more than horizontal (scrolling content)
+      if (Math.abs(dy) > Math.abs(dx) * 0.8) {
+        tracking = false;
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchend', e => {
+      if (!tracking) return;
+      tracking = false;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      if (dx >= SWIPE_MIN_DIST && Math.abs(dy) < Math.abs(dx) * 0.8) {
+        popView();
+        // Haptic feedback if available
+        navigator.vibrate?.(15);
+      }
+    }, { passive: true });
+  })();
 }
 
 function applyTheme(theme) {

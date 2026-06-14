@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (feat: BPM indicator in song list and gallery cards)
+2026-06-14 by OWL (feat: edge-swipe-to-go-back gesture)
 
 ## Build & Test Commands
 ```bash
@@ -65,6 +65,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Swipe-to-action on song list (swipe left to reveal pin ★ and delete ✕ buttons, snap animation, tap-outside-to-close)
 - Song writing session timer (tracks editing time per song, persists across sessions, displays in editor nav bar)
 - Directional view transitions (forward nav slides right→left, back nav slides left→right with nav bar parallax)
+- Edge-swipe-to-go-back gesture (swipe right from left edge to navigate back, 40px threshold, 60px min travel, vertical scroll cancellation, haptic feedback) (2026-06-14)
 - Move song to folder (from song context menu, folder picker sheet with current folder checkmark, drag-to-dismiss)
 |- Unsaved changes protection (beforeunload warning when edits pending, visibilitychange auto-save on mobile background/tab switch)
 |- Focus Mode (distraction-free editor toggle, hides toolbar/ribbon/FAB, blurred nav bar, vignette edges, persists to localStorage)
