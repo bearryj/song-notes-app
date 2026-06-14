@@ -6778,8 +6778,21 @@ window.addEventListener('beforeunload', e => {
 
 // Auto-save when the page loses visibility (app backgrounded on mobile, tab switch, etc.)
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && hasChanges) {
-    emergencySave();
+  if (document.hidden) {
+    // Pause session timer — accumulate elapsed time into sessionTotalMs so
+    // background time doesn't count as writing time.
+    if (sessionStartTime) {
+      sessionTotalMs += Date.now() - sessionStartTime;
+      sessionStartTime = null;
+    }
+    if (hasChanges) {
+      emergencySave();
+    }
+  } else {
+    // Resume session timer — reset sessionStartTime so display picks up from here
+    if (!sessionStartTime) {
+      sessionStartTime = Date.now();
+    }
   }
 });
 
