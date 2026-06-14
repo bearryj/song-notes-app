@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (feat: comprehensive light theme — accent color overrides for light mode)
+2026-06-14 by OWL (feat: inline chord detection — type [G]/[Am]/[F#m7] in lyrics to auto-create chord markers)
 
 ## Build & Test Commands
 ```bash
@@ -98,6 +98,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Recent chords quick-access row in chord edit popup
 - Save status timestamp in editor nav bar (shows "Saved"/"Editing…"/"Saving…" with relative time, auto-hides after 6s, updates every 15s) (2026-06-14)
 - Section quick-navigation dropdown (§ button in editor nav bar for songs with 3+ sections; scrollable list of section names; tap to smooth-scroll to section; highlights current section as you scroll; keyboard accessible with Escape to close; outside-click dismiss; Apple Notes aesthetic with entrance animation and prefers-reduced-motion support) (2026-06-14)
+- [x] Inline chord detection from bracket notation in lyrics — typing `[G]`, `[Am]`, `[F#m7]`, `[D/F#]` etc in the lyric editor auto-converts the bracket notation into a properly positioned chord marker, removes the brackets from the text, and shows a throttled toast confirmation. Uses the same regex as the import parser for consistency. (2026-06-14)
 - Comprehensive light theme — accent colors (`--accent`, `--chord`, `--section-label`, `--danger`) now tuned for light backgrounds (`#0066cc`, `#2e7d32`, `#e65100`, `#d32f2f`) instead of using dark-theme bright colors; added `[data-theme="light"]` overrides in styles.css and extras.css for hardcoded diff markers, tuner indicators, swipe indicators, gallery card actions, and onboarding dots.
 
 ## TODOs — Refinement & Bug Fixes

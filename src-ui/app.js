@@ -2925,9 +2925,55 @@ function renderLine(container, song, si, li, line) {
   lyricInput.dataset.placeholder = 'Lyrics';
   lyricInput.textContent = line.text;
 
+  // Inline chord detection: when user types [G] or [Am] etc in lyrics, auto-convert to chord marker
+  const INLINE_CHORD_RE = /\[([A-G][#b]?(?:m|maj|min|dim|aug|sus|add)?\d*(?:\/[A-G][#b]?)?)\]/g;
+  let inlineChordCooldown = false;
+
   lyricInput.addEventListener('input', () => {
-    line.text = lyricInput.textContent;
-    triggerAutoSave(song);
+    const text = lyricInput.textContent;
+
+    // Check for inline chord notation like [G], [Am], [F#m7], [D/F#]
+    let match;
+    let found = false;
+    INLINE_CHORD_RE.lastIndex = 0;
+    while ((match = INLINE_CHORD_RE.exec(text)) !== null) {
+      const chordName = match[1];
+      const matchStart = match.index;
+      const matchEnd = match.index + match[0].length;
+
+      // Measure pixel position of the chord in the lyric text
+      const chordX = measureTextWidthUpTo(matchStart);
+
+      // Check if a chord already exists near this position (within 20px)
+      const existingNear = line.chords.find(c => Math.abs(c.x - chordX) < 20);
+      if (!existingNear) {
+        line.chords.push({ x: chordX, name: chordName });
+        line.chords.sort((a, b) => a.x - b.x);
+      }
+
+      found = true;
+    }
+
+    if (found) {
+      // Remove the bracket chord notation from text
+      const cleanText = text.replace(INLINE_CHORD_RE, '').trimStart();
+      line.text = cleanText;
+      lyricInput.textContent = cleanText;
+
+      // Save and refresh chord markers
+      saveSingleSong(song);
+      renderChordMarkers();
+
+      // Show toast (throttled to avoid spam)
+      if (!inlineChordCooldown) {
+        inlineChordCooldown = true;
+        toast('Chord added from text', 'success');
+        setTimeout(() => { inlineChordCooldown = false; }, 1500);
+      }
+    } else {
+      line.text = text;
+      triggerAutoSave(song);
+    }
   });
 
   // Measure pixel width of text up to a given character offset in the lyric input
