@@ -39,6 +39,21 @@ function markHintShown(name) {
   safeStorageSet('sn_feature_hints', JSON.stringify(featureHints));
 }
 
+// ===== Recent Chords =====
+// Tracks the last 8 unique chords the user has confirmed, persisted to localStorage.
+// Most-recent first. Used to populate a quick-access row in the chord edit popup.
+function getRecentChords() {
+  try { return JSON.parse(localStorage.getItem('sn_recent_chords') || '[]'); } catch { return []; }
+}
+function addRecentChord(name) {
+  if (!name) return;
+  let recent = getRecentChords();
+  recent = recent.filter(c => c !== name);
+  recent.unshift(name);
+  if (recent.length > 8) recent.length = 8;
+  safeStorageSet('sn_recent_chords', JSON.stringify(recent));
+}
+
 // ===== Offline / Sync Queue State =====
 let isOnline = navigator.onLine;
 let syncQueue = []; // queued save operations while offline
@@ -3229,6 +3244,34 @@ function showChordEdit(song, line, chord) {
   input.className = 'chord-sheet-input';
   sheet.appendChild(input);
 
+  // Recent chords quick-access row
+  const recentChords = getRecentChords().filter(c => c !== chord.name);
+  if (recentChords.length > 0) {
+    const recentRow = document.createElement('div');
+    recentRow.className = 'chord-recent-row';
+    const recentLabel = document.createElement('div');
+    recentLabel.className = 'chord-recent-label';
+    recentLabel.textContent = 'Recent';
+    recentRow.appendChild(recentLabel);
+    const recentPills = document.createElement('div');
+    recentPills.className = 'chord-recent-pills';
+    recentChords.forEach(rc => {
+      const pill = document.createElement('button');
+      pill.textContent = rc;
+      pill.className = 'chord-recent-pill';
+      pill.addEventListener('click', () => {
+        input.value = rc;
+        chord.name = rc;
+        chordDisplay.textContent = rc;
+        updateQuickActive();
+        updateDiagram(rc);
+      });
+      recentPills.appendChild(pill);
+    });
+    recentRow.appendChild(recentPills);
+    sheet.appendChild(recentRow);
+  }
+
   // Mini chord diagram preview
   const diagramWrap = document.createElement('div');
   diagramWrap.className = 'chord-sheet-diagram';
@@ -3388,6 +3431,7 @@ function showChordEdit(song, line, chord) {
   doneBtn.className = 'done-btn'; doneBtn.textContent = '✓ Done';
   doneBtn.addEventListener('click', () => {
     chord.name = input.value.trim();
+    if (chord.name) addRecentChord(chord.name);
     line.chords.sort((a, b) => a.x - b.x);
     saveSingleSong(song);
     chordPopup.remove(); chordPopup = null;
