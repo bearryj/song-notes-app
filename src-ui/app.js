@@ -3239,6 +3239,82 @@ function showChordEdit(song, line, chord) {
   }
   updateDiagram(chord.name);
 
+  // Chord progression suggestions based on music theory
+  function getChordSuggestions(currentChord, songKey) {
+    if (!currentChord) return [];
+    const root = currentChord.match(/^[A-G][#b]?/)?.[0];
+    if (!root) return [];
+    const rootIdx = noteToSemitone(root);
+    if (rootIdx === -1) return [];
+
+    // Determine the key: use song key if available, otherwise infer from current chord
+    let keyIdx = songKey ? noteToSemitone(songKey) : rootIdx;
+    if (keyIdx === -1) keyIdx = rootIdx;
+
+    // Diatonic scale degrees (major scale): W W H W W W H
+    const majorScale = [0, 2, 4, 5, 7, 9, 11];
+    // Diatonic chord qualities in major key: I ii iii IV V vi vii°
+    const diatonicQualities = ['', 'm', 'm', '', '', 'm', 'dim'];
+    // Build diatonic chords for the key
+    const diatonic = majorScale.map((deg, i) => semitoneToNote(keyIdx + deg) + diatonicQualities[i]);
+
+    // Common progression rules (scale degree offsets from current chord)
+    // V → I (dominant → tonic), IV → I, ii → V, vi → IV, etc.
+    const suggestions = [];
+    const seen = new Set();
+
+    // Always include the diatonic chords (most common in the key)
+    diatonic.forEach(ch => {
+      if (ch !== currentChord && !seen.has(ch)) {
+        seen.add(ch);
+        suggestions.push(ch);
+      }
+    });
+
+    // Add relative minor/major relationships
+    const relMinor = semitoneToNote(rootIdx + 9) + 'm';  // vi of current
+    const relMajor = semitoneToNote(rootIdx - 9);          // bVI (borrowed)
+    const dom7 = semitoneToNote(rootIdx + 7) + '7';        // V7
+    const subdom = semitoneToNote(rootIdx + 5);            // IV
+
+    [relMinor, dom7, subdom, relMajor].forEach(ch => {
+      if (ch !== currentChord && !seen.has(ch)) {
+        seen.add(ch);
+        suggestions.push(ch);
+      }
+    });
+
+    return suggestions.slice(0, 6);
+  }
+
+  // Chord suggestion pills
+  const suggestionChords = getChordSuggestions(chord.name, song?.key);
+  if (suggestionChords.length > 0) {
+    const suggestRow = document.createElement('div');
+    suggestRow.className = 'chord-suggest-row';
+    const suggestLabel = document.createElement('div');
+    suggestLabel.className = 'chord-suggest-label';
+    suggestLabel.textContent = 'Suggestions';
+    suggestRow.appendChild(suggestLabel);
+    const suggestPills = document.createElement('div');
+    suggestPills.className = 'chord-suggest-pills';
+    suggestionChords.forEach(sc => {
+      const pill = document.createElement('button');
+      pill.textContent = sc;
+      pill.className = 'chord-suggest-pill';
+      pill.addEventListener('click', () => {
+        input.value = sc;
+        chord.name = sc;
+        chordDisplay.textContent = sc;
+        updateQuickActive();
+        updateDiagram(sc);
+      });
+      suggestPills.appendChild(pill);
+    });
+    suggestRow.appendChild(suggestPills);
+    sheet.appendChild(suggestRow);
+  }
+
   // Common chord quick-select
   const roots = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
   const suffixes = ['', 'm', '7', 'm7', 'maj7', 'dim', 'aug', 'sus4', 'add9'];
