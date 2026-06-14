@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-13 by OWL (add Restore All + Empty Trash actions to Recently Deleted view)
+2026-06-13 by OWL (show key change in transpose toast)
 
 ## Build & Test Commands
 ```bash
@@ -83,6 +83,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Strumming pattern notation (per-section text pattern editor, e.g. "D-DU-UDU"; toggle button in section header; included in export, print, and share codes)
 - [x] Chromatic tuner (autocorrelation pitch detection from mic, guitar string selector E2-A2-D3-G3-B3-E4, cents needle meter, sharp/flat/in-tune display)
 - [x] Trash bulk actions (Restore All + Empty Trash buttons in Recently Deleted view with confirmation sheets)
+- [x] Transpose toast shows old → new key (e.g., "G → F♯")
 
 ## TODOs — Refinement & Bug Fixes
 
