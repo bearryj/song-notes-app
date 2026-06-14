@@ -101,7 +101,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 
 ### Code Hygiene
 - [x] Remove debug console.log statements — 13 debug logs removed from recording/playback code (mediaRecorder, test player, playRecording, toggleRecordingsDropdown, sync queue). Kept error handlers that also show toast notifications. (2026-06-13)
-- [ ] Extract inline HTML templates to template literals or DocumentFragment functions — app.js has ~200 lines of inline HTML in panel functions that could be modularized
+- [x] Extract inline HTML templates to template literals or DocumentFragment functions — app.js has ~200 lines of inline HTML in panel functions that could be modularized (2026-06-14 — added `emptyStateHTML()` helper, `ICONS` constant, converted 7 string-concatenation blocks + 2 folder/setlist picker loops to template literals)
 
 ### Performance
 - [x] Add a keyboard shortcut to create new song from any view (Ctrl+N already works, but no visual hint exists outside shortcuts overlay) — added ⌘N badge on new song nav button, visible only on desktop via `@media (hover: hover)` (2026-06-14)
