@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (prefers-reduced-motion accessibility)
+2026-06-14 by OWL (session timer pause/resume on background)
 
 ## Build & Test Commands
 ```bash
@@ -87,6 +87,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Chromatic tuner (autocorrelation pitch detection from mic, guitar string selector E2-A2-D3-G3-B3-E4, cents needle meter, sharp/flat/in-tune display)
 - Typewriter scroll centering (keeps active lyric line centered while typing, debounced smooth scroll, toggle in toolbar View section, persisted to localStorage)
 - Prefers-reduced-motion support (disables all CSS animations/transitions for users with motion sensitivity, sets data-reduced-motion attribute on <html>)
+- Session timer pause/resume (timer pauses when app backgrounds/tabs away and resumes on return, so background time doesn't count as writing time)
 
 ## TODOs — Refinement & Bug Fixes
 
@@ -99,6 +100,11 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 
 ### Code Hygiene
 - [x] Remove debug console.log statements — 13 debug logs removed from recording/playback code (mediaRecorder, test player, playRecording, toggleRecordingsDropdown, sync queue). Kept error handlers that also show toast notifications. (2026-06-13)
+- [ ] Extract inline HTML templates to template literals or DocumentFragment functions — app.js has ~200 lines of inline HTML in panel functions that could be modularized
+
+### Performance
+- [ ] Add a keyboard shortcut to create new song from any view (Ctrl+N already works, but no visual hint exists outside shortcuts overlay)
+- [ ] Virtual scrolling for setlist song picker (song list in setlist add modal renders all songs at once)
 
 ### Platform
 - [ ] iOS build (requires macOS + Xcode) — blocked on hardware
