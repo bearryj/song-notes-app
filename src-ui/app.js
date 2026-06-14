@@ -1029,7 +1029,6 @@ async function startRecording() {
         break;
       }
     }
-    console.log('Using mimeType:', mimeType || '(browser default)');
     const opts = mimeType ? { mimeType } : {};
     mediaRecorder = new MediaRecorder(stream, opts);
     audioChunks = [];
@@ -1037,11 +1036,9 @@ async function startRecording() {
     mediaRecorder.onstop = () => {
       const actualType = mediaRecorder.mimeType || 'audio/webm';
       const blob = new Blob(audioChunks, { type: actualType });
-      console.log('Recording blob type:', blob.type, 'size:', blob.size, 'chunks:', audioChunks.length);
       const reader = new FileReader();
       reader.onloadend = async () => {
         const dataUrl = reader.result;
-        console.log('Data URL prefix:', dataUrl.substring(0, 60));
         const song = getSong(currentSongId);
         if (!song) return;
         if (!song.audio) song.audio = [];
@@ -1053,11 +1050,10 @@ async function startRecording() {
       // Test playback immediately
       const testUrl = URL.createObjectURL(blob);
       const testPlayer = new Audio(testUrl);
-      testPlayer.onerror = (e) => console.error('Test playback error:', e);
+      testPlayer.onerror = () => {};
       testPlayer.play().then(() => {
-        console.log('Test playback succeeded');
         setTimeout(() => { testPlayer.pause(); URL.revokeObjectURL(testUrl); }, 100);
-      }).catch(e => console.error('Test playback failed:', e.name, e.message));
+      }).catch(() => {});
     };
     mediaRecorder.start(100); // collect data every 100ms
     isRecording = true;
@@ -1084,16 +1080,13 @@ function updateRecordUI() {
 
 function playRecording(dataUrl) {
   if (!dataUrl) return;
-  console.log('playRecording called, prefix:', dataUrl.substring(0, 50), 'length:', dataUrl.length);
   // Stop any current playback
   try { if (!audioPlayer.paused) { audioPlayer.pause(); audioPlayer.currentTime = 0; } } catch(e) {}
   // Create a fresh audio element each time
   const player = new Audio();
   player.src = dataUrl;
   player.onerror = (e) => { console.error('Audio error:', e); toast('Audio error', 'error'); };
-  player.oncanplay = () => console.log('Audio can play');
   player.play().then(() => {
-    console.log('Playback started');
     toast('Playing...');
   }).catch(e => {
     console.error('Playback failed:', e.name, e.message);
@@ -1110,12 +1103,9 @@ function playRecording(dataUrl) {
 }
 
 function toggleRecordingsDropdown() {
-  console.log('toggleRecordingsDropdown called');
   const dd = $('recordings-dropdown');
-  console.log('dropdown el:', dd, 'current display:', dd?.style.display);
   if (dd.style.display !== 'none') { dd.style.display = 'none'; return; }
   const song = getSong(currentSongId);
-  console.log('song:', song?.title, 'recordings:', song?.audio?.length);
   const recordings = song?.audio || [];
   if (!recordings.length) { toast('No recordings'); return; }
   const recList = $('rec-list');
@@ -1129,18 +1119,14 @@ function toggleRecordingsDropdown() {
       e.preventDefault();
       const item = b.closest('.rec-item');
       const idx = parseInt(item.dataset.idx);
-      console.log('Play btn clicked, idx:', idx, 'recordings length:', recordings.length);
       if (recordings[idx]) {
         playRecording(recordings[idx].data);
-      } else {
-        console.error('No recording at index', idx);
       }
     });
   });
   recList.querySelectorAll('.rec-item').forEach(item => {
     item.addEventListener('click', (e) => {
       const idx = parseInt(item.dataset.idx);
-      console.log('Rec item clicked, idx:', idx);
       if (recordings[idx]) {
         playRecording(recordings[idx].data);
       }
@@ -1342,7 +1328,6 @@ function loadSyncQueueMeta() {
           if (song) syncQueue.push({ operation: m.operation, song, ts: Date.now(), songId: m.songId });
         });
         if (syncQueue.length > 0) {
-          console.log(`Restored ${syncQueue.length} queued sync items`);
           localStorage.removeItem('sn_sync_queue');
           updateQueueCount();
         }
