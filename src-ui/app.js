@@ -5888,12 +5888,16 @@ function setupEvents() {
   $('transpose-down-btn').addEventListener('click', () => {
     const song = getSong(currentSongId);
     if (!song) return; pushVersion();
-    transposeSong(song, -1); saveSingleSong(song); renderEditorBody(song); updateEditorKeyBpm(song); toast('♭');
+    const oldKey = song.key || '—';
+    transposeSong(song, -1); saveSingleSong(song); renderEditorBody(song); updateEditorKeyBpm(song);
+    toast(`${oldKey} → ${song.key || '—'}`);
   });
   $('transpose-up-btn').addEventListener('click', () => {
     const song = getSong(currentSongId);
     if (!song) return; pushVersion();
-    transposeSong(song, 1); saveSingleSong(song); renderEditorBody(song); updateEditorKeyBpm(song); toast('♯');
+    const oldKey = song.key || '—';
+    transposeSong(song, 1); saveSingleSong(song); renderEditorBody(song); updateEditorKeyBpm(song);
+    toast(`${oldKey} → ${song.key || '—'}`);
   });
 
   // More menu — bottom sheet
