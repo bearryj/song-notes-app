@@ -2488,6 +2488,18 @@ body.ios-device .toolbar-sheet-content {
   --fg-tertiary: #aeaeb2;
 }
 
+/* ===== Light Theme — Hardcoded Color Overrides ===== */
+/* These override specific hardcoded hex colors from the dark-era CSS
+   so they remain readable on light backgrounds. */
+[data-theme="light"] .gallery-card-delete,
+[data-theme="light"] .diff-line.diff-remove .diff-marker { color: #d32f2f; }
+[data-theme="light"] .diff-line.diff-add .diff-marker { color: #2e7d32; }
+[data-theme="light"] .editor-swipe-indicator.ready .editor-swipe-indicator-arrow {
+  background: rgba(46, 125, 50, 0.12);
+  border-color: rgba(46, 125, 50, 0.4);
+  color: #2e7d32;
+}
+
 /* ===== Setlist View ===== */
 .setlist-item {
   display: flex;

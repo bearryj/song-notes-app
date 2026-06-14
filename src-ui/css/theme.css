@@ -9,6 +9,11 @@
   --fg: #fff;
   --fg-secondary: #98989e;
   --fg-tertiary: #636366;
+  --accent: #0a84ff;
+  --accent-dim: #0a5dc2;
+  --danger: #ff453a;
+  --chord: #30d158;
+  --section-label: #ff9f0a;
 }
 [data-theme="light"] {
   --bg: #f2f2f7;
@@ -19,5 +24,11 @@
   --fg: #000000;
   --fg-secondary: #636366;
   --fg-tertiary: #aeaeb2;
+  /* Accent colors tuned for light backgrounds — slightly darker for WCAG AA contrast */
+  --accent: #0066cc;
+  --accent-dim: #004c99;
+  --danger: #d32f2f;
+  --chord: #2e7d32;
+  --section-label: #e65100;
 }
 

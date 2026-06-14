@@ -742,3 +742,18 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ===== Light Theme — Extras Overrides ===== */
+[data-theme="light"] .tuner-cents.sharp { color: #e65100; }
+[data-theme="light"] .tuner-cents.flat { color: #d32f2f; }
+[data-theme="light"] .tuner-cents.in-tune { color: #2e7d32; }
+[data-theme="light"] .tuner-string-btn.active.near-match {
+  background: #2e7d32;
+  border-color: #2e7d32;
+}
+[data-theme="light"] .onboarding-track {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+[data-theme="light"] .onboarding-dot {
+  background: rgba(0, 0, 0, 0.15);
+}
