@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (feat: BPM accent color in editor nav bar)
+2026-06-14 by OWL (feat: current section breadcrumb in editor nav bar)
 
 ## Build & Test Commands
 ```bash
@@ -100,6 +100,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Save status timestamp in editor nav bar (shows "Saved"/"Editing…"/"Saving…" with relative time, auto-hides after 6s, updates every 15s) (2026-06-14)
 - Song count in folder title bar (shows "All Songs · 12" style count in nav bar, updates on folder switch and after song CRUD, extracted getFolderCount() helper) (2026-06-14)
 - Section quick-navigation dropdown
+- [x] Show current section breadcrumb in editor nav bar — a subtle persistent label that updates while scrolling (e.g., "Chorus 2", "Verse 3"), giving musicians continuous context of where they are in the song. Fades in/out with smooth opacity transition, respects prefers-reduced-motion, clears on song switch and back navigation. (2026-06-14)
 - [x] Inline chord detection from bracket notation in lyrics — typing `[G]`, `[Am]`, `[F#m7]`, `[D/F#]` etc in the lyric editor auto-converts the bracket notation into a properly positioned chord marker, removes the brackets from the text, and shows a throttled toast confirmation. Uses the same regex as the import parser for consistency. (2026-06-14)
 - [x] BPM indicator in song list and gallery cards — compact orange-tinted badge shows BPM next to the key badge in both list rows and gallery cards, so musicians can quickly identify songs by tempo without opening the editor. Uses `--section-label` accent with subtle background, mono font, and matches existing badge patterns. (2026-06-14)
 - [x] BPM accent color in editor nav bar — added missing `.b` class rule so the BPM value in the editor key/BPM badge renders in `--section-label` orange instead of inheriting the default foreground color, matching the visual consistency of `.k` (key, blue accent) and `.c` (capo, green chord). (2026-06-14)

@@ -2508,6 +2508,7 @@ function openEditor(id) {
   hasChanges = false;
   $('save-btn').disabled = true;
   updateUndoBtn();
+  clearSectionLabel();
   renderEditorBody(song);
   updateRecordUI();
   updateSaveDot('saved');
@@ -6496,6 +6497,7 @@ function setupEvents() {
     if (isMetroPlaying()) metroStop();
     if (tunerActive) stopTuner();
     clearSaveStatusTimers();
+    clearSectionLabel();
     popView(); renderSongList();
   }
 
@@ -6683,6 +6685,12 @@ function setupEvents() {
     if (active) active.scrollIntoView({ block: 'nearest' });
   }
 
+  // Clear the persistent section breadcrumb label
+  function clearSectionLabel() {
+    const lbl = $('current-section-label');
+    if (lbl) { lbl.textContent = ''; lbl.classList.remove('visible'); }
+  }
+
   // Determine which section is currently most visible in the editor body
   function getCurrentVisibleSection() {
     const editorBody = $('song-body');
@@ -6703,16 +6711,32 @@ function setupEvents() {
   }
 
   // Editor scroll listener to highlight current section in the nav
+  // and update the persistent section breadcrumb in the nav bar
   let _sectionScrollTick = null;
   const _songBody = $('song-body');
+  const _sectionLabel = $('current-section-label');
   if (_songBody) {
     _songBody.addEventListener('scroll', () => {
       if (_sectionScrollTick) return;
       _sectionScrollTick = requestAnimationFrame(() => {
         _sectionScrollTick = null;
-        if (sectionNavDropdown && sectionNavDropdown.style.display !== 'none') {
-          const idx = getCurrentVisibleSection();
-          if (idx >= 0) highlightNavItem(idx);
+        const idx = getCurrentVisibleSection();
+        if (idx >= 0) {
+          // Highlight in dropdown if open
+          if (sectionNavDropdown && sectionNavDropdown.style.display !== 'none') {
+            highlightNavItem(idx);
+          }
+          // Update persistent section label in nav bar
+          if (_sectionLabel) {
+            const song = getSong(currentSongId);
+            const sec = song && song.sections && song.sections[idx];
+            if (sec) {
+              _sectionLabel.textContent = (sec.type || 'Section') + ' ' + (idx + 1);
+              _sectionLabel.classList.add('visible');
+            }
+          }
+        } else if (_sectionLabel) {
+          _sectionLabel.classList.remove('visible');
         }
       });
     }, { passive: true });
