@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-13 by OWL (interactive tutorial song — Welcome to Song Notes)
+2026-06-13 by OWL (remove debug console.log statements)
 
 ## Build & Test Commands
 ```bash
@@ -90,6 +90,9 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 
 ### Bugs / Reliability
 - (none currently known — all previous bugs resolved)
+
+### Code Hygiene
+- [x] Remove debug console.log statements — 13 debug logs removed from recording/playback code (mediaRecorder, test player, playRecording, toggleRecordingsDropdown, sync queue). Kept error handlers that also show toast notifications. (2026-06-13)
 
 ### Platform
 - [ ] iOS build (requires macOS + Xcode) — blocked on hardware
