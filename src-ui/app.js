@@ -1810,19 +1810,39 @@ function renderTrashList(el, filter = '') {
   // Header nav title
   $('song-title').textContent = 'Recently Deleted';
 
+  // Remove any existing trash actions bar
+  const existingBar = $('trash-actions-bar');
+  if (existingBar) existingBar.remove();
+
   if (!trash.length) {
     el.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">
-        <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M24 28h32M30 28v-4a6 6 0 0 1 6-6h8a6 6 0 0 1 6 6v4M34 36v20M40 36v20M46 36v20" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="20" y="28" width="40" height="32" rx="4" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <h2>Trash is Empty</h2>
-      <p>Deleted songs appear here for 30 days</p>
-    </div>`;
-    return;
-  }
+        <div class="empty-icon">
+          <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 28h32M30 28v-4a6 6 0 0 1 6-6h8a6 6 0 0 1 6 6v4M34 36v20M40 36v20M46 36v20" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="20" y="28" width="40" height="32" rx="4" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Trash is Empty</h2>
+        <p>Deleted songs appear here for 30 days</p>
+      </div>`;
+      return;
+    }
+
+    // Trash actions bar — Restore All + Empty Trash
+    const bar = document.createElement('div');
+    bar.id = 'trash-actions-bar';
+    bar.className = 'trash-actions-bar';
+    bar.innerHTML = `
+      <button class="trash-action-btn" id="trash-restore-all" aria-label="Restore all songs">
+        <span class="trash-action-icon">↩</span>
+        <span class="trash-action-label">Restore All</span>
+      </button>
+      <button class="trash-action-btn trash-action-danger" id="trash-empty" aria-label="Empty trash permanently">
+        <span class="trash-action-icon">✕</span>
+        <span class="trash-action-label">Empty Trash</span>
+      </button>
+    `;
+    el.parentNode.insertBefore(bar, el);
 
   let list = trash;
   if (filter) {
@@ -1890,6 +1910,44 @@ function renderTrashList(el, filter = '') {
       });
     });
   });
+
+  // Trash actions bar event listeners
+  const restoreAllBtn = $('trash-restore-all');
+  if (restoreAllBtn) {
+    restoreAllBtn.addEventListener('click', () => {
+      showConfirmSheet({
+        title: 'Restore All Songs',
+        body: `Restore all ${trash.length} song${trash.length !== 1 ? 's' : ''} to your library?`,
+        confirmText: 'Restore All',
+        onConfirm: async () => {
+          const ids = trash.map(t => t.song.id);
+          for (const id of ids) await restoreSong(id);
+          renderTrashList(el, filter);
+          renderFolders();
+          toast(`Restored ${ids.length} song${ids.length !== 1 ? 's' : ''}`);
+        }
+      });
+    });
+  }
+
+  const emptyTrashBtn = $('trash-empty');
+  if (emptyTrashBtn) {
+    emptyTrashBtn.addEventListener('click', () => {
+      showConfirmSheet({
+        title: 'Empty Trash',
+        body: `Permanently delete all ${trash.length} song${trash.length !== 1 ? 's' : ''}? This cannot be undone.`,
+        confirmText: 'Empty Trash',
+        confirmClass: 'sheet-danger',
+        onConfirm: async () => {
+          const count = trash.length;
+          for (const t of [...trash]) await permanentlyDeleteSong(t.song.id);
+          renderTrashList(el, filter);
+          renderFolders();
+          toast(`Deleted ${count} song${count !== 1 ? 's' : ''} permanently`);
+        }
+      });
+    });
+  }
 }
 
 function formatTimeAgo(ms) {
@@ -2067,6 +2125,12 @@ function initVirtualScroll() {
 // Song list
 function renderSongList(filter = '') {
   const el = $('song-list');
+
+  // Clean up trash actions bar when not in trash view
+  if (currentFolder !== 'Recently Deleted') {
+    const trashBar = $('trash-actions-bar');
+    if (trashBar) trashBar.remove();
+  }
 
   // Trash view
   if (currentFolder === 'Recently Deleted') {

@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-13 by OWL (add capo and writing time to Song Info panel)
+2026-06-13 by OWL (add Restore All + Empty Trash actions to Recently Deleted view)
 
 ## Build & Test Commands
 ```bash
@@ -82,6 +82,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Chord sheet display modes (toggle between chords+lyrics, lyrics-only, chords-only; nav bar button + toolbar View section; persisted to localStorage)
 - [x] Strumming pattern notation (per-section text pattern editor, e.g. "D-DU-UDU"; toggle button in section header; included in export, print, and share codes)
 - [x] Chromatic tuner (autocorrelation pitch detection from mic, guitar string selector E2-A2-D3-G3-B3-E4, cents needle meter, sharp/flat/in-tune display)
+- [x] Trash bulk actions (Restore All + Empty Trash buttons in Recently Deleted view with confirmation sheets)
 
 ## TODOs — Refinement & Bug Fixes
 
