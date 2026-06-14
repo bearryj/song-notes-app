@@ -2182,6 +2182,7 @@ function buildSongRowHTML(s, offset, height) {
     }
   }
 
+  const bpmBadge = s.bpm ? `<span class="item-bpm">${esc(String(s.bpm))}</span>` : '';
   const hasRec = s.audio && s.audio.length > 0;
   const isThisPlaying = currentPlayingSongId === s.id;
   const recBadge = hasRec ? `<button class="song-play-rec-btn${isThisPlaying ? ' playing' : ''}" data-id="${s.id}" aria-label="${isThisPlaying ? 'Pause' : 'Play'} recording" title="${isThisPlaying ? 'Pause' : 'Play'} latest recording (${s.audio.length})"><span class="rec-icon">${isThisPlaying ? '❚❚' : '▶'}</span><span class="rec-count">${s.audio.length}</span></button>` : '';
@@ -2204,7 +2205,7 @@ function buildSongRowHTML(s, offset, height) {
       <div class="swipe-content list-item">
         <div class="list-item-main">
           ${pinned}
-          <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}${tutorialBadge}</span>
+          <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}${bpmBadge}${tutorialBadge}</span>
           ${tagHtml}
           <span class="item-meta">${fmtDate(s.updated_at)}</span>
           ${writingTimeHtml}
@@ -2314,6 +2315,7 @@ function renderSongList(filter = '') {
     sorted.forEach((s, i) => {
       const pinned = s.pinned ? '<span class="card-pin">★</span>' : '';
       const keyBadge = s.key ? `<span class="card-key">${esc(s.key)}</span>` : '';
+      const bpmBadge = s.bpm ? `<span class="card-bpm">${esc(String(s.bpm))}</span>` : '';
       const tutorialBadge = s.tutorial ? '<span class="tutorial-badge">Tutorial</span>' : '';
       const secCount = s.sections?.length || 0;
       const secLabel = secCount === 1 ? 'section' : 'sections';
@@ -2345,6 +2347,7 @@ function renderSongList(filter = '') {
           ${pinned}
           <span class="card-title">${esc(s.title || 'Untitled')}</span>
           ${keyBadge}
+          ${bpmBadge}
           ${tutorialBadge}
         </div>
         ${chordPreview}
