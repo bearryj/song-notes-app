@@ -34,6 +34,20 @@
 .save-dot.saved { background: var(--chord); }
 .save-dot.saving { background: var(--section-label); }
 .save-dot.unsaved { background: var(--fg-tertiary); }
+.save-status-text {
+  font-size: 11px;
+  color: var(--fg-tertiary);
+  flex-shrink: 0;
+  margin-left: 4px;
+  letter-spacing: 0.2px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  white-space: nowrap;
+}
+.save-status-text.visible { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .save-status-text { transition: none; }
+}
 .session-timer {
   font-size: 12px;
   font-variant-numeric: tabular-nums;

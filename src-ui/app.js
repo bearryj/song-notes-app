@@ -1267,6 +1267,60 @@ function updateSaveDot(state) {
   const dot = $('auto-save-dot');
   if (!dot) return;
   dot.className = 'save-dot ' + state;
+
+  // Update "last saved" timestamp text
+  const statusEl = $('save-status-text');
+  if (!statusEl) return;
+  if (state === 'saved') {
+    statusEl.textContent = 'Saved';
+    statusEl.classList.add('visible');
+    saveStatusLastShown = Date.now();
+    // Start the "Xm ago" updater if not already running
+    if (!saveStatusInterval) {
+      saveStatusInterval = setInterval(updateSaveStatusAgo, 15000);
+    }
+    // Auto-hide after 6s
+    if (saveStatusHideTimer) clearTimeout(saveStatusHideTimer);
+    saveStatusHideTimer = setTimeout(() => {
+      statusEl.classList.remove('visible');
+    }, 6000);
+  } else if (state === 'unsaved') {
+    statusEl.textContent = 'Editing…';
+    statusEl.classList.add('visible');
+    if (saveStatusHideTimer) clearTimeout(saveStatusHideTimer);
+  } else if (state === 'saving') {
+    statusEl.textContent = 'Saving…';
+    statusEl.classList.add('visible');
+    if (saveStatusHideTimer) clearTimeout(saveStatusHideTimer);
+  }
+}
+
+// Tracks when the "Saved" label was first shown, for "Xm ago" display.
+let saveStatusLastShown = 0;
+let saveStatusInterval = null;
+let saveStatusHideTimer = null;
+
+function updateSaveStatusAgo() {
+  const el = $('save-status-text');
+  if (!el || !saveStatusLastShown || !el.classList.contains('visible')) return;
+  const elapsed = Date.now() - saveStatusLastShown;
+  const min = Math.floor(elapsed / 60000);
+  if (min < 1) {
+    el.textContent = 'Saved just now';
+  } else if (min < 60) {
+    el.textContent = 'Saved ' + min + 'm ago';
+  } else {
+    const h = Math.floor(min / 60);
+    el.textContent = 'Saved ' + min + 'm ago';
+  }
+}
+
+function clearSaveStatusTimers() {
+  if (saveStatusInterval) { clearInterval(saveStatusInterval); saveStatusInterval = null; }
+  if (saveStatusHideTimer) { clearTimeout(saveStatusHideTimer); saveStatusHideTimer = null; }
+  saveStatusLastShown = 0;
+  const el = $('save-status-text');
+  if (el) el.classList.remove('visible');
 }
 
 // ===== Offline Indicator & Sync Queue =====
@@ -6289,6 +6343,7 @@ function setupEvents() {
     stopSessionTimer();
     if (isMetroPlaying()) metroStop();
     if (tunerActive) stopTuner();
+    clearSaveStatusTimers();
     popView(); renderSongList();
   }
 
