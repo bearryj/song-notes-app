@@ -1152,7 +1152,7 @@
   border-radius: 16px 16px 0 0;
   padding: 8px 16px calc(16px + var(--safe-bottom));
   animation: slide-up 0.25s ease;
-  max-height: 70vh;
+  max-height: 80vh;
   overflow-y: auto;
 }
 @keyframes slide-up {
@@ -1210,6 +1210,19 @@
 }
 .chord-sheet-input:focus {
   box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* Mini chord diagram in chord edit popup */
+.chord-sheet-diagram {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 0 12px;
+}
+.chord-sheet-diagram .cd-mini-fretboard {
+  width: 120px;
+  height: 148px;
+  flex-shrink: 0;
 }
 
 /* Larger quick-select buttons for touch */

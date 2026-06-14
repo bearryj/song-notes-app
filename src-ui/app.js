@@ -3229,6 +3229,16 @@ function showChordEdit(song, line, chord) {
   input.className = 'chord-sheet-input';
   sheet.appendChild(input);
 
+  // Mini chord diagram preview
+  const diagramWrap = document.createElement('div');
+  diagramWrap.className = 'chord-sheet-diagram';
+  sheet.appendChild(diagramWrap);
+
+  function updateDiagram(chordName) {
+    renderMiniFretboard(diagramWrap, chordName || '');
+  }
+  updateDiagram(chord.name);
+
   // Common chord quick-select
   const roots = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
   const suffixes = ['', 'm', '7', 'm7', 'maj7', 'dim', 'aug', 'sus4', 'add9'];
@@ -3248,6 +3258,7 @@ function showChordEdit(song, line, chord) {
       chord.name = r;
       chordDisplay.textContent = r;
       updateQuickActive();
+      updateDiagram(r);
     });
     rootRow.appendChild(btn);
   });
@@ -3270,6 +3281,7 @@ function showChordEdit(song, line, chord) {
       chord.name = newChord;
       chordDisplay.textContent = newChord;
       updateQuickActive();
+      updateDiagram(newChord);
     });
     suffixBtns.push(btn);
     suffixRow.appendChild(btn);
@@ -3288,6 +3300,7 @@ function showChordEdit(song, line, chord) {
     chord.name = input.value.trim();
     chordDisplay.textContent = chord.name || '?';
     updateQuickActive();
+    updateDiagram(input.value);
   });
   sheet.appendChild(quickRow);
 
@@ -3455,6 +3468,97 @@ function getStartFret(frets) {
   return min - 1;
 }
 
+// Mini chord diagram for the chord edit popup — compact SVG fretboard
+function renderMiniFretboard(container, chordName) {
+  const shape = getChordShape(chordName);
+  if (!shape) {
+    container.innerHTML = '';
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'flex';
+
+  const frets = shape.frets;
+  const fingers = shape.fingers || [0,0,0,0,0,0];
+  const barres = shape.barres || [];
+  const numStrings = 6;
+  const numFrets = 4;
+  const startFret = getStartFret(frets);
+
+  const w = 120, h = 148;
+  const padX = 18, padY = 20;
+  const fretW = w - padX * 2;
+  const fretH = h - padY * 2 - 16;
+  const stringSpacing = fretW / (numStrings - 1);
+  const fretSpacing = fretH / numFrets;
+  const dotRadius = 6;
+
+  const minFret = Math.min(...frets.filter(f => f > 0));
+  const hasOpen = frets.some(f => f === 0);
+  const showNut = hasOpen || minFret <= 2;
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}" class="cd-mini-fretboard" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<rect x="0" y="0" width="${w}" height="${h}" fill="transparent"/>`;
+
+  if (!showNut && startFret > 1) {
+    svg += `<text x="${padX - 8}" y="${padY + fretSpacing * 0.6}" fill="var(--fg-tertiary)" font-size="8" font-family="var(--font)" text-anchor="middle">${startFret}fr</text>`;
+  }
+
+  // Strings
+  for (let s = 0; s < numStrings; s++) {
+    const x = padX + s * stringSpacing;
+    const strokeW = 0.8 + s * 0.2;
+    svg += `<line x1="${x}" y1="${padY}" x2="${x}" y2="${padY + fretH}" stroke="var(--fg-tertiary)" stroke-width="${strokeW}"/>`;
+  }
+
+  // Frets
+  for (let f = 0; f <= numFrets; f++) {
+    const y = padY + f * fretSpacing;
+    const isNut = f === 0 && showNut;
+    svg += `<line x1="${padX}" y1="${y}" x2="${padX + fretW}" y2="${y}" stroke="${isNut ? 'var(--fg)' : 'var(--fg-tertiary)'}" stroke-width="${isNut ? 2 : 0.8}"/>`;
+  }
+
+  // Finger positions
+  for (let s = 0; s < numStrings; s++) {
+    const x = padX + s * stringSpacing;
+    const fret = frets[s];
+    const finger = fingers[s];
+
+    if (fret === -1) {
+      const y = padY - 9;
+      svg += `<text x="${x}" y="${y}" fill="var(--fg-tertiary)" font-size="9" font-family="var(--font)" text-anchor="middle" font-weight="bold">&#10005;</text>`;
+    } else if (fret === 0) {
+      const y = padY - 9;
+      svg += `<text x="${x}" y="${y}" fill="var(--fg-secondary)" font-size="10" font-family="var(--font)" text-anchor="middle" font-weight="bold">&#9675;</text>`;
+    } else {
+      const fretPos = fret - startFret + (showNut ? 0 : 1);
+      const y = padY + fretPos * fretSpacing + fretSpacing / 2;
+      const isBarre = barres.some(b => b.fret === fret && s >= Math.min(b.from, b.to) && s <= Math.max(b.from, b.to));
+
+      if (isBarre) {
+        const barreStart = padX + Math.min(barres[0].from, barres[0].to) * stringSpacing;
+        const barreEnd = padX + Math.max(barres[0].from, barres[0].to) * stringSpacing;
+        svg += `<line x1="${barreStart}" y1="${y}" x2="${barreEnd}" y2="${y}" stroke="var(--chord)" stroke-width="${dotRadius * 1.4}" stroke-linecap="round" opacity="0.85"/>`;
+      } else {
+        svg += `<circle cx="${x}" cy="${y}" r="${dotRadius}" fill="var(--chord)" opacity="0.9"/>`;
+      }
+      if (finger > 0) {
+        svg += `<text x="${x}" y="${y + 3}" fill="var(--bg)" font-size="7" font-family="var(--font)" text-anchor="middle" font-weight="700">${finger}</text>`;
+      }
+    }
+  }
+
+  // String labels
+  const stringLabels = ['E', 'A', 'D', 'G', 'B', 'e'];
+  for (let s = 0; s < numStrings; s++) {
+    const x = padX + s * stringSpacing;
+    svg += `<text x="${x}" y="${h - 4}" fill="var(--fg-tertiary)" font-size="7" font-family="var(--font)" text-anchor="middle">${stringLabels[s]}</text>`;
+  }
+
+  svg += '</svg>';
+  container.innerHTML = svg;
+}
+
 function renderFretboard(container, chordName, capo) {
   const shape = getChordShape(chordName);
   if (!shape) {
@@ -3571,10 +3675,29 @@ function renderFretboard(container, chordName, capo) {
   container.innerHTML = svg;
 }
 
+// Extract unique chords from a song in order of first appearance
+function getSongUniqueChords(song) {
+  const seen = new Set();
+  const result = [];
+  if (!song || !song.sections) return result;
+  for (const sec of song.sections) {
+    for (const line of (sec.lines || [])) {
+      for (const c of (line.chords || [])) {
+        if (c.name && c.name.trim()) {
+          const n = c.name.trim();
+          if (!seen.has(n)) { seen.add(n); result.push(n); }
+        }
+      }
+    }
+  }
+  return result;
+}
+
 function showChordDiagramPanel(initialChord) {
-  // Get current song's capo
+  // Get current song's capo and unique chords
   const currentSong = getSong(currentSongId);
   const capo = currentSong?.capo || 0;
+  const songChords = getSongUniqueChords(currentSong);
 
   let panel = $('chord-diagram-panel');
   if (!panel) {
@@ -3588,9 +3711,11 @@ function showChordDiagramPanel(initialChord) {
       <div class="cd-header">
         <h3 class="cd-title">Chord Diagram</h3>
         <div class="cd-chord-name" id="cd-chord-name">C</div>
+        <div class="cd-chord-counter" id="cd-chord-counter"></div>
         <div class="cd-capo-label" id="cd-capo-label" style="display:none;"></div>
       </div>
       <div class="cd-fretboard-wrap" id="cd-fretboard-wrap"></div>
+      <div class="cd-swipe-hint" id="cd-swipe-hint">‹ swipe ›</div>
       <div class="cd-controls">
         <div class="cd-chord-nav">
           <button class="cd-nav-btn" id="cd-prev" title="Previous chord">‹</button>
@@ -3613,19 +3738,70 @@ function showChordDiagramPanel(initialChord) {
       panel.style.display = 'none';
     });
 
+    // --- Swipe on fretboard to cycle song chords ---
+    const fretWrap = $('cd-fretboard-wrap');
+    let touchStartX = 0, touchStartY = 0, touchMoved = false;
+    const SWIPE_THRESHOLD = 40;
+    fretWrap.addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchMoved = false;
+    }, { passive: true });
+    fretWrap.addEventListener('touchmove', e => {
+      const dx = Math.abs(e.touches[0].clientX - touchStartX);
+      const dy = Math.abs(e.touches[0].clientY - touchStartY);
+      if (dx > 10 || dy > 10) touchMoved = true;
+    }, { passive: true });
+    fretWrap.addEventListener('touchend', e => {
+      if (!touchMoved) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+      if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) > dy * 1.5) return;
+      // Use song chords if available, otherwise fall back to ALL_CHORD_NAMES
+      const list = songChords.length >= 2 ? songChords : null;
+      if (!list) return;
+      const curName = $('cd-chord-name').textContent;
+      let idx = list.indexOf(curName);
+      if (idx === -1) idx = 0;
+      if (dx < 0) {
+        // swipe left → next
+        const next = list[(idx + 1) % list.length];
+        setDiagramChord(next, capo);
+        animateFretSwipe('left');
+      } else {
+        // swipe right → prev
+        const prev = list[(idx - 1 + list.length) % list.length];
+        setDiagramChord(prev, capo);
+        animateFretSwipe('right');
+      }
+    }, { passive: true });
+
     const doSet = (name) => setDiagramChord(name, capo);
 
     $('cd-prev').addEventListener('click', () => {
       const name = $('cd-chord-name').textContent;
-      const idx = ALL_CHORD_NAMES.indexOf(name);
-      const prev = idx > 0 ? ALL_CHORD_NAMES[idx - 1] : ALL_CHORD_NAMES[ALL_CHORD_NAMES.length - 1];
-      doSet(prev);
+      // Prefer song chord list for navigation
+      if (songChords.length >= 2) {
+        let idx = songChords.indexOf(name);
+        if (idx === -1) idx = 0;
+        doSet(songChords[(idx - 1 + songChords.length) % songChords.length]);
+      } else {
+        const idx = ALL_CHORD_NAMES.indexOf(name);
+        const prev = idx > 0 ? ALL_CHORD_NAMES[idx - 1] : ALL_CHORD_NAMES[ALL_CHORD_NAMES.length - 1];
+        doSet(prev);
+      }
     });
     $('cd-next').addEventListener('click', () => {
       const name = $('cd-chord-name').textContent;
-      const idx = ALL_CHORD_NAMES.indexOf(name);
-      const next = idx < ALL_CHORD_NAMES.length - 1 ? ALL_CHORD_NAMES[idx + 1] : ALL_CHORD_NAMES[0];
-      doSet(next);
+      if (songChords.length >= 2) {
+        let idx = songChords.indexOf(name);
+        if (idx === -1) idx = 0;
+        doSet(songChords[(idx + 1) % songChords.length]);
+      } else {
+        const idx = ALL_CHORD_NAMES.indexOf(name);
+        const next = idx < ALL_CHORD_NAMES.length - 1 ? ALL_CHORD_NAMES[idx + 1] : ALL_CHORD_NAMES[0];
+        doSet(next);
+      }
     });
 
     $('cd-lookup-btn').addEventListener('click', () => {
@@ -3657,7 +3833,36 @@ function showChordDiagramPanel(initialChord) {
       capoLabel.style.display = 'none';
     }
   }
+  // Update song chords list on the panel instance so swipe always uses latest
+  panel._songChords = songChords;
   setDiagramChord(initialChord || 'C', capo);
+  updateChordCounter(initialChord || 'C', songChords);
+}
+
+function animateFretSwipe(direction) {
+  const wrap = $('cd-fretboard-wrap');
+  if (!wrap) return;
+  const offset = direction === 'left' ? -30 : 30;
+  wrap.style.transition = 'none';
+  wrap.style.transform = `translateX(${offset}px)`;
+  // force reflow
+  void wrap.offsetWidth;
+  wrap.style.transition = 'transform 0.2s ease';
+  wrap.style.transform = 'translateX(0)';
+  setTimeout(() => { wrap.style.transition = ''; wrap.style.transform = ''; }, 250);
+}
+
+function updateChordCounter(name, songChords) {
+  const counter = $('cd-chord-counter');
+  if (!counter) return;
+  if (songChords.length >= 2) {
+    let idx = songChords.indexOf(name);
+    if (idx === -1) idx = 0;
+    counter.textContent = `${idx + 1} / ${songChords.length}`;
+    counter.style.display = 'block';
+  } else {
+    counter.style.display = 'none';
+  }
 }
 
 function setDiagramChord(name, capo) {
@@ -3678,6 +3883,11 @@ function setDiagramChord(name, capo) {
   document.querySelectorAll('.cd-browse-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.chord === name);
   });
+  // Update chord counter from panel's song chords
+  const panel = $('chord-diagram-panel');
+  if (panel && panel._songChords) {
+    updateChordCounter(name, panel._songChords);
+  }
 }
 
 // ===== Mobile Keyboard Handling =====

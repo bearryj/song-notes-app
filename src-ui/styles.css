@@ -2628,13 +2628,7 @@ body.ios-device .toolbar-sheet-content {
   color: var(--chord);
 }
 
-.cd-fretboard-wrap {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 180px;
-  padding: 8px 0;
-}
+/* NOTE: Chord diagram panel styles are in css/share.css */
 
 .cd-fretboard {
   max-width: 220px;
