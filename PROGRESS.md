@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (feat: edge-swipe-to-go-back gesture)
+2026-06-14 by OWL (feat: song count in folder title bar)
 
 ## Build & Test Commands
 ```bash
@@ -98,7 +98,8 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Chord progression suggestions in edit popup — added `getChordSuggestions()` function that uses music theory (diatonic chords from the song's key, relative minor/major, dominant 7th, subdominant) to suggest 4-6 common next chords. Suggestions appear as tappable pill buttons in the chord edit bottom sheet, between the fretboard diagram and the quick-select grid. Pills update in real-time as the user types. Uses the song's key if set, otherwise infers from the current chord. Styled with Apple Notes aesthetic: muted label, rounded pills, accent hover/active states, prefers-reduced-motion support. (2026-06-14)
 - [x] Recent chords quick-access row in chord edit popup
 - Save status timestamp in editor nav bar (shows "Saved"/"Editing…"/"Saving…" with relative time, auto-hides after 6s, updates every 15s) (2026-06-14)
-- Section quick-navigation dropdown (§ button in editor nav bar for songs with 3+ sections; scrollable list of section names; tap to smooth-scroll to section; highlights current section as you scroll; keyboard accessible with Escape to close; outside-click dismiss; Apple Notes aesthetic with entrance animation and prefers-reduced-motion support) (2026-06-14)
+- Song count in folder title bar (shows "All Songs · 12" style count in nav bar, updates on folder switch and after song CRUD, extracted getFolderCount() helper) (2026-06-14)
+- Section quick-navigation dropdown
 - [x] Inline chord detection from bracket notation in lyrics — typing `[G]`, `[Am]`, `[F#m7]`, `[D/F#]` etc in the lyric editor auto-converts the bracket notation into a properly positioned chord marker, removes the brackets from the text, and shows a throttled toast confirmation. Uses the same regex as the import parser for consistency. (2026-06-14)
 - BPM indicator in song list and gallery cards — compact orange-tinted badge shows BPM next to the key badge in both list rows and gallery cards, so musicians can quickly identify songs by tempo without opening the editor. Uses `--section-label` accent with subtle background, mono font, and matches existing badge patterns.
 - Comprehensive light theme — accent colors (`--accent`, `--chord`, `--section-label`, `--danger`) now tuned for light backgrounds (`#0066cc`, `#2e7d32`, `#e65100`, `#d32f2f`) instead of using dark-theme bright colors; added `[data-theme="light"]` overrides in styles.css and extras.css for hardcoded diff markers, tuner indicators, swipe indicators, gallery card actions, and onboarding dots.
