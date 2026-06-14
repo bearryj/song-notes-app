@@ -2511,6 +2511,9 @@ function openEditor(id) {
   startSessionTimer();
   // Update switcher button state
   updateSwitcherButtons();
+  // Show section nav button only for songs with 3+ sections
+  const _snBtn = $('section-nav-btn');
+  if (_snBtn) _snBtn.style.display = (song.sections && song.sections.length >= 3) ? '' : 'none';
 }
 
 // Update the key+BPM+capo badge in the editor nav bar
@@ -2629,6 +2632,9 @@ function renderEditorBody(song) {
   renderChordRibbon(song);
   applyDisplayMode();
   applyEditorFontSize();
+  // Update section nav button visibility
+  const _snBtn2 = $('section-nav-btn');
+  if (_snBtn2) _snBtn2.style.display = (song.sections && song.sections.length >= 3) ? '' : 'none';
 }
 
 // Build a single section DOM element (extracted from the old forEach)
@@ -6270,35 +6276,108 @@ function setupEvents() {
   (function initEditorSwipe() {
     const target = $('song-body');
     if (!target) return;
+    const editorView = $('editor-view');
     let touchStartX = 0;
     let touchStartY = 0;
     let touchStartTime = 0;
     let isSwipe = false;
+    let currentDx = 0;
+    let indicatorEl = null;
     const MIN_SWIPE_X = 60;   // min horizontal px to trigger
     const MAX_SWIPE_Y = 40;   // max vertical px deviation allowed
     const MAX_DURATION = 500; // ms — must be a quick flick
+
+    function createIndicator() {
+      if (indicatorEl) return indicatorEl;
+      indicatorEl = document.createElement('div');
+      indicatorEl.className = 'editor-swipe-indicator';
+      indicatorEl.innerHTML = '<div class="editor-swipe-indicator-arrow"></div><div class="editor-swipe-indicator-label"></div>';
+      document.body.appendChild(indicatorEl);
+      return indicatorEl;
+    }
+
+    function removeIndicator() {
+      if (indicatorEl) {
+        indicatorEl.remove();
+        indicatorEl = null;
+      }
+    }
+
+    function updateSwipeFeedback(dx) {
+      if (!editorView) return;
+      // Apply resistance curve: raw dx is dampened past the threshold
+      const dampened = dx * 0.4;
+      editorView.style.transition = 'none';
+      editorView.style.transform = `translateX(${dampened}px)`;
+
+      const el = createIndicator();
+      const isLeft = dx < 0;
+      const progress = Math.min(Math.abs(dx) / MIN_SWIPE_X, 1);
+      const willTrigger = progress >= 1;
+
+      el.className = `editor-swipe-indicator ${isLeft ? 'swipe-left' : 'swipe-right'} ${willTrigger ? 'ready' : ''}`;
+      el.style.opacity = String(0.3 + progress * 0.7);
+
+      const label = el.querySelector('.editor-swipe-indicator-label');
+      const arrow = el.querySelector('.editor-swipe-indicator-arrow');
+      if (isLeft) {
+        label.textContent = willTrigger ? 'Release for next ›' : 'Swipe for next ›';
+        arrow.textContent = '‹';
+      } else {
+        label.textContent = willTrigger ? '‹ Release for prev' : '‹ Swipe for prev';
+        arrow.textContent = '›';
+      }
+
+      // Scale the arrow toward the threshold
+      const arrowScale = 1 + progress * 0.3;
+      arrow.style.transform = `translateY(-50%) scale(${arrowScale})`;
+    }
+
+    function resetSwipeFeedback() {
+      if (!editorView) return;
+      editorView.style.transition = 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)';
+      editorView.style.transform = '';
+      removeIndicator();
+    }
 
     target.addEventListener('touchstart', e => {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
       touchStartTime = Date.now();
       isSwipe = false;
+      currentDx = 0;
     }, { passive: true });
 
     target.addEventListener('touchmove', e => {
-      if (isSwipe) return;
       const dx = Math.abs(e.touches[0].clientX - touchStartX);
       const dy = Math.abs(e.touches[0].clientY - touchStartY);
-      // Lock in as horizontal swipe if clearly horizontal
-      if (dx > 15 && dx > dy * 1.2) {
-        isSwipe = true;
+
+      if (!isSwipe) {
+        // Lock in as horizontal swipe if clearly horizontal
+        if (dx > 15 && dx > dy * 1.2) {
+          isSwipe = true;
+          // Prevent vertical scroll while swiping horizontally
+          // (passive:false not needed here since we just track)
+        } else {
+          return;
+        }
       }
+
+      // Real-time feedback
+      currentDx = e.touches[0].clientX - touchStartX;
+      // Reject if vertical deviation too large
+      if (dy > MAX_SWIPE_Y * 2) {
+        isSwipe = false;
+        resetSwipeFeedback();
+        return;
+      }
+      updateSwipeFeedback(currentDx);
     }, { passive: true });
 
     target.addEventListener('touchend', e => {
-      if (!isSwipe) return;
+      if (!isSwipe) { resetSwipeFeedback(); return; }
       const elapsed = Date.now() - touchStartTime;
-      if (elapsed > MAX_DURATION) { isSwipe = false; return; }
+      if (elapsed > MAX_DURATION) { isSwipe = false; resetSwipeFeedback(); return; }
 
       const endX = e.changedTouches[0].clientX;
       const endY = e.changedTouches[0].clientY;
@@ -6308,15 +6387,30 @@ function setupEvents() {
       if (Math.abs(dx) >= MIN_SWIPE_X && dy <= MAX_SWIPE_Y) {
         // Haptic feedback
         navigator.vibrate?.(15);
-        if (dx < 0) {
-          // Swipe left → next song
-          nextSong();
-        } else {
-          // Swipe right → previous song
-          prevSong();
+        // Animate out with a full slide before switching
+        if (editorView) {
+          editorView.style.transition = 'transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease';
+          editorView.style.transform = dx < 0 ? 'translateX(-100%)' : 'translateX(100%)';
+          editorView.style.opacity = '0';
         }
+        removeIndicator();
+        setTimeout(() => {
+          if (dx < 0) {
+            nextSong();
+          } else {
+            prevSong();
+          }
+        }, 200);
+      } else {
+        resetSwipeFeedback();
       }
       isSwipe = false;
+    }, { passive: true });
+
+    // Reset on touchcancel (e.g. system gesture intercept)
+    target.addEventListener('touchcancel', () => {
+      isSwipe = false;
+      resetSwipeFeedback();
     }, { passive: true });
   })();
 
@@ -6438,6 +6532,156 @@ function setupEvents() {
   const fontIncBtn = $('font-inc-btn');
   if (fontDecBtn) fontDecBtn.addEventListener('click', () => adjustFontSize(-1));
   if (fontIncBtn) fontIncBtn.addEventListener('click', () => adjustFontSize(1));
+
+  // ===== Section Navigation =====
+  const sectionNavBtn = $('section-nav-btn');
+  const sectionNavDropdown = $('section-nav-dropdown');
+  const sectionNavList = $('section-nav-list');
+  const sectionNavClose = $('section-nav-close');
+
+  // Toggle section nav dropdown
+  if (sectionNavBtn) {
+    sectionNavBtn.addEventListener('click', () => {
+      if (sectionNavDropdown.style.display === 'none') {
+        openSectionNav();
+      } else {
+        closeSectionNav();
+      }
+    });
+  }
+
+  // Close button
+  if (sectionNavClose) {
+    sectionNavClose.addEventListener('click', closeSectionNav);
+  }
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (sectionNavDropdown && sectionNavDropdown.style.display !== 'none') {
+      if (!sectionNavDropdown.contains(e.target) && e.target !== sectionNavBtn) {
+        closeSectionNav();
+      }
+    }
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSectionNav();
+  });
+
+  function openSectionNav() {
+    const song = getSong(currentSongId);
+    if (!song || !song.sections) { closeSectionNav(); return; }
+    const sections = song.sections;
+    if (sections.length < 3) { closeSectionNav(); return; }
+
+    // Build section list
+    if (!sections.length) {
+      sectionNavList.innerHTML = '<div class="section-nav-empty">No sections</div>';
+    } else {
+      sectionNavList.innerHTML = '';
+      sections.forEach((sec, idx) => {
+        const item = document.createElement('div');
+        item.className = 'section-nav-item';
+        item.dataset.sectionIdx = idx;
+        item.setAttribute('role', 'menuitem');
+        item.setAttribute('tabindex', '0');
+        item.innerHTML = `<span class="section-nav-idx">${idx + 1}</span><span class="section-nav-name">${esc(sec.type || 'Section')}</span>`;
+        // Scroll to section on click/tap
+        item.addEventListener('click', () => {
+          scrollToSection(idx);
+          highlightNavItem(idx);
+          closeSectionNav();
+        });
+        // Keyboard: Enter/Space to activate
+        item.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scrollToSection(idx); highlightNavItem(idx); closeSectionNav(); }
+        });
+        sectionNavList.appendChild(item);
+      });
+    }
+
+    // Highlight current
+    const currentIdx = getCurrentVisibleSection();
+    if (currentIdx >= 0) highlightNavItem(currentIdx);
+
+    sectionNavDropdown.style.display = 'flex';
+    if (sectionNavBtn) sectionNavBtn.classList.add('nav-btn-active');
+  }
+
+  function closeSectionNav() {
+    if (sectionNavDropdown) sectionNavDropdown.style.display = 'none';
+    if (sectionNavBtn) sectionNavBtn.classList.remove('nav-btn-active');
+  }
+
+  function highlightNavItem(idx) {
+    if (!sectionNavList) return;
+    const items = sectionNavList.querySelectorAll('.section-nav-item');
+    items.forEach((el, i) => {
+      el.classList.toggle('active', i === idx);
+    });
+    // Scroll the active item into view within the dropdown
+    const active = items[idx];
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  }
+
+  // Determine which section is currently most visible in the editor body
+  function getCurrentVisibleSection() {
+    const editorBody = $('song-body');
+    if (!editorBody) return -1;
+    const sections = editorBody.querySelectorAll('.song-section, .section-placeholder');
+    if (!sections.length) return -1;
+    const bodyRect = editorBody.getBoundingClientRect();
+    const bodyCenter = bodyRect.top + bodyRect.height / 2;
+    let closest = 0;
+    let closestDist = Infinity;
+    sections.forEach((el, i) => {
+      const r = el.getBoundingClientRect();
+      const elCenter = r.top + r.height / 2;
+      const dist = Math.abs(elCenter - bodyCenter);
+      if (dist < closestDist) { closestDist = dist; closest = parseInt(el.dataset.sectionIdx) || i; }
+    });
+    return closest;
+  }
+
+  // Editor scroll listener to highlight current section in the nav
+  let _sectionScrollTick = null;
+  const _songBody = $('song-body');
+  if (_songBody) {
+    _songBody.addEventListener('scroll', () => {
+      if (_sectionScrollTick) return;
+      _sectionScrollTick = requestAnimationFrame(() => {
+        _sectionScrollTick = null;
+        if (sectionNavDropdown && sectionNavDropdown.style.display !== 'none') {
+          const idx = getCurrentVisibleSection();
+          if (idx >= 0) highlightNavItem(idx);
+        }
+      });
+    }, { passive: true });
+  }
+
+  // ===== Scroll to Section =====
+  function scrollToSection(idx) {
+    const editorBody = $('song-body');
+    if (!editorBody) return;
+    // For lazy-rendered songs, the section might be a placeholder — force render it first
+    const sectionEl = editorBody.querySelector(`.song-section[data-section-idx="${idx}"], .section-placeholder[data-section-idx="${idx}"]`);
+    if (sectionEl) {
+      // If it's a placeholder, we need to render the actual section first
+      if (sectionEl.classList.contains('section-placeholder') && typeof buildSectionElement === 'function') {
+        const song = getSong(currentSongId);
+        if (song && song.sections[idx]) {
+          const realEl = buildSectionElement(song, idx, song.sections[idx]);
+          sectionEl.replaceWith(realEl);
+          // Also un-observe the old placeholder if observer exists
+          if (sectionObserver) { try { sectionObserver.unobserve(sectionEl); } catch {} }
+          realEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return;
+        }
+      }
+      sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
 
   // Recording
   $('record-btn').addEventListener('click', async () => {

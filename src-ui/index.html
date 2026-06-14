@@ -79,9 +79,18 @@
         <button id="font-dec-btn" class="nav-btn" aria-label="Decrease font size" title="Decrease font size">A−</button>
         <button id="font-inc-btn" class="nav-btn" aria-label="Increase font size" title="Increase font size">A+</button>
         <button id="display-mode-btn" class="nav-btn" aria-label="Display mode" title="Display mode: Chords + Lyrics">≡</button>
+        <button id="section-nav-btn" class="nav-btn section-nav-btn" aria-label="Jump to section" title="Sections" style="display:none;">§</button>
         <button id="focus-btn" class="nav-btn" aria-label="Focus mode" title="Focus mode">◉</button>
         <button id="undo-btn" class="nav-btn" aria-label="Undo" disabled>↶</button>
         <button id="save-btn" class="nav-btn nav-btn-primary" aria-label="Save" disabled>Done</button>
+      </div>
+      <!-- Section Navigation Dropdown -->
+      <div id="section-nav-dropdown" class="section-nav-dropdown" style="display:none;" role="menu" aria-label="Jump to section">
+        <div class="section-nav-header">
+          <span class="section-nav-title">Sections</span>
+          <button id="section-nav-close" class="section-nav-close" aria-label="Close section list">✕</button>
+        </div>
+        <div id="section-nav-list" class="section-nav-list"></div>
       </div>
       <div id="chord-ribbon" class="chord-ribbon" role="navigation" aria-label="Chord progression"></div>
       <div id="song-body" class="editor-body" role="main" tabindex="0" aria-label="Song content"></div>
