@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-13 by OWL (remove debug console.log statements)
+2026-06-13 by OWL (add capo and writing time to Song Info panel)
 
 ## Build & Test Commands
 ```bash
@@ -70,6 +70,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 |- Focus Mode (distraction-free editor toggle, hides toolbar/ribbon/FAB, blurred nav bar, vignette edges, persists to localStorage)
 - Keyboard shortcuts help overlay (Ctrl+/ or ? to show grouped shortcuts in Apple Notes-style modal)
 - Pagehide save handler (reliable save on mobile app kill/swipe-away where beforeunload doesn't fire, extracted emergencySave())
+- Song Info panel: capo + writing time stats (shows capo setting and accumulated session time with live update when song is open)
 - Auto-save timer flush on song switch + back navigation (prevents stale debounced writes from corrupting state when quick-switching songs or going back)
 - Swipe gesture to switch songs in editor (swipe left → next, swipe right → prev, with haptic feedback)
 - Song content preview in list view (chord chips + first lyric line snippet under each title)
