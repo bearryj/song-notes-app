@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (feature discovery hint CSS styles)
+2026-06-14 by OWL (safe localStorage writes with quota handling)
 
 ## Build & Test Commands
 ```bash
@@ -90,6 +90,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Session timer pause/resume (timer pauses when app backgrounds/tabs away and resumes on return, so background time doesn't count as writing time)
 - [x] Search/filter in setlist song picker (live search by title, key, or tag when adding songs to a setlist; auto-focuses input; shows "No matching songs" empty state) (2026-06-14)
 - [x] Feature discovery hint system CSS — showFeatureHint() was called from 3 places (gallery toggle, multi-select bar, swipe actions) but had zero CSS styles, rendering hints invisible. Added complete styles: positioned tooltip bubble with ::before arrows for all 4 directions, dismiss button, entrance animation, tap-outside-to-dismiss, auto-dismiss after 4s, and prefers-reduced-motion support. (2026-06-14)
+- [x] Safe localStorage writes — added safeStorageSet() helper with try/catch and quota-exceeded detection (matches QuotaExceededError by name, code 22/1014, and message). Replaced all 20+ raw localStorage.setItem calls (only 3 were previously wrapped). Shows a single per-session toast ("Storage full — delete old recordings to free space") so users know when audio recordings have filled localStorage. (2026-06-14)
 
 ## TODOs — Refinement & Bug Fixes
 
