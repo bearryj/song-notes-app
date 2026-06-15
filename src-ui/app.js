@@ -4922,7 +4922,7 @@ function importFiles(fileList) {
   })();
   if (!files) return;
   (async () => {
-    let n = 0, dups = 0;
+    let n = 0, dups = 0, lastImported = null;
     for (const file of files) {
       try {
         const content = await file.text();
@@ -4930,11 +4930,20 @@ function importFiles(fileList) {
         const imported = parseImported(name, content);
         if (isDuplicateTitle(imported.title)) { dups++; continue; }
         songs.unshift(imported); n++;
+        lastImported = imported;
       } catch (err) {}
     }
     await saveSongs(); renderSongList();
     let msg = `Imported ${n} song${n !== 1 ? 's' : ''}`;
     if (dups) msg += ` (${dups} duplicate${dups !== 1 ? 's' : ''} skipped)`;
+    // Report detected metadata from the last imported file
+    if (lastImported) {
+      const meta = [];
+      if (lastImported.key) meta.push(`key ${lastImported.key}`);
+      if (lastImported.bpm) meta.push(`${lastImported.bpm} BPM`);
+      if (lastImported.time_sig) meta.push(`time ${lastImported.time_sig}`);
+      if (meta.length) msg += ` · ${meta.join(', ')}`;
+    }
     toast(msg);
   })();
 }
@@ -5174,7 +5183,36 @@ function parseImported(title, content) {
   const km = content.match(/\bkey[:\s]+([A-G][#b]?m?)\b/i);
   if (km) key = km[1];
 
-  return { id, title, key, bpm: null, time_sig: null, tags: [], folder: null, sections, audio: [], created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+  // Detect BPM from common patterns: "BPM: 120", "Tempo: 120", "120 bpm", "♩=120"
+  let bpm = null;
+  const bpmPatterns = [
+    /\b(?:bpm|tempo)[:\s=]+(\d{2,4})\b/i,
+    /♩\s*=\s*(\d{2,4})\b/,
+    /\b(\d{2,4})\s*bpm\b/i,
+  ];
+  for (const re of bpmPatterns) {
+    const bm = content.match(re);
+    if (bm) { const n = parseInt(bm[1], 10); if (n >= 20 && n <= 400) { bpm = n; break; } }
+  }
+
+  // Detect time signature from common patterns: "Time: 4/4", "4/4 time", "Time Sig: 3/4", "meter: 6/8"
+  let time_sig = null;
+  const timePatterns = [
+    /\b(?:time(?: signature| sig)?|meter|metre)[:\s]+(\d+\/\d+)\b/i,
+    /\b(\d+\/\d+)\s*(?:time|meter|metre)\b/i,
+  ];
+  for (const re of timePatterns) {
+    const tm = content.match(re);
+    if (tm) {
+      const parts = tm[1].split('/');
+      if (parts.length === 2) {
+        const num = parseInt(parts[0], 10), den = parseInt(parts[1], 10);
+        if (num >= 1 && num <= 16 && [2, 4, 8, 16].includes(den)) { time_sig = tm[1]; break; }
+      }
+    }
+  }
+
+  return { id, title, key, bpm, time_sig, tags: [], folder: null, sections, audio: [], created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
 }
 
 // Duplicate title detection
