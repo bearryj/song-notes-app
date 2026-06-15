@@ -307,6 +307,16 @@
   padding: 1px 5px;
   border-radius: 4px;
 }
+.list-item .item-duration {
+  font-size: 11px;
+  color: var(--fg-secondary);
+  margin-left: 4px;
+  font-family: var(--mono);
+  font-weight: 500;
+  background: rgba(152, 152, 158, 0.14);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
 .list-item .tutorial-badge,
 .card-tutorial-badge,
 .gallery-card .tutorial-badge {

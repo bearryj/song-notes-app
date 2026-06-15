@@ -2250,6 +2250,9 @@ function buildSongRowHTML(s, offset, height, filter = '') {
   }
 
   const bpmBadge = s.bpm ? `<span class="item-bpm">${esc(String(s.bpm))}</span>` : '';
+  // Duration estimate badge (compact, shown when BPM is set)
+  const rowDur = estimateSongDuration(s);
+  const durBadge = rowDur ? `<span class="item-duration" title="Estimated duration: ${formatDuration(rowDur.seconds)} (~${rowDur.bars} bars)">${formatDuration(rowDur.seconds)}</span>` : '';
   const hasRec = s.audio && s.audio.length > 0;
   const isThisPlaying = currentPlayingSongId === s.id;
   const recBadge = hasRec ? `<button class="song-play-rec-btn${isThisPlaying ? ' playing' : ''}" data-id="${s.id}" aria-label="${isThisPlaying ? 'Pause' : 'Play'} recording" title="${isThisPlaying ? 'Pause' : 'Play'} latest recording (${s.audio.length})"><span class="rec-icon">${isThisPlaying ? '❚❚' : '▶'}</span><span class="rec-count">${s.audio.length}</span></button>` : '';
@@ -2272,7 +2275,7 @@ function buildSongRowHTML(s, offset, height, filter = '') {
       <div class="swipe-content list-item">
         <div class="list-item-main">
           ${pinned}
-          <span class="item-title">${highlightMatch(s.title || 'Untitled', filter)}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}${bpmBadge}${tutorialBadge}</span>
+          <span class="item-title">${highlightMatch(s.title || 'Untitled', filter)}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}${bpmBadge}${durBadge}${tutorialBadge}</span>
           ${tagHtml}
           <span class="item-meta">${fmtDate(s.updated_at)}</span>
           ${writingTimeHtml}
@@ -2415,12 +2418,16 @@ function renderSongList(filter = '') {
       const galleryWritingTime = (s.session_ms || 0) > 0
         ? `<span class="card-writing-time" title="Writing time">${gwtH > 0 ? gwtH + 'h ' + gwtM + 'm' : gwtM + 'm'}</span>`
         : '';
+      // Duration estimate for gallery card
+      const gDur = estimateSongDuration(s);
+      const galleryDuration = gDur ? `<span class="card-duration" title="Estimated duration: ${formatDuration(gDur.seconds)} (~${gDur.bars} bars)">${formatDuration(gDur.seconds)}</span>` : '';
       html += `<div class="gallery-card${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}" role="option" aria-selected="${multiSelectMode && selectedSongIds.has(s.id) ? 'true' : 'false'}" style="animation-delay:${i * 30}ms">
         <div class="gallery-card-top">
           ${pinned}
           <span class="card-title">${highlightMatch(s.title || 'Untitled', filter)}</span>
           ${keyBadge}
           ${bpmBadge}
+          ${galleryDuration}
           ${tutorialBadge}
         </div>
         ${chordPreview}
@@ -7743,6 +7750,11 @@ function updateNotesStats(song) {
   html += `<div class="song-stat-row"><span class="song-stat-label">Created</span><span class="song-stat-value">${created}</span></div>`;
   html += `<div class="song-stat-row"><span class="song-stat-label">Modified</span><span class="song-stat-value">${updated}</span></div>`;
   html += `<div class="song-stat-row"><span class="song-stat-label">Writing time</span><span class="song-stat-value">${esc(sessionTime)}</span></div>`;
+  // Duration estimate
+  const infoDur = estimateSongDuration(song);
+  const infoDurLabel = infoDur ? formatDuration(infoDur.seconds) : '—';
+  const infoDurTitle = infoDur ? `~${infoDur.bars} bars · ${infoDur.lineCount} lyric lines · estimated from BPM` : 'Set BPM and add lyrics to estimate duration';
+  html += `<div class="song-stat-row"><span class="song-stat-label">Duration</span><span class="song-stat-value" title="${infoDurTitle}">${esc(infoDurLabel)}${infoDur ? ' (est.)' : ''}</span></div>`;
 
   statsEl.innerHTML = html;
 }
@@ -8018,6 +8030,53 @@ function countWords(song) {
   return count;
 }
 
+// ===== Song Duration Estimate =====
+// Estimates song duration based on BPM, time signature, and lyric line count.
+// Assumes each lyric line ≈ 2 bars (a common musical phrase length).
+// Returns { seconds: <number>, label: "3:45" } or null if not estimable.
+function estimateSongDuration(song) {
+  if (!song || !song.sections) return null;
+  const bpm = song.bpm;
+  if (!bpm || bpm <= 0) return null;
+
+  // Parse time signature (default 4/4)
+  let beatsPerBar = 4;
+  if (song.time_sig) {
+    const m = song.time_sig.match(/^(\d+)\//);
+    if (m) beatsPerBar = parseInt(m[1]) || 4;
+    // For compound time signatures (6/8, 12/8), treat as written
+    // For simple time (2/4, 3/4, 4/4), use as-is
+  }
+
+  // Count lyric lines (lines with actual text content)
+  let lineCount = 0;
+  song.sections.forEach(sec => {
+    (sec.lines || []).forEach(l => {
+      if ((l.text || '').trim()) lineCount++;
+    });
+  });
+  if (lineCount === 0) return null;
+
+  // Estimate: each lyric line ≈ 2 bars (one musical phrase)
+  const barsPerLine = 2;
+  const totalBars = lineCount * barsPerLine;
+
+  // Seconds per bar = (beats per bar) / (beats per minute) * 60
+  const secondsPerBar = (beatsPerBar / bpm) * 60;
+  const totalSeconds = Math.round(totalBars * secondsPerBar);
+
+  if (totalSeconds <= 0) return null;
+
+  return { seconds: totalSeconds, bars: totalBars, lineCount };
+}
+
+function formatDuration(seconds) {
+  if (!seconds || seconds <= 0) return '—';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s > 0 ? `${m}:${s.toString().padStart(2, '0')}` : `${m}:00`;
+}
+
 function getChordFrequency(song) {
   const chords = extractAllChords(song);
   const freq = {};
@@ -8235,6 +8294,11 @@ function computeStatsHTML(song) {
   html += '<div class="stats-section-list">';
   html += `<div class="stats-section-row"><span class="stats-section-type">BPM</span><span class="stats-section-detail">${song.bpm || '—'}</span></div>`;
   html += `<div class="stats-section-row"><span class="stats-section-type">Time Sig</span><span class="stats-section-detail">${song.time_sig || '—'}</span></div>`;
+  // Duration estimate
+  const dur = estimateSongDuration(song);
+  const durLabel = dur ? formatDuration(dur.seconds) : '—';
+  const durTitle = dur ? `~${dur.bars} bars · ${dur.lineCount} lines · est. from BPM` : 'Set BPM to estimate duration';
+  html += `<div class="stats-section-row"><span class="stats-section-type">Duration</span><span class="stats-section-detail" title="${durTitle}">${durLabel}${dur ? ' (est.)' : ''}</span></div>`;
   html += `<div class="stats-section-row"><span class="stats-section-type">Created</span><span class="stats-section-detail">${song.created_at ? new Date(song.created_at).toLocaleDateString() : '—'}</span></div>`;
   html += `<div class="stats-section-row"><span class="stats-section-type">Modified</span><span class="stats-section-detail">${song.updated_at ? new Date(song.updated_at).toLocaleDateString() : '—'}</span></div>`;
   html += '</div></div>';
