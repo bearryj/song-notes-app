@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-15 by OWL (feat: double-tap editor nav bar title to scroll to top)
+2026-06-15 by OWL (feat: color-coded section type labels in editor)
 
 ## Build & Test Commands
 ```bash
@@ -89,6 +89,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Typewriter scroll centering (keeps active lyric line centered while typing, debounced smooth scroll, toggle in toolbar View section, persisted to localStorage)
 - Clipboard error handling — all `navigator.clipboard.writeText()` calls now have `.catch()` handlers that show an error toast when clipboard access fails (e.g. in Tauri WebView or non-HTTPS contexts), instead of silently swallowing the error
 - Clear all chords from song (toolbar Tools section action, removes all chord markings with full undo support via undoBuffer, chord count shown in toast) (2026-06-15)
+- Color-coded section type labels in editor (each section type — Verse, Chorus, Bridge, Pre-Chorus, Intro, Outro, Tag, Coda — gets a distinct accent color as left border + subtle tinted background on section header; section type text inherits accent color; CSS custom properties with light theme variants; data-section-type attribute updated dynamically on rename) (2026-06-15)
 - [x] Comprehensive prefers-reduced-motion CSS
 - [x] Session timer pause/resume (timer pauses when app backgrounds/tabs away and resumes on return, so background time doesn't count as writing time)
 - [x] Search/filter in setlist song picker (live search by title, key, or tag when adding songs to a setlist; auto-focuses input; shows "No matching songs" empty state) (2026-06-14)
