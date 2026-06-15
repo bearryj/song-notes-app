@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-15 by OWL (feat: color-coded section type labels in editor)
+2026-06-15 by OWL (feat: add BPM sort mode to song list)
 
 ## Build & Test Commands
 ```bash
@@ -61,7 +61,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Polished bottom sheets replacing all raw browser prompt()/confirm() dialogs (input sheet + confirm sheet)
 - Visual key picker for transposition (circle-of-fifths grid, 12 keys, quick ♭/♯ buttons)
 - Duplicate song (deep copy from toolbar sheet, auto-suffixes title with " (Copy)")
-- Song list sort (4 modes: recent, A→Z, Z→A, Key — pinned always first, persisted)
+- Song list sort (5 modes: recent, A→Z, Z→A, Key, BPM — pinned always first, persisted)
 - Swipe-to-action on song list (swipe left to reveal pin ★ and delete ✕ buttons, snap animation, tap-outside-to-close)
 - Song writing session timer (tracks editing time per song, persists across sessions, displays in editor nav bar)
 - Directional view transitions (forward nav slides right→left, back nav slides left→right with nav bar parallax)

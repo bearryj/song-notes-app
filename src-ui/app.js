@@ -1675,6 +1675,7 @@ function showSortPopover(anchorEl) {
     { id: 'title-az', label: 'A → Z', icon: 'A' },
     { id: 'title-za', label: 'Z → A', icon: 'Z' },
     { id: 'key', label: 'Key', icon: '♫' },
+    { id: 'bpm', label: 'BPM', icon: '⌖' },
   ];
   popover.innerHTML = modes.map(m =>
     `<button class="sort-opt${activeSortMode === m.id ? ' active' : ''}" data-mode="${m.id}"><span class="sort-opt-icon">${m.icon}</span>${m.label}</button>`
@@ -1709,7 +1710,7 @@ function updateSortBtn() {
   const btn = $('sort-btn');
   if (!btn) return;
   btn.classList.toggle('nav-btn-active', activeSortMode !== 'recent');
-  const SORT_LABELS = { 'title-az': 'A-Z', 'title-za': 'Z-A', 'key': 'Key' };
+  const SORT_LABELS = { 'title-az': 'A-Z', 'title-za': 'Z-A', 'key': 'Key', 'bpm': 'BPM' };
   const label = SORT_LABELS[activeSortMode] || '';
   btn.textContent = label ? `↕ ${label}` : '↕';
 }
@@ -2349,7 +2350,7 @@ function renderSongList(filter = '') {
   }
 
   // Sort
-  const SORT_MODES = { recent: 'Recent', 'title-az': 'A → Z', 'title-za': 'Z → A', key: 'Key' };
+  const SORT_MODES = { recent: 'Recent', 'title-az': 'A → Z', 'title-za': 'Z → A', key: 'Key', bpm: 'BPM' };
   const sorted = [...list].sort((a, b) => {
     // Pinned always first
     if (a.pinned && !b.pinned) return -1;
@@ -2359,6 +2360,10 @@ function renderSongList(filter = '') {
     if (activeSortMode === 'key') {
       const ka = (a.key || 'ZZZ').toLowerCase(), kb = (b.key || 'ZZZ').toLowerCase();
       return ka.localeCompare(kb);
+    }
+    if (activeSortMode === 'bpm') {
+      const ba = a.bpm || 0, bb = b.bpm || 0;
+      return ba - bb;
     }
     // recent (default)
     return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
