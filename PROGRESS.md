@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-15 by OWL (feat: add BPM sort mode to song list)
+2026-06-15 by OWL (feat: add centralized haptic feedback to all interactive touchpoints)
 
 ## Build & Test Commands
 ```bash
@@ -88,8 +88,9 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Chromatic tuner (autocorrelation pitch detection from mic, guitar string selector E2-A2-D3-G3-B3-E4, cents needle meter, sharp/flat/in-tune display)
 - Typewriter scroll centering (keeps active lyric line centered while typing, debounced smooth scroll, toggle in toolbar View section, persisted to localStorage)
 - Clipboard error handling — all `navigator.clipboard.writeText()` calls now have `.catch()` handlers that show an error toast when clipboard access fails (e.g. in Tauri WebView or non-HTTPS contexts), instead of silently swallowing the error
-- Clear all chords from song (toolbar Tools section action, removes all chord markings with full undo support via undoBuffer, chord count shown in toast) (2026-06-15)
-- Color-coded section type labels in editor (each section type — Verse, Chorus, Bridge, Pre-Chorus, Intro, Outro, Tag, Coda — gets a distinct accent color as left border + subtle tinted background on section header; section type text inherits accent color; CSS custom properties with light theme variants; data-section-type attribute updated dynamically on rename) (2026-06-15)
+|- Clear all chords from song (toolbar Tools section action, removes all chord markings with full undo support via undoBuffer, chord count shown in toast) (2026-06-15)
+|- Haptic feedback centralized — haptic(ms) helper replaces all inline navigator.vibrate() calls; wired to toolbar sheet buttons, FAB, swipe-to-action (open + button taps), edge-swipe back, chord long-press delete, song long-press multi-select, editor swipe (2026-06-15)
+|- Color-coded section type labels in editor (each section type — Verse, Chorus, Bridge, Pre-Chorus, Intro, Outro, Tag, Coda — gets a distinct accent color as left border + subtle tinted background on section header; section type text inherits accent color; CSS custom properties with light theme variants; data-section-type attribute updated dynamically on rename) (2026-06-15)
 - [x] Comprehensive prefers-reduced-motion CSS
 - [x] Session timer pause/resume (timer pauses when app backgrounds/tabs away and resumes on return, so background time doesn't count as writing time)
 - [x] Search/filter in setlist song picker (live search by title, key, or tag when adding songs to a setlist; auto-focuses input; shows "No matching songs" empty state) (2026-06-14)
