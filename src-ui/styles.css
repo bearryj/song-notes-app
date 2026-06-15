@@ -2448,6 +2448,19 @@ body.ios-device .toolbar-sheet-content {
   padding: 1px 6px;
   border-radius: 4px;
 }
+
+/* ===== Search Highlight ===== */
+.search-highlight {
+  background: rgba(255, 159, 10, 0.35);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+mark.search-highlight {
+  background: rgba(255, 159, 10, 0.35);
+  color: inherit;
+}
+
 .card-tag-more {
   font-size: 10px;
   color: var(--fg-tertiary);

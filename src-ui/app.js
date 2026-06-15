@@ -29,6 +29,7 @@ let currentPlayingSongId = null;
 let displayMode = localStorage.getItem('sn_displayMode') || 'both'; // 'both' | 'lyrics' | 'chords'
 let editorFontSize = parseInt(localStorage.getItem('sn_editorFontSize')) || 17; // lyric font size in px, range 13-24
 let typewriterScroll = localStorage.getItem('sn_typewriterScroll') === 'true'; // keep active line centered while typing
+let currentSearchFilter = ''; // active search query for highlighting in virtual scroll re-renders
 
 // ===== Feature Discovery Hints =====
 // Tracks which one-time hints have been shown. Persisted to localStorage.
@@ -1199,6 +1200,17 @@ function toggleRecordingsDropdown() {
 
 // Render helpers
 function esc(text) { return (text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Highlight search query matches in text (safe HTML: escapes text first, then wraps matches in <mark>)
+function highlightMatch(text, query) {
+  if (!text || !query) return esc(text || '');
+  const escaped = esc(text);
+  const q = esc(query);
+  // Case-insensitive replace, preserving original case
+  const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+  return escaped.replace(re, '<mark class="search-highlight">$&</mark>');
+}
+
 function fmtDate(iso) {
   if (!iso) return '';
   const diff = Date.now() - new Date(iso).getTime();
@@ -1979,7 +1991,7 @@ function renderTrashList(el, filter = '') {
     const agoLabel = formatTimeAgo(deletedMs);
     html += `<div class="list-item trash-item" data-trash-id="${esc(s.id)}" style="animation-delay:${i * 30}ms">
       <div class="trash-item-info">
-        <span class="item-title">${esc(s.title || 'Untitled')}${keyBadge}</span>
+        <span class="item-title">${highlightMatch(s.title || 'Untitled', filter)}${keyBadge}</span>
         <span class="item-meta">Deleted ${agoLabel} · ${daysLeft}d left</span>
       </div>
       <div class="trash-item-actions">
@@ -2114,7 +2126,7 @@ function buildVirtualItems(sorted) {
 }
 
 // Render only the visible virtual items into the container
-function renderVirtualItems() {
+function renderVirtualItems(filter = '') {
   const el = $('song-list');
   if (!el || !virtualItems.length) return;
 
@@ -2161,7 +2173,7 @@ function renderVirtualItems() {
     if (item.type === 'header') {
       html += `<div class="list-section-header" style="position:absolute;top:${item.offset}px;left:0;right:0;height:${item.height}px">${esc(item.name)}</div>`;
     } else {
-      html += buildSongRowHTML(item.song, item.offset, item.height);
+      html += buildSongRowHTML(item.song, item.offset, item.height, filter);
     }
   }
 
@@ -2171,16 +2183,16 @@ function renderVirtualItems() {
 }
 
 // Build HTML for a single song row (extracted from renderSongList)
-function buildSongRowHTML(s, offset, height) {
+function buildSongRowHTML(s, offset, height, filter = '') {
   const pinned = s.pinned ? '<span class="item-pin">★</span>' : '';
-  const tagHtml = (s.tags && s.tags.length) ? `<span class="item-tags">${s.tags.map(t => `<span class="item-tag">${esc(t)}</span>`).join('')}</span>` : '';
+  const tagHtml = (s.tags && s.tags.length) ? `<span class="item-tags">${s.tags.map(t => `<span class="item-tag">${highlightMatch(t, filter)}</span>`).join('')}</span>` : '';
   const pinLabel = s.pinned ? '☆' : '★';
 
   let previewHtml = '';
   const firstLine = s.sections?.[0]?.lines?.[0];
   if (firstLine) {
     const lyricSnippet = firstLine.text?.trim()
-      ? esc(firstLine.text.trim().slice(0, 40))
+      ? highlightMatch(firstLine.text.trim().slice(0, 40), filter)
       : '';
     const chords = (firstLine.chords || []).slice(0, 4);
     const chordHtml = chords.length
@@ -2214,7 +2226,7 @@ function buildSongRowHTML(s, offset, height) {
       <div class="swipe-content list-item">
         <div class="list-item-main">
           ${pinned}
-          <span class="item-title">${esc(s.title || 'Untitled')}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}${bpmBadge}${tutorialBadge}</span>
+          <span class="item-title">${highlightMatch(s.title || 'Untitled', filter)}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}${bpmBadge}${tutorialBadge}</span>
           ${tagHtml}
           <span class="item-meta">${fmtDate(s.updated_at)}</span>
           ${writingTimeHtml}
@@ -2240,7 +2252,7 @@ function initVirtualScroll() {
     if (virtualScrollRAF) cancelAnimationFrame(virtualScrollRAF);
     virtualScrollRAF = requestAnimationFrame(() => {
       if (!galleryMode && virtualItems.length) {
-        renderVirtualItems();
+        renderVirtualItems(currentSearchFilter);
       }
     });
   }, { passive: true });
@@ -2343,7 +2355,7 @@ function renderSongList(filter = '') {
         }
       }
       const chordPreview = chordSet.length ? `<div class="card-chords">${chordSet.map(c => `<span class="card-chord-chip">${esc(c)}</span>`).join('')}</div>` : '';
-      const tagHtml = (s.tags && s.tags.length) ? `<div class="card-tags">${s.tags.slice(0, 3).map(t => `<span class="card-tag">${esc(t)}</span>`).join('')}${s.tags.length > 3 ? `<span class="card-tag-more">+${s.tags.length - 3}</span>` : ''}</div>` : '';
+      const tagHtml = (s.tags && s.tags.length) ? `<div class="card-tags">${s.tags.slice(0, 3).map(t => `<span class="card-tag">${highlightMatch(t, filter)}</span>`).join('')}${s.tags.length > 3 ? `<span class="card-tag-more">+${s.tags.length - 3}</span>` : ''}</div>` : '';
       const pinLabel = s.pinned ? '☆' : '★';
       // Writing time for gallery card
       const gwtH = Math.floor((s.session_ms || 0) / 3600000);
@@ -2354,7 +2366,7 @@ function renderSongList(filter = '') {
       html += `<div class="gallery-card${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}" style="animation-delay:${i * 30}ms">
         <div class="gallery-card-top">
           ${pinned}
-          <span class="card-title">${esc(s.title || 'Untitled')}</span>
+          <span class="card-title">${highlightMatch(s.title || 'Untitled', filter)}</span>
           ${keyBadge}
           ${bpmBadge}
           ${tutorialBadge}
@@ -2387,7 +2399,8 @@ function renderSongList(filter = '') {
   el.style.position = 'relative';
 
   // Render initial visible items
-  renderVirtualItems();
+  currentSearchFilter = filter;
+  renderVirtualItems(filter);
 
   // Update tag filter bar
   renderTagFilterBar();
