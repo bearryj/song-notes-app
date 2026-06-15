@@ -317,6 +317,22 @@
   padding: 1px 5px;
   border-radius: 4px;
 }
+.list-item .item-folder {
+  font-size: 11px;
+  color: var(--folder-accent, #b48450);
+  margin-left: 4px;
+  font-family: var(--font);
+  font-weight: 500;
+  background: rgba(180, 132, 80, 0.14);
+  padding: 1px 6px;
+  border-radius: 4px;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
 .list-item .tutorial-badge,
 .card-tutorial-badge,
 .gallery-card .tutorial-badge {

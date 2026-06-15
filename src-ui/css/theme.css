@@ -14,6 +14,7 @@
   --danger: #ff453a;
   --chord: #30d158;
   --section-label: #ff9f0a;
+  --folder-accent: #b48450;
 }
 [data-theme="light"] {
   --bg: #f2f2f7;
@@ -30,5 +31,6 @@
   --danger: #d32f2f;
   --chord: #2e7d32;
   --section-label: #e65100;
+  --folder-accent: #8d6238;
 }
 

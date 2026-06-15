@@ -76,6 +76,19 @@
   flex-shrink: 0;
   font-family: var(--mono);
 }
+.card-folder {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--folder-accent, #b48450);
+  background: rgba(180, 132, 80, 0.16);
+  padding: 2px 7px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .card-chords {
   display: flex;
   flex-wrap: wrap;

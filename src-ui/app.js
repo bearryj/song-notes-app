@@ -2253,6 +2253,9 @@ function buildSongRowHTML(s, offset, height, filter = '') {
   // Duration estimate badge (compact, shown when BPM is set)
   const rowDur = estimateSongDuration(s);
   const durBadge = rowDur ? `<span class="item-duration" title="Estimated duration: ${formatDuration(rowDur.seconds)} (~${rowDur.bars} bars)">${formatDuration(rowDur.seconds)}</span>` : '';
+  // Folder badge (shown in All Songs / Recently Edited views when song has a folder)
+  const showFolder = (currentFolder === 'All Songs' || currentFolder === 'Recently Edited') && s.folder;
+  const folderBadge = showFolder ? `<span class="item-folder" title="Folder: ${esc(s.folder)}">${esc(s.folder)}</span>` : '';
   const hasRec = s.audio && s.audio.length > 0;
   const isThisPlaying = currentPlayingSongId === s.id;
   const recBadge = hasRec ? `<button class="song-play-rec-btn${isThisPlaying ? ' playing' : ''}" data-id="${s.id}" aria-label="${isThisPlaying ? 'Pause' : 'Play'} recording" title="${isThisPlaying ? 'Pause' : 'Play'} latest recording (${s.audio.length})"><span class="rec-icon">${isThisPlaying ? '❚❚' : '▶'}</span><span class="rec-count">${s.audio.length}</span></button>` : '';
@@ -2275,7 +2278,7 @@ function buildSongRowHTML(s, offset, height, filter = '') {
       <div class="swipe-content list-item">
         <div class="list-item-main">
           ${pinned}
-          <span class="item-title">${highlightMatch(s.title || 'Untitled', filter)}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}${bpmBadge}${durBadge}${tutorialBadge}</span>
+          <span class="item-title">${highlightMatch(s.title || 'Untitled', filter)}${s.key ? `<span class="item-key">${esc(s.key)}</span>` : ''}${bpmBadge}${durBadge}${folderBadge}${tutorialBadge}</span>
           ${tagHtml}
           <span class="item-meta">${fmtDate(s.updated_at)}</span>
           ${writingTimeHtml}
@@ -2447,6 +2450,9 @@ function renderSongList(filter = '') {
       // Duration estimate for gallery card
       const gDur = estimateSongDuration(s);
       const galleryDuration = gDur ? `<span class="card-duration" title="Estimated duration: ${formatDuration(gDur.seconds)} (~${gDur.bars} bars)">${formatDuration(gDur.seconds)}</span>` : '';
+      // Folder badge for gallery card (shown in All Songs / Recently Edited views)
+      const gShowFolder = (currentFolder === 'All Songs' || currentFolder === 'Recently Edited') && s.folder;
+      const galleryFolder = gShowFolder ? `<span class="card-folder" title="Folder: ${esc(s.folder)}">${esc(s.folder)}</span>` : '';
       html += `<div class="gallery-card${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}" role="option" aria-selected="${multiSelectMode && selectedSongIds.has(s.id) ? 'true' : 'false'}" style="animation-delay:${i * 30}ms">
         <div class="gallery-card-top">
           ${pinned}
@@ -2454,6 +2460,7 @@ function renderSongList(filter = '') {
           ${keyBadge}
           ${bpmBadge}
           ${galleryDuration}
+          ${galleryFolder}
           ${tutorialBadge}
         </div>
         ${chordPreview}
