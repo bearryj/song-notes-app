@@ -13,6 +13,7 @@ let autoSaveTimer = null;
 let localStorageWriteTimer = null; // debounced localStorage flush for songs array
 let versionHistory = [];
 let mediaRecorder = null;
+let recordingStream = null;
 let audioChunks = [];
 let isRecording = false;
 let audioPlayer = new Audio();
@@ -1062,8 +1063,9 @@ function computeDiff(oldLines, newLines) {
 
 // Audio
 async function startRecording() {
+  if (isRecording) return; // prevent double-start
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
+    recordingStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
         noiseSuppression: true,
@@ -1082,7 +1084,7 @@ async function startRecording() {
       }
     }
     const opts = mimeType ? { mimeType } : {};
-    mediaRecorder = new MediaRecorder(stream, opts);
+    mediaRecorder = new MediaRecorder(recordingStream, opts);
     audioChunks = [];
     mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data) };
     mediaRecorder.onstop = () => {
@@ -1118,6 +1120,8 @@ async function startRecording() {
 
 function stopRecording() {
   if (mediaRecorder && isRecording) { mediaRecorder.stop(); isRecording = false; updateRecordUI(); }
+  // Release microphone tracks so the hardware indicator turns off
+  if (recordingStream) { recordingStream.getTracks().forEach(t => t.stop()); recordingStream = null; }
 }
 
 function updateRecordUI() {
