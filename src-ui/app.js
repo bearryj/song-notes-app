@@ -4307,7 +4307,10 @@ function initMobileKeyboard() {
 // Export
 function buildExportText(song) {
   let text = `${song.title}\n${'='.repeat(song.title.length)}\n\n`;
-  if (song.key) text += `Key: ${song.key}\n\n`;
+  if (song.key) text += `Key: ${song.key}\n`;
+  if (song.bpm) text += `BPM: ${song.bpm}\n`;
+  if (song.time_sig) text += `Time: ${song.time_sig}\n`;
+  if (song.key || song.bpm || song.time_sig) text += '\n';
   if (song.notes) text += `Notes:\n${song.notes}\n\n`;
   song.sections.forEach(section => {
     text += `[${section.type}]\n`;
@@ -4327,7 +4330,10 @@ function buildExportText(song) {
 
 function buildExportMarkdown(song) {
   let md = `# ${song.title}\n\n`;
-  if (song.key) md += `_Key: ${song.key}_\n\n`;
+  if (song.key) md += `_Key: ${song.key}_\n`;
+  if (song.bpm) md += `_BPM: ${song.bpm}_\n`;
+  if (song.time_sig) md += `_Time: ${song.time_sig}_\n`;
+  if (song.key || song.bpm || song.time_sig) md += '\n';
   if (song.notes) md += `> **Notes:** ${song.notes}\n\n`;
   song.sections.forEach(section => {
     md += `## ${section.type}\n\n`;
@@ -4347,6 +4353,7 @@ function buildExportChordPro(song) {
   out += `{title: ${song.title || 'Untitled'}}`;
   if (song.key) out += `\n{key: ${song.key}}`;
   if (song.bpm) out += `\n{tempo: ${song.bpm}}`;
+  if (song.time_sig) out += `\n{time: ${song.time_sig}}`;
   if (song.notes) out += `\n{comment: ${song.notes}}`;
   out += '\n';
 
