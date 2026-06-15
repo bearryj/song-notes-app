@@ -814,6 +814,34 @@ async function duplicateCurrentSong() {
   toast(`Duplicated "${song.title}"`);
 }
 
+// Clear all chords from the current song (with undo support via undoBuffer)
+function clearAllChords() {
+  const song = getSong(currentSongId);
+  if (!song) { toast('No song open'); return; }
+  // Deep-copy sections for undo
+  const savedSections = JSON.parse(JSON.stringify(song.sections));
+  let chordCount = 0;
+  song.sections.forEach(sec => {
+    sec.lines.forEach(line => { chordCount += (line.chords || []).length; line.chords = []; });
+  });
+  if (chordCount === 0) { toast('No chords to clear'); return; }
+  pushVersion();
+  saveSingleSong(song);
+  renderEditorBody(song);
+  undoBuffer = {
+    type: 'clear-chords', songId: song.id,
+    restore: () => {
+      const s = getSong(song.id);
+      if (!s) return;
+      s.sections = JSON.parse(JSON.stringify(savedSections));
+      s.updated_at = new Date().toISOString();
+      saveSingleSong(s); renderEditorBody(s);
+      toast('Chords restored', 'success');
+    }
+  };
+  showUndoToast(`Cleared ${chordCount} chord${chordCount !== 1 ? 's' : ''}`);
+}
+
 // Version History
 function pushVersion() {
   const song = getSong(currentSongId);
@@ -6941,6 +6969,9 @@ function setupEvents() {
         safeStorageSet('sn_typewriterScroll', typewriterScroll);
         btn.classList.toggle('sheet-active', typewriterScroll);
         toast(typewriterScroll ? 'Typewriter scroll on' : 'Typewriter scroll off');
+      } else if (a === 'clear-chords') {
+        if (!song) return;
+        clearAllChords();
       }
     });
   });
