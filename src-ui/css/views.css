@@ -23,6 +23,12 @@
   align-items: center;
   gap: 4px;
   padding: 0 4px;
+  cursor: default;
+}
+.editor-nav .nav-title-wrap {
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .save-dot {
   width: 8px;

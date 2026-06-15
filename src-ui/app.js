@@ -7485,6 +7485,25 @@ function setupEvents() {
       }
     }, { passive: true });
   })();
+
+  // Double-tap editor nav bar title to scroll editor to top
+  (function initNavTitleScrollTop() {
+    const navTitleWrap = document.querySelector('.editor-nav .nav-title-wrap');
+    const songBody = $('song-body');
+    if (!navTitleWrap || !songBody) return;
+    let lastTap = 0;
+    navTitleWrap.addEventListener('touchend', () => {
+      const now = Date.now();
+      if (now - lastTap < 350) {
+        songBody.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+      }
+      lastTap = now;
+    }, { passive: true });
+    // Also support double-click on desktop
+    navTitleWrap.addEventListener('dblclick', () => {
+      songBody.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  })();
 }
 
 function applyTheme(theme) {
