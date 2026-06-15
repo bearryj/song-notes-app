@@ -214,6 +214,14 @@
 .list-item:active {
   background: var(--bg-surface);
 }
+.list-item.keyboard-focus {
+  outline: 2.5px solid var(--accent) !important;
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .list-item { transition: none; }
+}
 .list-item .item-pin {
   color: var(--section-label);
   font-size: 14px;

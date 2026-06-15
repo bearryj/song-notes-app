@@ -7211,6 +7211,97 @@ function setupEvents() {
     }
   });
 
+  // ===== Listbox Keyboard Navigation =====
+  // Arrow-key + Enter/Space navigation for folder-list and song-list
+  function setupListKeyboardNav(listboxId, itemSelector) {
+    const listbox = $(listboxId);
+    if (!listbox) return;
+
+    // Make the listbox itself programmatically focusable for roving tabindex
+    if (!listbox.hasAttribute('tabindex')) listbox.setAttribute('tabindex', '0');
+
+    function getItems() {
+      return [...listbox.querySelectorAll(itemSelector)].filter(el => el.offsetParent !== null);
+    }
+
+    function getFocusedIdx(items) {
+      const focused = listbox.querySelector(`${itemSelector}.keyboard-focus`);
+      return focused ? items.indexOf(focused) : -1;
+    }
+
+    function focusItem(items, idx) {
+      // Remove previous focus
+      listbox.querySelectorAll(`${itemSelector}.keyboard-focus`).forEach(el => el.classList.remove('keyboard-focus'));
+      if (idx < 0 || idx >= items.length) return;
+      const el = items[idx];
+      el.classList.add('keyboard-focus');
+      el.scrollIntoView({ block: 'nearest' });
+    }
+
+    listbox.addEventListener('keydown', e => {
+      // Skip if user is typing in an input/textarea/contenteditable
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.target.isContentEditable) return;
+      // Skip buttons inside the listbox (they handle their own keys)
+      if (e.target.closest('button')) return;
+
+      const items = getItems();
+      if (!items.length) return;
+
+      const focusedIdx = getFocusedIdx(items);
+      let newIdx = focusedIdx;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        newIdx = (focusedIdx + 1) % items.length;
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        newIdx = focusedIdx <= 0 ? items.length - 1 : focusedIdx - 1;
+      } else if (e.key === 'Home' || e.key === 'PageUp') {
+        e.preventDefault();
+        newIdx = 0;
+      } else if (e.key === 'End' || e.key === 'PageDown') {
+        e.preventDefault();
+        newIdx = items.length - 1;
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (focusedIdx >= 0 && focusedIdx < items.length) {
+          items[focusedIdx].click();
+        } else if (items.length) {
+          items[0].click();
+        }
+        return;
+      } else if (e.key === 'Escape') {
+        // Remove keyboard focus highlight, return focus to listbox
+        listbox.querySelectorAll(`${itemSelector}.keyboard-focus`).forEach(el => el.classList.remove('keyboard-focus'));
+        return;
+      } else {
+        return; // Don't handle other keys
+      }
+
+      if (newIdx !== focusedIdx || focusedIdx === -1) {
+        focusItem(items, newIdx);
+      }
+    });
+
+    // Remove keyboard-focus when mouse clicks an item
+    listbox.addEventListener('mousedown', () => {
+      listbox.querySelectorAll(`${itemSelector}.keyboard-focus`).forEach(el => el.classList.remove('keyboard-focus'));
+    });
+    listbox.addEventListener('pointerdown', () => {
+      listbox.querySelectorAll(`${itemSelector}.keyboard-focus`).forEach(el => el.classList.remove('keyboard-focus'));
+    });
+  }
+
+  // Wire up folder list and song list
+  setupListKeyboardNav('folder-list', '.list-item');
+  // Song list items need the data-id attribute (real rendered rows, not section headers)
+  setupListKeyboardNav('song-list', '.list-item[data-id], .swipe-item[data-id]');
+  // Also cover the setlist list and gallery cards
+  setupListKeyboardNav('setlist-list', '.list-item');
+  setupListKeyboardNav('setlist-songs', '.list-item');
+
   // Mobile keyboard handling
   initMobileKeyboard();
 
