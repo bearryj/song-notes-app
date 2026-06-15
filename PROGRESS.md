@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (feat: search result highlighting in song list)
+2026-06-14 by OWL (feat: search bar clear button + enhanced no-results state)
 
 ## Build & Test Commands
 ```bash
@@ -102,6 +102,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Song count in folder title bar (shows "All Songs · 12" style count in nav bar, updates on folder switch and after song CRUD, extracted getFolderCount() helper) (2026-06-14)
 - Ctrl+L to focus song list search bar (standard productivity shortcut, selects existing text for quick replacement, only active in song list view, documented in shortcuts overlay) (2026-06-14)
 - Search result highlighting (matching text highlighted in orange within song titles, tags, and preview snippets across list, gallery, and trash views; uses safe HTML escaping with `<mark>` elements) (2026-06-14)
+- Search bar clear button (✕ button appears inside the search bar when text is present, one-tap to clear and reset the song list; "No Results" empty state now shows the actual search query) (2026-06-14)
 - [x] Section quick-navigation dropdown
 - [x] Show current section breadcrumb in editor nav bar — a subtle persistent label that updates while scrolling (e.g., "Chorus 2", "Verse 3"), giving musicians continuous context of where they are in the song. Fades in/out with smooth opacity transition, respects prefers-reduced-motion, clears on song switch and back navigation. (2026-06-14)
 - [x] Inline chord detection from bracket notation in lyrics — typing `[G]`, `[Am]`, `[F#m7]`, `[D/F#]` etc in the lyric editor auto-converts the bracket notation into a properly positioned chord marker, removes the brackets from the text, and shows a throttled toast confirmation. Uses the same regex as the import parser for consistency. (2026-06-14)

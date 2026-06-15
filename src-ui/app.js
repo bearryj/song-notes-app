@@ -2306,7 +2306,9 @@ function renderSongList(filter = '') {
     const isFilter = !!filter;
     const iconSvg = isFilter ? ICONS.search : ICONS.music;
     const title = isFilter ? 'No Results' : 'No Songs Yet';
-    const desc = isFilter ? 'Try a different search term' : 'Create your first song to get started';
+    const desc = isFilter
+      ? `No songs match "${escHtml(filter)}". Try a different search term.`
+      : 'Create your first song to get started';
     const cta = isFilter ? '' : '<button class="empty-cta" id="empty-create-btn">Create Song</button>';
     el.innerHTML = emptyStateHTML({ iconSvg, title, desc, cta });
     const ctaBtn = $('empty-create-btn');
@@ -6536,10 +6538,32 @@ function setupEvents() {
 
   // Debounced search: avoid rebuilding DOM on every keystroke
   let searchTimer = 0;
-  $('search-input').addEventListener('input', e => {
+  const searchInput = $('search-input');
+  const searchClearBtn = $('search-clear-btn');
+
+  function updateClearBtn() {
+    if (searchClearBtn) searchClearBtn.style.display = searchInput.value ? 'flex' : 'none';
+  }
+
+  searchInput.addEventListener('input', e => {
     clearTimeout(searchTimer);
+    updateClearBtn();
     searchTimer = setTimeout(() => renderSongList(e.target.value), 150);
   });
+
+  // Handle the browser's native clear (X) in search input
+  searchInput.addEventListener('search', () => {
+    updateClearBtn();
+  });
+
+  if (searchClearBtn) {
+    searchClearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      updateClearBtn();
+      renderSongList('');
+      searchInput.focus();
+    });
+  }
 
   // Sort button
   $('sort-btn').addEventListener('click', e => {
