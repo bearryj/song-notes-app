@@ -7087,6 +7087,18 @@ function setupEvents() {
       btn.setAttribute('aria-checked', 'true');
       tunerTargetNote = btn.dataset.note;
       updateTunerTargetDisplay();
+      haptic(10);
+    });
+  });
+
+  // Tuning preset buttons
+  document.querySelectorAll('.tuner-preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const presetKey = btn.dataset.preset;
+      if (presetKey && presetKey !== activeTuningPreset) {
+        applyTuningPreset(presetKey);
+        haptic(15);
+      }
     });
   });
 
@@ -8604,8 +8616,121 @@ let tunerTargetNote = 'E2';
 // Standard guitar string frequencies
 const STRING_FREQS = {
   'E2': 82.41, 'A2': 110.00, 'D3': 146.83,
-  'G3': 196.00, 'B3': 246.94, 'E4': 329.63
+  'G3': 196.00, 'B3': 246.94, 'E4': 329.63,
+  'D2': 73.42, 'G2': 98.00, 'C3': 130.81, 'F3': 174.61,
+  'A4': 440.00, 'C4': 261.63, 'E3': 164.81, 'G4': 392.00,
+  'D4': 293.66, 'F4': 349.23, 'B1': 61.74
 };
+
+// Tuning presets — each defines the string notes (low to high) and display labels
+const TUNING_PRESETS = {
+  'guitar-standard': {
+    label: 'Guitar',
+    strings: [
+      { note: 'E2', label: 'E₂' },
+      { note: 'A2', label: 'A₂' },
+      { note: 'D3', label: 'D₃' },
+      { note: 'G3', label: 'G₃' },
+      { note: 'B3', label: 'B₃' },
+      { note: 'E4', label: 'E₄' }
+    ]
+  },
+  'drop-d': {
+    label: 'Drop D',
+    strings: [
+      { note: 'D2', label: 'D₂' },
+      { note: 'A2', label: 'A₂' },
+      { note: 'D3', label: 'D₃' },
+      { note: 'G3', label: 'G₃' },
+      { note: 'B3', label: 'B₃' },
+      { note: 'E4', label: 'E₄' }
+    ]
+  },
+  'open-g': {
+    label: 'Open G',
+    strings: [
+      { note: 'D2', label: 'D₂' },
+      { note: 'G2', label: 'G₂' },
+      { note: 'D3', label: 'D₃' },
+      { note: 'G3', label: 'G₃' },
+      { note: 'B3', label: 'B₃' },
+      { note: 'D4', label: 'D₄' }
+    ]
+  },
+  'dadgad': {
+    label: 'DADGAD',
+    strings: [
+      { note: 'D2', label: 'D₂' },
+      { note: 'A2', label: 'A₂' },
+      { note: 'D3', label: 'D₃' },
+      { note: 'G3', label: 'G₃' },
+      { note: 'A4', label: 'A₄' },
+      { note: 'D4', label: 'D₄' }
+    ]
+  },
+  'ukulele': {
+    label: 'Ukulele',
+    strings: [
+      { note: 'G4', label: 'G₄' },
+      { note: 'C4', label: 'C₄' },
+      { note: 'E3', label: 'E₃' },
+      { note: 'A4', label: 'A₄' }
+    ]
+  },
+  'bass': {
+    label: 'Bass',
+    strings: [
+      { note: 'B1', label: 'B₁' },
+      { note: 'E2', label: 'E₂' },
+      { note: 'A2', label: 'A₂' },
+      { note: 'D3', label: 'D₃' }
+    ]
+  }
+};
+
+let activeTuningPreset = 'guitar-standard';
+
+function applyTuningPreset(presetKey) {
+  const preset = TUNING_PRESETS[presetKey];
+  if (!preset) return;
+  activeTuningPreset = presetKey;
+
+  // Update preset button active state
+  document.querySelectorAll('.tuner-preset-btn').forEach(btn => {
+    const isMatch = btn.dataset.preset === presetKey;
+    btn.classList.toggle('active', isMatch);
+    btn.setAttribute('aria-checked', isMatch ? 'true' : 'false');
+  });
+
+  // Rebuild string buttons
+  const container = document.querySelector('.tuner-string-buttons');
+  if (!container) return;
+  container.innerHTML = '';
+  preset.strings.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'tuner-string-btn' + (i === 0 ? ' active' : '');
+    btn.dataset.note = s.note;
+    btn.setAttribute('role', 'radio');
+    btn.setAttribute('aria-checked', i === 0 ? 'true' : 'false');
+    btn.textContent = s.label;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tuner-string-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-checked', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-checked', 'true');
+      tunerTargetNote = btn.dataset.note;
+      updateTunerTargetDisplay();
+      haptic(10);
+    });
+    container.appendChild(btn);
+  });
+
+  // Set first string as target
+  tunerTargetNote = preset.strings[0].note;
+  updateTunerTargetDisplay();
+}
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
@@ -8645,7 +8770,7 @@ function autoCorrelate(buf, sampleRate) {
   if (rms < 0.01) return -1; // too quiet
 
   // Autocorrelation
-  const minPeriod = Math.floor(effectiveSR / 500); // max freq 500Hz (covers guitar low E)
+  const minPeriod = Math.floor(effectiveSR / 500); // max freq 500Hz (covers guitar low E + harmonics)
   const maxPeriod = Math.floor(effectiveSR / 50);  // min freq 50Hz
 
   let bestCorr = -1;

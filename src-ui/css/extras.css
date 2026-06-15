@@ -442,6 +442,37 @@
 }
 .tuner-mark-zero { color: var(--fg-secondary); opacity: 0.6; }
 
+/* Tuner preset buttons */
+.tuner-presets {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin: 6px 0 2px;
+  flex-wrap: wrap;
+}
+.tuner-preset-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg-tertiary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.tuner-preset-btn:hover {
+  border-color: var(--fg-tertiary);
+  color: var(--fg-secondary);
+}
+.tuner-preset-btn.active {
+  background: var(--fg-tertiary);
+  border-color: var(--fg-tertiary);
+  color: var(--bg-primary);
+}
+
 /* String buttons */
 .tuner-string-buttons {
   display: flex;
@@ -750,6 +781,11 @@
 [data-theme="light"] .tuner-string-btn.active.near-match {
   background: #2e7d32;
   border-color: #2e7d32;
+}
+[data-theme="light"] .tuner-preset-btn.active {
+  background: var(--fg-primary);
+  border-color: var(--fg-primary);
+  color: var(--bg-primary);
 }
 [data-theme="light"] .onboarding-track {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);

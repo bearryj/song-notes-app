@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-15 by OWL (feat: auto-detect BPM and time signature from plain text imports)
+2026-06-15 by OWL (feat: instrument tuning presets for tuner — 6 presets: Guitar, Drop D, Open G, DADGAD, Ukulele, Bass)
 
 ## Build & Test Commands
 ```bash
@@ -92,6 +92,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 |- Haptic feedback centralized — haptic(ms) helper replaces all inline navigator.vibrate() calls; wired to toolbar sheet buttons, FAB, swipe-to-action (open + button taps), edge-swipe back, chord long-press delete, song long-press multi-select, editor swipe (2026-06-15)
 |- Color-coded section type labels in editor (each section type — Verse, Chorus, Bridge, Pre-Chorus, Intro, Outro, Tag, Coda — gets a distinct accent color as left border + subtle tinted background on section header; section type text inherits accent color; CSS custom properties with light theme variants; data-section-type attribute updated dynamically on rename) (2026-06-15)
 - Auto-detect BPM and time signature from plain text imports (parses "BPM: 120", "Tempo: 120", "120 bpm", "♩=120" for tempo; "Time: 4/4", "Time Sig: 3/4", "meter: 6/8", "4/4 time" for time signature; validates BPM 20–400 and standard denominators 2/4/8/16; reports detected metadata in import toast) (2026-06-15)
+- Instrument tuning presets for tuner (6 presets: Guitar Standard, Drop D, Open G, DADGAD, Ukulele GCEA, 4-String Bass; preset selector row above string buttons; switches string notes/frequencies/target; rebuilt string buttons per preset with haptic feedback; light theme support; ARIA roles) (2026-06-15)
 - [x] Comprehensive prefers-reduced-motion CSS
 - [x] Session timer pause/resume (timer pauses when app backgrounds/tabs away and resumes on return, so background time doesn't count as writing time)
 - [x] Search/filter in setlist song picker (live search by title, key, or tag when adding songs to a setlist; auto-focuses input; shows "No matching songs" empty state) (2026-06-14)
