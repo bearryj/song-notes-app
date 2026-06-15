@@ -123,3 +123,34 @@ html, body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* ===== Reduced Motion — Global Overrides ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .view, .view.sliding-out-left, .view.sliding-out-right {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+/* Attribute-based fallback for JS-set data-reduced-motion */
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] *::before,
+[data-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+[data-reduced-motion="true"] .view,
+[data-reduced-motion="true"] .view.sliding-out-left,
+[data-reduced-motion="true"] .view.sliding-out-right {
+  transition: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
