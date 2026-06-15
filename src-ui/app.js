@@ -1599,7 +1599,7 @@ function renderFolders() {
     const count = getFolderCount(f);
     const cls = f === currentFolder ? 'list-item active' : 'list-item';
     const icon = f === 'All Songs' ? '♫' : f === 'Recently Edited' ? '↻' : f === 'Recently Deleted' ? '✕' : '♪';
-    return `<div class="${cls}" data-folder="${esc(f)}"><span class="item-icon">${icon}</span><span class="item-title">${esc(f === 'Recently Edited' ? 'Recently Edited' : f)}</span><span class="item-meta">${count}</span>${!smartFolders.includes(f) ? '<span class="folder-dots">⋯</span>' : ''}</div>`;
+    return `<div class="${cls}" data-folder="${esc(f)}" role="option" aria-selected="${f === currentFolder ? 'true' : 'false'}"><span class="item-icon">${icon}</span><span class="item-title">${esc(f === 'Recently Edited' ? 'Recently Edited' : f)}</span><span class="item-meta">${count}</span>${!smartFolders.includes(f) ? '<span class="folder-dots">⋯</span>' : ''}</div>`;
   }).join('');
   el.querySelectorAll('.list-item[data-folder]').forEach(item => {
     item.addEventListener('click', e => {
@@ -2255,7 +2255,7 @@ function buildSongRowHTML(s, offset, height, filter = '') {
     ? `<span class="item-writing-time" title="Writing time">${wtH > 0 ? wtH + 'h ' + wtM + 'm' : wtM + 'm'}</span>`
     : '';
 
-  return `<div class="swipe-item${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}" style="position:absolute;top:${offset}px;left:0;right:0;height:${height}px">
+  return `<div class="swipe-item${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}" role="option" aria-selected="${multiSelectMode && selectedSongIds.has(s.id) ? 'true' : 'false'}" style="position:absolute;top:${offset}px;left:0;right:0;height:${height}px">
       <div class="swipe-bg">
         <button class="swipe-pin-btn" data-action="pin" aria-label="${s.pinned ? 'Unpin' : 'Pin'} song">${pinLabel}</button>
         <button class="swipe-duplicate-btn" data-action="duplicate" aria-label="Duplicate song">⧉</button>
@@ -2407,7 +2407,7 @@ function renderSongList(filter = '') {
       const galleryWritingTime = (s.session_ms || 0) > 0
         ? `<span class="card-writing-time" title="Writing time">${gwtH > 0 ? gwtH + 'h ' + gwtM + 'm' : gwtM + 'm'}</span>`
         : '';
-      html += `<div class="gallery-card${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}" style="animation-delay:${i * 30}ms">
+      html += `<div class="gallery-card${multiSelectMode && selectedSongIds.has(s.id) ? ' selected' : ''}" data-id="${s.id}" role="option" aria-selected="${multiSelectMode && selectedSongIds.has(s.id) ? 'true' : 'false'}" style="animation-delay:${i * 30}ms">
         <div class="gallery-card-top">
           ${pinned}
           <span class="card-title">${highlightMatch(s.title || 'Untitled', filter)}</span>
