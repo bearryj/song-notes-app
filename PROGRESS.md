@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-15 by OWL (feat: include BPM and time signature in text, markdown, and ChordPro exports — plain text and markdown exports now include BPM and time signature metadata alongside key; ChordPro export adds {time: ...} directive)
+2026-06-15 by OWL (feat: song duration estimate — estimate song length from BPM, time sig, and lyric line count; display in stats panel, Song Info panel, list view badges, and gallery cards)
 
 ## Build & Test Commands
 ```bash
@@ -95,6 +95,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Instrument tuning presets for tuner (6 presets: Guitar Standard, Drop D, Open G, DADGAD, Ukulele GCEA, 4-String Bass; preset selector row above string buttons; switches string notes/frequencies/target; rebuilt string buttons per preset with haptic feedback; light theme support; ARIA roles) (2026-06-15)
 - Share and Edit Tags in song context menu (long-press) — added ↗ Share and # Tags buttons to the song context menu, providing feature parity with the toolbar sheet and swipe-to-action bar; sets currentSongId from contextSongId before invoking showShareSheet() / showTagEditorPanel() (2026-06-15)
 - BPM and time signature in exports — plain text and markdown exports now include `BPM: 120` and `Time: 4/4` metadata lines alongside the existing `Key:` line; ChordPro export adds `{time: 4/4}` directive (2026-06-15)
+- Song duration estimate — estimates song length from BPM, time signature, and lyric line count (assumes ~2 bars per line); displayed in stats panel Details section, Song Info panel, as compact badge in list view rows and gallery cards; tooltip shows bar count and estimation basis (2026-06-15)
 - [x] Comprehensive prefers-reduced-motion CSS
 - [x] Session timer pause/resume (timer pauses when app backgrounds/tabs away and resumes on return, so background time doesn't count as writing time)
 - [x] Search/filter in setlist song picker (live search by title, key, or tag when adding songs to a setlist; auto-focuses input; shows "No matching songs" empty state) (2026-06-14)
