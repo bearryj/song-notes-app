@@ -1786,6 +1786,8 @@ function showSongContext(songId, anchorEl) {
     menu.innerHTML = `
       <button data-action="pin">★ Pin</button>
       <button data-action="duplicate">⧉ Duplicate</button>
+      <button data-action="share">↗ Share</button>
+      <button data-action="edit-tags"># Tags</button>
       <button data-action="move-folder">◎ Move to Folder</button>
       <button data-action="export-txt">Export Text</button>
       <button data-action="export-md">Export MD</button>
@@ -1815,6 +1817,12 @@ function showSongContext(songId, anchorEl) {
           await saveSongs();
           renderSongList($('search-input').value);
           toast('Duplicated');
+        } else if (btn.dataset.action === 'share') {
+          currentSongId = contextSongId;
+          showShareSheet();
+        } else if (btn.dataset.action === 'edit-tags') {
+          currentSongId = contextSongId;
+          showTagEditorPanel();
         } else if (btn.dataset.action === 'move-folder') {
           showMoveToFolderSheet(s);
         } else if (btn.dataset.action === 'export-txt') {
