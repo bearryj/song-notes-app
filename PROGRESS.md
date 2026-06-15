@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (fix: release microphone stream tracks after recording stops)
+2026-06-14 by OWL (fix: add catch handlers to all navigator.clipboard.writeText calls)
 
 ## Build & Test Commands
 ```bash
@@ -87,6 +87,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Strumming pattern notation (per-section text pattern editor, e.g. "D-DU-UDU"; toggle button in section header; included in export, print, and share codes)
 - Chromatic tuner (autocorrelation pitch detection from mic, guitar string selector E2-A2-D3-G3-B3-E4, cents needle meter, sharp/flat/in-tune display)
 - Typewriter scroll centering (keeps active lyric line centered while typing, debounced smooth scroll, toggle in toolbar View section, persisted to localStorage)
+- Clipboard error handling — all `navigator.clipboard.writeText()` calls now have `.catch()` handlers that show an error toast when clipboard access fails (e.g. in Tauri WebView or non-HTTPS contexts), instead of silently swallowing the error
 - [x] Comprehensive prefers-reduced-motion CSS — global override in base.css that disables all animations/transitions for users with motion sensitivity. Covers 25+ animations across all components. Both `@media (prefers-reduced-motion: reduce)` and `[data-reduced-motion="true"]` attribute selectors for maximum browser coverage. (2026-06-14)
 - [x] Session timer pause/resume (timer pauses when app backgrounds/tabs away and resumes on return, so background time doesn't count as writing time)
 - [x] Search/filter in setlist song picker (live search by title, key, or tag when adding songs to a setlist; auto-focuses input; shows "No matching songs" empty state) (2026-06-14)
