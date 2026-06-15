@@ -4483,6 +4483,8 @@ function showShareSheet() {
     navigator.clipboard.writeText(code).then(() => {
       toast('Share code copied');
       sheet.style.display = 'none';
+    }).catch(() => {
+      toast('Unable to copy — select and copy manually', 'error');
     });
   };
 
@@ -4491,12 +4493,14 @@ function showShareSheet() {
     navigator.clipboard.writeText(code).then(() => {
       toast('Share code copied to clipboard');
       sheet.style.display = 'none';
+    }).catch(() => {
+      toast('Unable to copy to clipboard', 'error');
     });
   };
 
   // Copy code button in the code area
   $('share-copy-code-btn').onclick = () => {
-    navigator.clipboard.writeText(code).then(() => toast('Copied'));
+    navigator.clipboard.writeText(code).then(() => toast('Copied')).catch(() => toast('Unable to copy', 'error'));
   };
 
   // QR Code (simple: show the code in a large monospace display for scanning apps)
@@ -6878,7 +6882,7 @@ function setupEvents() {
       } else if (a === 'export-md') {
         if (!song) return; downloadFile(buildExportMarkdown(song), `${song.title || 'song'}.md`, 'text/markdown'); toast('Exported');
       } else if (a === 'export-clip') {
-        if (!song) return; navigator.clipboard.writeText(buildExportText(song)).then(() => toast('Copied'));
+        if (!song) return; navigator.clipboard.writeText(buildExportText(song)).then(() => toast('Copied')).catch(() => toast('Unable to copy to clipboard', 'error'));
       } else if (a === 'history') {
         const panel = $('history-panel');
         if (panel) panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
