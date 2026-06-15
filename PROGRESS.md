@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (feat: search bar clear button + enhanced no-results state)
+2026-06-14 by OWL (feat: respect prefers-color-scheme on first launch)
 
 ## Build & Test Commands
 ```bash
@@ -109,6 +109,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] BPM indicator in song list and gallery cards — compact orange-tinted badge shows BPM next to the key badge in both list rows and gallery cards, so musicians can quickly identify songs by tempo without opening the editor. Uses `--section-label` accent with subtle background, mono font, and matches existing badge patterns. (2026-06-14)
 - [x] BPM accent color in editor nav bar — added missing `.b` class rule so the BPM value in the editor key/BPM badge renders in `--section-label` orange instead of inheriting the default foreground color, matching the visual consistency of `.k` (key, blue accent) and `.c` (capo, green chord). (2026-06-14)
 - [x] Comprehensive light theme
+- [x] Respect prefers-color-scheme on first launch — currently defaults to dark even on systems set to light mode (2026-06-14)
 
 ## TODOs — Refinement & Bug Fixes
 

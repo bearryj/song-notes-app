@@ -7715,9 +7715,11 @@ async function init() {
     return;
   }
 
-  // Restore theme
-  const savedTheme = localStorage.getItem('sn_app_theme') || 'dark';
-  applyTheme(savedTheme);
+  // Restore theme — respect system preference on first launch
+  const savedTheme = localStorage.getItem('sn_app_theme');
+  const systemPrefersLight = window.matchMedia?.('(prefers-color-scheme: light)').matches;
+  const theme = savedTheme || (systemPrefersLight ? 'light' : 'dark');
+  applyTheme(theme);
 
   try { const s = JSON.parse(localStorage.getItem('folders_app')); if (s?.length) folders = s; } catch {}
   if (isTauri) { const bf = await tauriLoadFolders(); if (bf?.length) folders = bf; }
