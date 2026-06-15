@@ -7186,6 +7186,20 @@ function setupEvents() {
         toggleFindBar();
       }
     }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+      // Ctrl+L focuses the song list search bar (when in song list view)
+      e.preventDefault();
+      const tag = document.activeElement?.tagName;
+      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+        if (viewStack[viewStack.length - 1] === 'song-list-view') {
+          const searchInput = $('search-input');
+          if (searchInput) {
+            searchInput.focus();
+            searchInput.select();
+          }
+        }
+      }
+    }
     if (e.key === 'Escape' && $('find-bar').style.display !== 'none') {
       hideFindBar();
     }

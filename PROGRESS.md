@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (feat: listbox keyboard navigation for folders, songs, and setlists)
+2026-06-14 by OWL (feat: Ctrl+L to focus song list search bar)
 
 ## Build & Test Commands
 ```bash
@@ -100,6 +100,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Listbox keyboard navigation — added arrow-key (↑↓), Enter/Space, Home/End, and Escape handling for all listbox containers (folder list, song list, setlist list, setlist songs). Includes `.keyboard-focus` accent outline ring, scroll-into-view, mouse/touch auto-clear of focus ring, and input/contenteditable guard. Documented in shortcuts overlay under new "Lists" group. (2026-06-14)
 - Save status timestamp in editor nav bar (shows "Saved"/"Editing…"/"Saving…" with relative time, auto-hides after 6s, updates every 15s) (2026-06-14)
 - Song count in folder title bar (shows "All Songs · 12" style count in nav bar, updates on folder switch and after song CRUD, extracted getFolderCount() helper) (2026-06-14)
+- Ctrl+L to focus song list search bar (standard productivity shortcut, selects existing text for quick replacement, only active in song list view, documented in shortcuts overlay) (2026-06-14)
 - [x] Section quick-navigation dropdown
 - [x] Show current section breadcrumb in editor nav bar — a subtle persistent label that updates while scrolling (e.g., "Chorus 2", "Verse 3"), giving musicians continuous context of where they are in the song. Fades in/out with smooth opacity transition, respects prefers-reduced-motion, clears on song switch and back navigation. (2026-06-14)
 - [x] Inline chord detection from bracket notation in lyrics — typing `[G]`, `[Am]`, `[F#m7]`, `[D/F#]` etc in the lyric editor auto-converts the bracket notation into a properly positioned chord marker, removes the brackets from the text, and shows a throttled toast confirmation. Uses the same regex as the import parser for consistency. (2026-06-14)
