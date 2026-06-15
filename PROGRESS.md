@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (fix: add catch handlers to all navigator.clipboard.writeText calls)
+2026-06-15 by OWL (feat: add Clear Chords toolbar action with undo support)
 
 ## Build & Test Commands
 ```bash
@@ -88,7 +88,8 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Chromatic tuner (autocorrelation pitch detection from mic, guitar string selector E2-A2-D3-G3-B3-E4, cents needle meter, sharp/flat/in-tune display)
 - Typewriter scroll centering (keeps active lyric line centered while typing, debounced smooth scroll, toggle in toolbar View section, persisted to localStorage)
 - Clipboard error handling — all `navigator.clipboard.writeText()` calls now have `.catch()` handlers that show an error toast when clipboard access fails (e.g. in Tauri WebView or non-HTTPS contexts), instead of silently swallowing the error
-- [x] Comprehensive prefers-reduced-motion CSS — global override in base.css that disables all animations/transitions for users with motion sensitivity. Covers 25+ animations across all components. Both `@media (prefers-reduced-motion: reduce)` and `[data-reduced-motion="true"]` attribute selectors for maximum browser coverage. (2026-06-14)
+- Clear all chords from song (toolbar Tools section action, removes all chord markings with full undo support via undoBuffer, chord count shown in toast) (2026-06-15)
+- [x] Comprehensive prefers-reduced-motion CSS
 - [x] Session timer pause/resume (timer pauses when app backgrounds/tabs away and resumes on return, so background time doesn't count as writing time)
 - [x] Search/filter in setlist song picker (live search by title, key, or tag when adding songs to a setlist; auto-focuses input; shows "No matching songs" empty state) (2026-06-14)
 - [x] Feature discovery hint system CSS — showFeatureHint() was called from 3 places (gallery toggle, multi-select bar, swipe actions) but had zero CSS styles, rendering hints invisible. Added complete styles: positioned tooltip bubble with ::before arrows for all 4 directions, dismiss button, entrance animation, tap-outside-to-dismiss, auto-dismiss after 4s, and prefers-reduced-motion support. (2026-06-14)
