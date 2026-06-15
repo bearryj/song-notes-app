@@ -32,6 +32,11 @@ let editorFontSize = parseInt(localStorage.getItem('sn_editorFontSize')) || 17; 
 let typewriterScroll = localStorage.getItem('sn_typewriterScroll') === 'true'; // keep active line centered while typing
 let currentSearchFilter = ''; // active search query for highlighting in virtual scroll re-renders
 
+// ===== Haptic Feedback =====
+function haptic(ms = 15) {
+  if (navigator.vibrate) navigator.vibrate(ms);
+}
+
 // ===== Feature Discovery Hints =====
 // Tracks which one-time hints have been shown. Persisted to localStorage.
 let featureHints = {};
@@ -3199,7 +3204,7 @@ function renderLine(container, song, si, li, line) {
         longPressChord = ch;
         longPressTimer = setTimeout(() => {
           marker.classList.add('chord-marker-deleting');
-          navigator.vibrate?.(50);
+          haptic(50);
           showConfirmSheet({
             title: 'Delete Chord',
             body: `Delete chord "${ch.name}"?`,
@@ -5908,7 +5913,7 @@ function showSongPrintPreview() {
       st.longPressTimer = null;
       const songId = item.dataset.id;
       if (songId) {
-        if (navigator.vibrate) navigator.vibrate(30);
+        haptic(30);
         enterMultiSelectMode(songId);
         // Show long-press hint on first multi-select
         if (!featureHints['longpress-multiselect']) {
@@ -5975,6 +5980,7 @@ function showSongPrintPreview() {
             content.style.transform = `translateX(${-MAX_OPEN}px)`;
             st.isOpen = true;
             item.classList.add('swiped');
+            haptic(15);
             // Show swipe-to-action hint on first swipe
             if (!featureHints['swipe-actions']) {
               markHintShown('swipe-actions');
@@ -6011,6 +6017,7 @@ function showSongPrintPreview() {
       const action = actionBtn.dataset.action;
       const s = getSong(songId);
       if (!s) return;
+      haptic(15);
       if (action === 'pin') {
         s.pinned = !s.pinned;
         await saveSingleSong(s);
@@ -6507,7 +6514,7 @@ function setupEvents() {
 
       if (Math.abs(dx) >= MIN_SWIPE_X && dy <= MAX_SWIPE_Y) {
         // Haptic feedback
-        navigator.vibrate?.(15);
+        haptic(15);
         // Animate out with a full slide before switching
         if (editorView) {
           editorView.style.transition = 'transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease';
@@ -6891,6 +6898,7 @@ function setupEvents() {
   document.querySelectorAll('.toolbar-sheet-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       hideToolbarSheet();
+      haptic(15);
       const a = btn.dataset.action;
       const song = getSong(currentSongId);
 
@@ -7105,6 +7113,7 @@ function setupEvents() {
 
   // FAB to show toolbar
   $('toolbar-fab')?.addEventListener('click', () => {
+    haptic(15);
     const toolbar = $('mobile-toolbar');
     if (toolbar) {
       toolbar.classList.remove('collapsed');
@@ -7491,8 +7500,7 @@ function setupEvents() {
       const dy = t.clientY - startY;
       if (dx >= SWIPE_MIN_DIST && Math.abs(dy) < Math.abs(dx) * 0.8) {
         popView();
-        // Haptic feedback if available
-        navigator.vibrate?.(15);
+        haptic(15);
       }
     }, { passive: true });
   })();
