@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-14 by OWL (feat: respect prefers-color-scheme on first launch)
+2026-06-14 by OWL (fix: release microphone stream tracks after recording stops)
 
 ## Build & Test Commands
 ```bash
@@ -119,9 +119,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [x] Chord diagram panel: swipe left/right on the fretboard area to cycle through all unique chords in the current song (2026-06-14)
 
 ### Bugs / Reliability
-
-### Bugs / Reliability
-- (none currently known — all previous bugs resolved)
+- [x] Microphone stream cleanup after recording — `getUserMedia()` stream tracks were never stopped, leaving the mic hardware indicator on indefinitely after recording. Added `recordingStream` module-level variable, store reference during `startRecording()`, and call `getTracks().forEach(t => t.stop())` in `stopRecording()`. Also added a double-start guard to prevent a second stream from being opened. (2026-06-14)
 
 ### Code Hygiene
 - [x] Remove debug console.log statements — 13 debug logs removed from recording/playback code (mediaRecorder, test player, playRecording, toggleRecordingsDropdown, sync queue). Kept error handlers that also show toast notifications. (2026-06-13)
