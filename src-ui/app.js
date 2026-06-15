@@ -2353,12 +2353,38 @@ function renderSongList(filter = '') {
 
   if (!list.length) {
     const isFilter = !!filter;
-    const iconSvg = isFilter ? ICONS.search : ICONS.music;
-    const title = isFilter ? 'No Results' : 'No Songs Yet';
-    const desc = isFilter
-      ? `No songs match "${escHtml(filter)}". Try a different search term.`
-      : 'Create your first song to get started';
-    const cta = isFilter ? '' : '<button class="empty-cta" id="empty-create-btn">Create Song</button>';
+    const isTagFilter = !!activeTagFilter;
+    const isFolder = currentFolder !== 'All Songs' && currentFolder !== 'Recently Edited' && currentFolder !== 'Recently Deleted';
+    const iconSvg = (isFilter || isTagFilter) ? ICONS.search : ICONS.music;
+
+    // Build contextual title and description based on what's filtering the list
+    let title, desc;
+    if (isFilter && isTagFilter) {
+      title = 'No Results';
+      desc = `No songs tagged "${escHtml(activeTagFilter)}" match "${escHtml(filter)}".`;
+    } else if (isFilter && isFolder) {
+      title = 'No Results';
+      desc = `No songs in "${escHtml(currentFolder)}" match "${escHtml(filter)}".`;
+    } else if (isTagFilter && isFolder) {
+      title = 'No Results';
+      desc = `No songs in "${escHtml(currentFolder)}" tagged "${escHtml(activeTagFilter)}".`;
+    } else if (isFilter) {
+      title = 'No Results';
+      desc = `No songs match "${escHtml(filter)}". Try a different search term.`;
+    } else if (isTagFilter) {
+      title = 'No Results';
+      desc = `No songs tagged "${escHtml(activeTagFilter)}".`;
+    } else if (isFolder) {
+      title = 'Empty Folder';
+      desc = `No songs in "${escHtml(currentFolder)}" yet. Create or move a song here.`;
+    } else {
+      title = 'No Songs Yet';
+      desc = 'Create your first song to get started';
+    }
+
+    // Show CTA only when there are no filters active (pure empty state)
+    const showCta = !isFilter && !isTagFilter;
+    const cta = showCta ? '<button class="empty-cta" id="empty-create-btn">Create Song</button>' : '';
     el.innerHTML = emptyStateHTML({ iconSvg, title, desc, cta });
     const ctaBtn = $('empty-create-btn');
     if (ctaBtn) ctaBtn.addEventListener('click', () => { if (typeof showNewSongSheet === 'function') showNewSongSheet(); });
