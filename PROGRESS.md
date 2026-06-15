@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-15 by OWL (feat: add Clear Chords toolbar action with undo support)
+2026-06-15 by OWL (feat: double-tap editor nav bar title to scroll to top)
 
 ## Build & Test Commands
 ```bash
@@ -135,6 +135,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - [ ] iOS build (requires macOS + Xcode) — blocked on hardware
 - [ ] Android: test on a real device — touch gestures, audio recording, localStorage limits
 - [ ] Android: build and test APK on real device — the symlink workaround may not hold on all devices
+- [x] Double-tap editor nav bar title to scroll to top — mobile double-tap + desktop double-click on `.editor-nav .nav-title-wrap` scrolls `song-body` to top, respects `prefers-reduced-motion` (2026-06-15)
 - [x] Keyboard shortcuts for desktop — Ctrl+S (save), Ctrl+Z (undo), Ctrl+F (find), Ctrl+P (print), arrow keys for song navigation. (2026-06-13)
 - [x] Desktop Tauri build — the app is mobile-only in tauri.conf.json; enable desktop targets for Windows/Mac/Linux distribution (2026-06-13 — added window config: 1000×700 default, 380×500 min, resizable, with title "Song Notes")
 
