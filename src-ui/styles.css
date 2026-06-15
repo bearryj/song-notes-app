@@ -14,6 +14,15 @@
   --danger: #ff453a;
   --chord: #30d158;
   --section-label: #ff9f0a;
+  /* Section type accent colors */
+  --section-color-verse: #0a84ff;
+  --section-color-chorus: #ff9f0a;
+  --section-color-bridge: #bf5af2;
+  --section-color-pre-chorus: #30d158;
+  --section-color-intro: #64d2ff;
+  --section-color-outro: #64d2ff;
+  --section-color-tag: #ff453a;
+  --section-color-coda: #ff453a;
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro', 'Helvetica Neue', Arial, sans-serif;
   --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
   --radius: 10px;
@@ -1175,6 +1184,68 @@ body.multi-select-mode #song-list {
 }
 .section-controls button:active { background: var(--bg-tertiary); color: var(--fg); }
 .delete-section { color: var(--danger) !important; }
+
+/* ===== Section Type Color Coding ===== */
+/* Left border accent + subtle tinted background per section type */
+.song-section[data-section-type="verse"] .section-header {
+  border-left: 3px solid var(--section-color-verse);
+  padding-left: 8px;
+  background: color-mix(in srgb, var(--section-color-verse) 8%, transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.song-section[data-section-type="chorus"] .section-header {
+  border-left: 3px solid var(--section-color-chorus);
+  padding-left: 8px;
+  background: color-mix(in srgb, var(--section-color-chorus) 8%, transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.song-section[data-section-type="bridge"] .section-header {
+  border-left: 3px solid var(--section-color-bridge);
+  padding-left: 8px;
+  background: color-mix(in srgb, var(--section-color-bridge) 8%, transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.song-section[data-section-type="pre-chorus"] .section-header {
+  border-left: 3px solid var(--section-color-pre-chorus);
+  padding-left: 8px;
+  background: color-mix(in srgb, var(--section-color-pre-chorus) 8%, transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.song-section[data-section-type="intro"] .section-header {
+  border-left: 3px solid var(--section-color-intro);
+  padding-left: 8px;
+  background: color-mix(in srgb, var(--section-color-intro) 8%, transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.song-section[data-section-type="outro"] .section-header {
+  border-left: 3px solid var(--section-color-outro);
+  padding-left: 8px;
+  background: color-mix(in srgb, var(--section-color-outro) 8%, transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.song-section[data-section-type="tag"] .section-header {
+  border-left: 3px solid var(--section-color-tag);
+  padding-left: 8px;
+  background: color-mix(in srgb, var(--section-color-tag) 8%, transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.song-section[data-section-type="coda"] .section-header {
+  border-left: 3px solid var(--section-color-coda);
+  padding-left: 8px;
+  background: color-mix(in srgb, var(--section-color-coda) 8%, transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+/* Section type input inherits the accent color */
+.song-section[data-section-type="verse"] .section-type-input { color: var(--section-color-verse); }
+.song-section[data-section-type="chorus"] .section-type-input { color: var(--section-color-chorus); }
+.song-section[data-section-type="bridge"] .section-type-input { color: var(--section-color-bridge); }
+.song-section[data-section-type="pre-chorus"] .section-type-input { color: var(--section-color-pre-chorus); }
+.song-section[data-section-type="intro"] .section-type-input { color: var(--section-color-intro); }
+.song-section[data-section-type="outro"] .section-type-input { color: var(--section-color-outro); }
+.song-section[data-section-type="tag"] .section-type-input { color: var(--section-color-tag); }
+.song-section[data-section-type="coda"] .section-type-input { color: var(--section-color-coda); }
+/* Focus underline matches accent */
+.song-section .section-type-input:focus { border-bottom-color: currentColor; }
 
 /* ===== Chord Line (two rows: chord markers + lyric text) ===== */
 .chord-line {
@@ -2524,6 +2595,14 @@ mark.search-highlight {
   --fg: #000000;
   --fg-secondary: #636366;
   --fg-tertiary: #aeaeb2;
+  --section-color-verse: #0070e0;
+  --section-color-chorus: #d97e00;
+  --section-color-bridge: #8b3dbf;
+  --section-color-pre-chorus: #1a9e3c;
+  --section-color-intro: #0088b3;
+  --section-color-outro: #0088b3;
+  --section-color-tag: #d32f2f;
+  --section-color-coda: #d32f2f;
 }
 
 /* ===== Light Theme — Hardcoded Color Overrides ===== */

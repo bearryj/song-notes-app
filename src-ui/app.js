@@ -2702,6 +2702,9 @@ function buildSectionElement(song, si, section) {
     const tmpl = $('section-template').content.cloneNode(true);
     const sectionEl = tmpl.querySelector('.song-section');
     sectionEl.dataset.sectionIdx = si;
+    // Normalize section type for color coding (strip numbers/suffixes, lowercase)
+    const typeKey = (section.type || 'Verse').replace(/\s+\d+$/, '').toLowerCase().replace(/[^a-z]/g, '-');
+    sectionEl.dataset.sectionType = typeKey;
     const typeInput = tmpl.querySelector('.section-type-input');
     if (typeInput) {
       typeInput.value = section.type || 'Verse';
@@ -2738,6 +2741,9 @@ function buildSectionElement(song, si, section) {
         const val = typeInput.value;
         song.sections[si].type = val;
         autoCapitalize(val);
+        // Update color coding data attribute
+        const typeKey = val.replace(/\s+\d+$/, '').toLowerCase().replace(/[^a-z]/g, '-');
+        sectionEl.dataset.sectionType = typeKey;
         if (song.sections[si].type !== prev) triggerAutoSave(song);
       });
       typeInput.addEventListener('change', () => {
