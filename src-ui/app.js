@@ -699,6 +699,39 @@ function enableDragToDismiss(sheet, { contentSelector = null, backdropSelector =
   content.addEventListener('touchend', onTouchEnd, { passive: true });
 }
 
+// Auto-number duplicate section types when adding via the section picker.
+// e.g. adding "Verse" when one exists → "Verse 2"; if "Verse 2" also exists → "Verse 3".
+// Types without a trailing number are treated as the base (e.g. "Verse" is base for "Verse 2").
+function autoNumberSectionType(song, baseType) {
+  // Collect all existing section types that match the base (sans number) or are the base itself
+  const baseLower = baseType.trim().toLowerCase();
+  const numbered = [];
+  let baseExists = false;
+  for (const sec of song.sections) {
+    const t = (sec.type || '').trim();
+    const tLower = t.toLowerCase();
+    if (tLower === baseLower) {
+      baseExists = true;
+    } else if (tLower.startsWith(baseLower + ' ')) {
+      const suffix = t.substring(baseType.length).trim();
+      const num = parseInt(suffix, 10);
+      if (!isNaN(num) && num > 0) {
+        numbered.push(num);
+      }
+    }
+  }
+  // If the base type doesn't already exist, use it as-is (first instance)
+  if (!baseExists) return baseType;
+  // Find the smallest unused number starting from 2
+  numbered.sort((a, b) => a - b);
+  let next = 2;
+  for (const n of numbered) {
+    if (n > next) break;
+    if (n === next) next++;
+  }
+  return baseType + ' ' + next;
+}
+
 function showSectionPicker(e) {
   e.stopPropagation();
   const picker = $('section-picker');
@@ -732,7 +765,9 @@ function showSectionPicker(e) {
       const song = getSong(currentSongId);
       if (!song) { close(); return; }
       pushVersion();
-      song.sections.push({ type, strumming: null, lines: [{ text: '', chords: [] }] });
+      // Auto-number duplicate section types (e.g. second "Verse" → "Verse 2")
+      const finalType = autoNumberSectionType(song, type);
+      song.sections.push({ type: finalType, strumming: null, lines: [{ text: '', chords: [] }] });
       saveSingleSong(song);
       renderEditorBody(song);
       const body = $('song-body');
