@@ -1,0 +1,20 @@
+{
+  "name": "Song Notes",
+  "short_name": "Song Notes",
+  "description": "Mobile songwriting app — Apple Notes inspired, built for musicians.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["music", "productivity"],
+  "lang": "en"
+}
