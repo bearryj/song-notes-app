@@ -32,6 +32,19 @@ let editorFontSize = parseInt(localStorage.getItem('sn_editorFontSize')) || 17; 
 let typewriterScroll = localStorage.getItem('sn_typewriterScroll') === 'true'; // keep active line centered while typing
 let currentSearchFilter = ''; // active search query for highlighting in virtual scroll re-renders
 
+// ===== Section Collapse State =====
+// Persisted to localStorage as sn_collapsed_{songId} = JSON array of collapsed section indices
+function getCollapsedSections(songId) {
+  try {
+    const raw = localStorage.getItem('sn_collapsed_' + songId);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw));
+  } catch { return new Set(); }
+}
+function saveCollapsedSections(songId, collapsedSet) {
+  safeStorageSet('sn_collapsed_' + songId, JSON.stringify([...collapsedSet]));
+}
+
 // ===== Haptic Feedback =====
 function haptic(ms = 15) {
   if (navigator.vibrate) navigator.vibrate(ms);
@@ -2864,6 +2877,16 @@ function buildSectionElement(song, si, section) {
       const deletedSection = song.sections[si];
       const deletedIndex = si;
       song.sections.splice(si, 1);
+      // Update collapse state: remove deleted index, shift higher indices down
+      const collapsed = getCollapsedSections(song.id);
+      const newCollapsed = new Set();
+      collapsed.forEach(idx => {
+        if (idx < deletedIndex) newCollapsed.add(idx);
+        else if (idx > deletedIndex) newCollapsed.add(idx - 1);
+        // idx === deletedIndex is removed
+      });
+      if (newCollapsed.size === 0) localStorage.removeItem('sn_collapsed_' + song.id);
+      else saveCollapsedSections(song.id, newCollapsed);
       saveSingleSong(song); renderEditorBody(song);
       undoBuffer = {
         type: 'section', songId: song.id,
@@ -2881,18 +2904,91 @@ function buildSectionElement(song, si, section) {
     tmpl.querySelector('.move-up').addEventListener('click', () => {
       if (si <= 0) return;
       [song.sections[si-1], song.sections[si]] = [song.sections[si], song.sections[si-1]];
+      // Swap collapse state for the two sections
+      const collapsed = getCollapsedSections(song.id);
+      const a = collapsed.has(si), b = collapsed.has(si - 1);
+      if (a) collapsed.add(si - 1); else collapsed.delete(si - 1);
+      if (b) collapsed.add(si); else collapsed.delete(si);
+      if (collapsed.size === 0) localStorage.removeItem('sn_collapsed_' + song.id);
+      else saveCollapsedSections(song.id, collapsed);
       saveSingleSong(song); renderEditorBody(song);
     });
     tmpl.querySelector('.move-down').addEventListener('click', () => {
       if (si >= song.sections.length - 1) return;
       [song.sections[si], song.sections[si+1]] = [song.sections[si+1], song.sections[si]];
+      // Swap collapse state for the two sections
+      const collapsed = getCollapsedSections(song.id);
+      const a = collapsed.has(si), b = collapsed.has(si + 1);
+      if (a) collapsed.add(si + 1); else collapsed.delete(si + 1);
+      if (b) collapsed.add(si); else collapsed.delete(si);
+      if (collapsed.size === 0) localStorage.removeItem('sn_collapsed_' + song.id);
+      else saveCollapsedSections(song.id, collapsed);
       saveSingleSong(song); renderEditorBody(song);
     });
     tmpl.querySelector('.duplicate-section').addEventListener('click', () => {
       const copy = JSON.parse(JSON.stringify(song.sections[si]));
       song.sections.splice(si + 1, 0, copy);
+      // Update collapse state: shift indices >= si+1 up by 1
+      const collapsed = getCollapsedSections(song.id);
+      const newCollapsed = new Set();
+      collapsed.forEach(idx => {
+        if (idx <= si) newCollapsed.add(idx);
+        else newCollapsed.add(idx + 1);
+      });
+      // The duplicated section inherits the original's collapse state
+      if (collapsed.has(si)) newCollapsed.add(si + 1);
+      if (newCollapsed.size === 0) localStorage.removeItem('sn_collapsed_' + song.id);
+      else saveCollapsedSections(song.id, newCollapsed);
       saveSingleSong(song); renderEditorBody(song);
     });
+
+    // Collapse/expand section
+    const collapseBtn = tmpl.querySelector('.collapse-section');
+    if (collapseBtn) {
+      const syncCollapseState = () => {
+        const collapsed = getCollapsedSections(song.id);
+        // Remove any existing badge
+        const existingBadge = sectionEl.querySelector('.section-collapse-badge');
+        if (existingBadge) existingBadge.remove();
+        if (collapsed.has(si)) {
+          sectionEl.classList.add('collapsed');
+          collapseBtn.textContent = '▸';
+          collapseBtn.title = 'Expand section';
+          collapseBtn.setAttribute('aria-label', 'Expand section');
+          // Add line count badge
+          const lineCount = section.lines ? section.lines.length : 0;
+          const badge = document.createElement('span');
+          badge.className = 'section-collapse-badge';
+          badge.textContent = `${lineCount} line${lineCount !== 1 ? 's' : ''}`;
+          badge.setAttribute('aria-label', `${lineCount} lines`);
+          typeInput.parentNode.insertBefore(badge, typeInput.nextSibling);
+        } else {
+          sectionEl.classList.remove('collapsed');
+          collapseBtn.textContent = '▾';
+          collapseBtn.title = 'Collapse section';
+          collapseBtn.setAttribute('aria-label', 'Collapse section');
+        }
+      };
+      // Apply initial state
+      syncCollapseState();
+      collapseBtn.addEventListener('click', () => {
+        const collapsed = getCollapsedSections(song.id);
+        if (collapsed.has(si)) {
+          collapsed.delete(si);
+        } else {
+          collapsed.add(si);
+        }
+        saveCollapsedSections(song.id, collapsed);
+        syncCollapseState();
+        haptic(10);
+      });
+      // Also toggle collapse on section header double-click
+      sectionEl.querySelector('.section-header').addEventListener('dblclick', (e) => {
+        // Don't toggle if clicking on inputs or buttons
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+        collapseBtn.click();
+      });
+    }
 
     // Strumming pattern toggle + input
     const strummingDiv = tmpl.querySelector('.section-strumming');
@@ -6877,13 +6973,16 @@ function setupEvents() {
       sectionNavList.innerHTML = '<div class="section-nav-empty">No sections</div>';
     } else {
       sectionNavList.innerHTML = '';
+      const collapsed = currentSongId ? getCollapsedSections(currentSongId) : new Set();
       sections.forEach((sec, idx) => {
         const item = document.createElement('div');
         item.className = 'section-nav-item';
+        if (collapsed.has(idx)) item.classList.add('section-nav-collapsed');
         item.dataset.sectionIdx = idx;
         item.setAttribute('role', 'menuitem');
         item.setAttribute('tabindex', '0');
-        item.innerHTML = `<span class="section-nav-idx">${idx + 1}</span><span class="section-nav-name">${esc(sec.type || 'Section')}</span>`;
+        const collapsedIcon = collapsed.has(idx) ? '<span class="section-nav-collapsed-icon">▸</span>' : '';
+        item.innerHTML = `<span class="section-nav-idx">${idx + 1}</span>${collapsedIcon}<span class="section-nav-name">${esc(sec.type || 'Section')}</span>`;
         // Scroll to section on click/tap
         item.addEventListener('click', () => {
           scrollToSection(idx);

@@ -1042,6 +1042,15 @@ body.multi-select-mode #song-list {
   color: var(--fg-tertiary);
   font-size: 13px;
 }
+.section-nav-collapsed {
+  opacity: 0.55;
+}
+.section-nav-collapsed-icon {
+  font-size: 10px;
+  color: var(--fg-quaternary);
+  margin-right: -4px;
+  flex-shrink: 0;
+}
 @media (prefers-reduced-motion: reduce) {
   .section-nav-dropdown {
     animation: none;

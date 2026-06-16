@@ -149,6 +149,41 @@
 .delete-section { color: var(--danger) !important; }
 .section-controls .toggle-strumming.active { color: var(--accent); }
 
+/* ===== Section Collapse ===== */
+.song-section.collapsed .section-editor,
+.song-section.collapsed .section-strumming {
+  display: none;
+}
+.song-section.collapsed .section-header {
+  margin-bottom: 0;
+}
+.song-section.collapsed {
+  margin-bottom: 12px;
+}
+.section-controls .collapse-section {
+  font-size: 13px;
+  transition: transform 0.15s ease;
+}
+.song-section.collapsed .collapse-section {
+  transform: rotate(-90deg);
+}
+.section-collapse-badge {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--fg-quaternary);
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 1px 6px;
+  margin-left: 4px;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .section-controls .collapse-section {
+    transition: none;
+  }
+}
+
 /* ===== Strumming Pattern ===== */
 .section-strumming {
   display: flex;
