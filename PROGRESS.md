@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-15 by OWL (feat: collapsible sections in editor with persistence)
+2026-06-15 by OWL (feat: bulk tag operations in multi-select mode)
 
 ## Build & Test Commands
 ```bash
@@ -102,6 +102,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Auto-number duplicate section types in section picker — tapping "Verse" when a "Verse" section already exists automatically creates "Verse 2"; if "Verse 2" also exists, creates "Verse 3", etc. Uses smallest available gap-filling number. Handles types with existing numeric suffixes, case-insensitive matching, and falls back to the base type unchanged on first use. (2026-06-15)
 - Time signature in editor nav badge + Song Info panel — the editor nav bar key/BPM badge now shows time signature (e.g. "G · 120 · 4/4 · capo 2") with a muted gray `.t` class. Song Info panel stats include a "Time" row between BPM and Capo. Both update dynamically on transposition or metadata changes. (2026-06-15)
 - Collapsible sections in editor — each section header now has a ▾ collapse toggle button. Collapsed sections hide the editor content and strumming pattern, showing only the section type label with a line count badge (e.g. "4 lines"). State is persisted per-song to localStorage. Double-clicking the section header also toggles collapse. Section navigation dropdown shows ▸ icon and reduced opacity for collapsed sections. Collapse state is correctly maintained when sections are moved, duplicated, or deleted. (2026-06-15)
+|- Bulk tag operations in multi-select mode — new # button in the multi-select bar opens a bottom sheet showing all existing tags as tappable chips. Tags on all selected songs show ✓ (all), tags on some show • (partial), tags on none show + (tap to add). Create new tags via the input field. Toggling a tag that is on all selected songs removes it from all; tapping a tag on none (or some) adds it to all. State refreshes live, and the song list and tag filter bar update immediately. (2026-06-15)
 - [x] Comprehensive prefers-reduced-motion CSS
 - [x] Session timer pause/resume (timer pauses when app backgrounds/tabs away and resumes on return, so background time doesn't count as writing time)
 - [x] Search/filter in setlist song picker (live search by title, key, or tag when adding songs to a setlist; auto-focuses input; shows "No matching songs" empty state) (2026-06-14)
