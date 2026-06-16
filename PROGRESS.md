@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-15 by OWL (feat: auto-number duplicate section types in section picker)
+2026-06-15 by OWL (feat: show time signature in editor nav badge and Song Info panel)
 
 ## Build & Test Commands
 ```bash
@@ -100,6 +100,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Folder badge in song list — when browsing All Songs or Recently Edited, a subtle warm-toned folder badge appears on each song row and gallery card showing which folder the song belongs to. Hidden when inside a specific folder view since it would be redundant. Truncated with ellipsis for long folder names. Styled with --folder-accent CSS variable (brown tones) distinct from key (green), BPM (orange), and duration (gray) badges. (2026-06-15)
 - Import progress feedback + per-file error reporting — multi-file imports now show a progress toast (e.g. "Importing 2/5…"). Previously, the empty `catch (err) {}` silently swallowed all import failures. Failed files are now counted and reported in the summary toast (e.g. "Imported 3 songs (1 duplicate skipped, 2 failed)"), with `console.error` for debugging and error/success toast styling. (2026-06-15)
 - Auto-number duplicate section types in section picker — tapping "Verse" when a "Verse" section already exists automatically creates "Verse 2"; if "Verse 2" also exists, creates "Verse 3", etc. Uses smallest available gap-filling number. Handles types with existing numeric suffixes, case-insensitive matching, and falls back to the base type unchanged on first use. (2026-06-15)
+- Time signature in editor nav badge + Song Info panel — the editor nav bar key/BPM badge now shows time signature (e.g. "G · 120 · 4/4 · capo 2") with a muted gray `.t` class. Song Info panel stats include a "Time" row between BPM and Capo. Both update dynamically on transposition or metadata changes. (2026-06-15)
 - [x] Comprehensive prefers-reduced-motion CSS
 - [x] Session timer pause/resume (timer pauses when app backgrounds/tabs away and resumes on return, so background time doesn't count as writing time)
 - [x] Search/filter in setlist song picker (live search by title, key, or tag when adding songs to a setlist; auto-focuses input; shows "No matching songs" empty state) (2026-06-14)
