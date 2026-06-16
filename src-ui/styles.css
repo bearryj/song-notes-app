@@ -204,6 +204,10 @@ html, body {
   color: var(--chord);
   font-weight: 500;
 }
+.editor-key-bpm .t {
+  color: var(--fg-secondary);
+  font-weight: 500;
+}
 .current-section-label {
   display: block;
   font-size: 11px;

@@ -2677,17 +2677,20 @@ function updateEditorKeyBpm(song) {
   const key = song.key || '';
   const bpm = song.bpm || '';
   const capo = song.capo || 0;
-  if (!key && !bpm && !capo) { badge.style.display = 'none'; return; }
+  const timeSig = song.time_sig || '';
+  if (!key && !bpm && !capo && !timeSig) { badge.style.display = 'none'; return; }
   const parts = [];
   if (key) parts.push(`<span class="k">${esc(key)}</span>`);
   if (bpm) parts.push(`<span class="b">${esc(String(bpm))}</span>`);
   if (capo) parts.push(`<span class="c">capo ${capo}</span>`);
+  if (timeSig) parts.push(`<span class="t">${esc(timeSig)}</span>`);
   badge.innerHTML = parts.join(`<span class="s">·</span>`);
   badge.style.display = '';
   const labels = [];
   if (key) labels.push('Key: ' + key);
   if (bpm) labels.push('BPM: ' + bpm);
   if (capo) labels.push('Capo: ' + capo);
+  if (timeSig) labels.push('Time: ' + timeSig);
   badge.setAttribute('aria-label', labels.join(', '));
 }
 
@@ -7822,6 +7825,7 @@ function updateNotesStats(song) {
   let html = '';
   html += `<div class="song-stat-row"><span class="song-stat-label">Key</span><span class="song-stat-value">${esc(key)}</span></div>`;
   html += `<div class="song-stat-row"><span class="song-stat-label">BPM</span><span class="song-stat-value">${esc(bpm)}</span></div>`;
+  html += `<div class="song-stat-row"><span class="song-stat-label">Time</span><span class="song-stat-value">${song.time_sig || '—'}</span></div>`;
   html += `<div class="song-stat-row"><span class="song-stat-label">Capo</span><span class="song-stat-value">${esc(capo)}</span></div>`;
   html += `<div class="song-stat-row"><span class="song-stat-label">Sections</span><span class="song-stat-value">${sectionCount}</span></div>`;
   html += `<div class="song-stat-row"><span class="song-stat-label">Lines</span><span class="song-stat-value">${lineCount} · ${wordCount} words</span></div>`;
