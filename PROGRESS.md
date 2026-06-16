@@ -1,7 +1,7 @@
 # Song Notes App — Progress Tracker
 
 ## Last Updated
-2026-06-15 by OWL (feat: folder badge in song list — shows folder name on each song row/card in All Songs and Recently Edited views)
+2026-06-15 by OWL (feat: import progress feedback + per-file error reporting — multi-file imports show progress toast, failed files counted and reported, error/success toast styling)
 
 ## Build & Test Commands
 ```bash
@@ -98,6 +98,7 @@ powershell.exe -Command "Get-NetTCPConnection -LocalPort 1422 -ErrorAction Silen
 - Song duration estimate — estimates song length from BPM, time signature, and lyric line count (assumes ~2 bars per line); displayed in stats panel Details section, Song Info panel, as compact badge in list view rows and gallery cards; tooltip shows bar count and estimation basis (2026-06-15)
 - Contextual empty states in song list — empty state now shows specific messages for each scenario: tag-only filter ("No songs tagged X"), folder-only ("Empty Folder — no songs in X yet"), search-only, search+tag, search+folder, tag+folder, and the default "No Songs Yet" CTA. Previously all filter scenarios showed the same generic message that only mentioned the search query. (2026-06-15)
 - Folder badge in song list — when browsing All Songs or Recently Edited, a subtle warm-toned folder badge appears on each song row and gallery card showing which folder the song belongs to. Hidden when inside a specific folder view since it would be redundant. Truncated with ellipsis for long folder names. Styled with --folder-accent CSS variable (brown tones) distinct from key (green), BPM (orange), and duration (gray) badges. (2026-06-15)
+- Import progress feedback + per-file error reporting — multi-file imports now show a progress toast (e.g. "Importing 2/5…"). Previously, the empty `catch (err) {}` silently swallowed all import failures. Failed files are now counted and reported in the summary toast (e.g. "Imported 3 songs (1 duplicate skipped, 2 failed)"), with `console.error` for debugging and error/success toast styling. (2026-06-15)
 - [x] Comprehensive prefers-reduced-motion CSS
 - [x] Session timer pause/resume (timer pauses when app backgrounds/tabs away and resumes on return, so background time doesn't count as writing time)
 - [x] Search/filter in setlist song picker (live search by title, key, or tag when adding songs to a setlist; auto-focuses input; shows "No matching songs" empty state) (2026-06-14)
