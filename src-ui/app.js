@@ -6417,6 +6417,7 @@ function renderMultiSelectBar() {
       <button class="ms-bar-btn" data-ms-action="duplicate" aria-label="Duplicate selected">⧉</button>
       <button class="ms-bar-btn" data-ms-action="folder" aria-label="Move to folder">◎</button>
       <button class="ms-bar-btn" data-ms-action="setlist" aria-label="Add to setlist">≡</button>
+      <button class="ms-bar-btn" data-ms-action="tag" aria-label="Tag selected">#</button>
       <button class="ms-bar-btn ms-bar-danger" data-ms-action="delete" aria-label="Delete selected">✕</button>
     </div>`;
   document.body.appendChild(bar);
@@ -6506,6 +6507,8 @@ async function handleBulkAction(action) {
     showBulkMoveToFolderSheet(ids);
   } else if (action === 'setlist') {
     showBulkAddToSetlistSheet(ids);
+  } else if (action === 'tag') {
+    showBulkTagSheet(ids);
   }
 }
 
@@ -6633,6 +6636,169 @@ function showBulkAddToSetlistSheet(songIds) {
     });
   }
 }
+
+// ===== Bulk Tag =====
+function showBulkTagSheet(songIds) {
+  const sheet = document.createElement('div');
+  sheet.className = 'confirm-sheet';
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-label', 'Tag selected songs');
+
+  const selectedSongs = songIds.map(id => getSong(id)).filter(Boolean);
+  const allTags = getAllTags();
+  const commonTags = getCommonTags(selectedSongs);
+
+  sheet.innerHTML = buildBulkTagHTML(songIds.length, allTags, commonTags);
+
+  document.body.appendChild(sheet);
+  const close = () => sheet.remove();
+  sheet.querySelector('.confirm-sheet-backdrop').onclick = close;
+  sheet.querySelector('.confirm-sheet-cancel').onclick = close;
+  enableDragToDismiss(sheet, { contentSelector: '.confirm-sheet-content', backdropSelector: '.confirm-sheet-backdrop', onDismiss: close });
+
+  attachBulkTagListeners(sheet, songIds, selectedSongs, close);
+}
+
+function getCommonTags(selectedSongs) {
+  if (!selectedSongs.length) return [];
+  return selectedSongs.reduce((common, s) => {
+    const st = new Set(s.tags || []);
+    return common.filter(t => st.has(t));
+  }, [...(selectedSongs[0].tags || [])]);
+}
+
+function buildBulkTagHTML(count, allTags, commonTags) {
+  const esc = t => (t || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  let chipsHtml = '';
+  allTags.forEach(tag => {
+    const state = commonTags.includes(tag) ? 'all' : 'none';
+    const icon = state === 'all' ? '\u2713' : '+';
+    chipsHtml += '<button class="bulk-tag-chip bulk-tag-' + state + '" data-tag="' + esc(tag) + '" data-state="' + state + '"><small>' + icon + '</small> ' + tag + '</button>';
+  });
+  if (!allTags.length) chipsHtml = '<div class="bulk-tag-empty">No tags yet \u2014 create one above</div>';
+
+  return '<div class="confirm-sheet-backdrop"></div>'
+    + '<div class="confirm-sheet-content" style="max-height:70vh;display:flex;flex-direction:column;">'
+    + '<div class="confirm-sheet-handle"></div>'
+    + '<div class="confirm-sheet-title">Tag ' + count + ' Song' + (count !== 1 ? 's' : '') + '</div>'
+    + '<div class="bulk-tag-search-wrap">'
+    + '<input type="text" class="bulk-tag-input" id="bulk-tag-input" placeholder="Add new tag\u2026" autocomplete="off">'
+    + '<button class="bulk-tag-add-btn" id="bulk-tag-add-btn" aria-label="Add tag">+ Add</button>'
+    + '</div>'
+    + '<div class="bulk-tag-chips" id="bulk-tag-chips">' + chipsHtml + '</div>'
+    + '<div class="confirm-sheet-actions" style="margin-top:auto;">'
+    + '<button class="confirm-sheet-cancel">Done</button></div>'
+    + '</div>';
+}
+
+function attachBulkTagListeners(sheet, songIds, _selectedSongs, _onClose) {
+  const doToggle = async (chip) => {
+    const tag = chip.dataset.tag;
+    const state = chip.dataset.state;
+    const ids = songIds;
+    const selSongs = ids.map(id => getSong(id)).filter(Boolean);
+    if (state === 'all') {
+      for (const s of selSongs) {
+        s.tags = (s.tags || []).filter(t => t !== tag);
+      }
+    } else {
+      for (const s of selSongs) {
+        if (!s.tags) s.tags = [];
+        if (!s.tags.includes(tag)) s.tags.push(tag);
+        s.tags.sort((a, b) => a.localeCompare(b));
+      }
+    }
+    await saveSongs();
+    haptic(15);
+    rebuildBulkTagSheet(sheet, ids);
+    renderTagFilterBar();
+    renderSongList($('search-input')?.value || '');
+  };
+
+  sheet.querySelectorAll('.bulk-tag-chip').forEach(chip => {
+    chip.addEventListener('click', () => doToggle(chip));
+  });
+
+  const input = $('bulk-tag-input');
+  const addBtn = $('bulk-tag-add-btn');
+
+  const doAdd = async () => {
+    const val = input.value.trim();
+    if (!val) return;
+    haptic(15);
+    const selSongs = songIds.map(id => getSong(id)).filter(Boolean);
+    for (const s of selSongs) {
+      if (!s.tags) s.tags = [];
+      if (!s.tags.includes(val)) s.tags.push(val);
+      s.tags.sort((a, b) => a.localeCompare(b));
+    }
+    await saveSongs();
+    input.value = '';
+    rebuildBulkTagSheet(sheet, songIds);
+    renderTagFilterBar();
+    renderSongList($('search-input')?.value || '');
+  };
+
+  if (addBtn) addBtn.addEventListener('click', doAdd);
+  if (input) {
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
+    input.focus();
+  }
+}
+
+function rebuildBulkTagSheet(sheet, songIds) {
+  const selectedSongs = songIds.map(id => getSong(id)).filter(Boolean);
+  const allTags = getAllTags();
+  const commonTags = getCommonTags(selectedSongs);
+  const esc = t => (t || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+
+  const partialTags = allTags.filter(t =>
+    selectedSongs.some(s => (s.tags || []).includes(t)) && !commonTags.includes(t)
+  );
+
+  const chipsContainer = sheet.querySelector('#bulk-tag-chips');
+  if (!chipsContainer) return;
+
+  let html = '';
+  allTags.forEach(tag => {
+    const hasAll = commonTags.includes(tag);
+    const hasSome = partialTags.includes(tag);
+    const state = hasAll ? 'all' : hasSome ? 'some' : 'none';
+    const icon = hasAll ? '\u2713' : hasSome ? '\u2022' : '+';
+    html += '<button class="bulk-tag-chip bulk-tag-' + state + '" data-tag="' + esc(tag) + '" data-state="' + state + '"><small>' + icon + '</small> ' + tag + '</button>';
+  });
+  if (!allTags.length) html = '<div class="bulk-tag-empty">No tags yet</div>';
+  chipsContainer.innerHTML = html;
+
+  // Re-attach toggle listeners
+  chipsContainer.querySelectorAll('.bulk-tag-chip').forEach(chip => {
+    chip.addEventListener('click', async () => {
+      const tag = chip.dataset.tag;
+      const state = chip.dataset.state;
+      const selSongs = songIds.map(id => getSong(id)).filter(Boolean);
+      if (state === 'all') {
+        for (const s of selSongs) {
+          s.tags = (s.tags || []).filter(t => t !== tag);
+        }
+      } else {
+        for (const s of selSongs) {
+          if (!s.tags) s.tags = [];
+          if (!s.tags.includes(tag)) s.tags.push(tag);
+          s.tags.sort((a, b) => a.localeCompare(b));
+        }
+      }
+      await saveSongs();
+      haptic(15);
+      rebuildBulkTagSheet(sheet, songIds);
+      renderTagFilterBar();
+      renderSongList($('search-input')?.value || '');
+    });
+  });
+
+  const title = sheet.querySelector('.confirm-sheet-title');
+  if (title) title.textContent = 'Tag ' + songIds.length + ' Song' + (songIds.length !== 1 ? 's' : '');
+}
+
 
 function setupEvents() {
   $('back-to-folders').addEventListener('click', popView);
