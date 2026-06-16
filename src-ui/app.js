@@ -4977,8 +4977,13 @@ function importFiles(fileList) {
   })();
   if (!files) return;
   (async () => {
-    let n = 0, dups = 0, lastImported = null;
+    let n = 0, dups = 0, fails = 0, lastImported = null;
+    const total = files.length;
+    // Show progress toast for multi-file imports
+    if (total > 1) toast(`Importing 1/${total}…`, 'info');
+    let idx = 0;
     for (const file of files) {
+      idx++;
       try {
         const content = await file.text();
         const name = file.name.replace(/\.[^.]+$/, '');
@@ -4986,11 +4991,21 @@ function importFiles(fileList) {
         if (isDuplicateTitle(imported.title)) { dups++; continue; }
         songs.unshift(imported); n++;
         lastImported = imported;
-      } catch (err) {}
+      } catch (err) {
+        fails++;
+        console.error('Import failed for', file.name, err);
+      }
+      // Update progress toast for multi-file imports
+      if (total > 1 && idx < total) {
+        toast(`Importing ${idx + 1}/${total}…`, 'info');
+      }
     }
     await saveSongs(); renderSongList();
     let msg = `Imported ${n} song${n !== 1 ? 's' : ''}`;
-    if (dups) msg += ` (${dups} duplicate${dups !== 1 ? 's' : ''} skipped)`;
+    const parts = [];
+    if (dups) parts.push(`${dups} duplicate${dups !== 1 ? 's' : ''} skipped`);
+    if (fails) parts.push(`${dups ? '' : ''}${fails} failed`);
+    if (parts.length) msg += ` (${parts.join(', ')})`;
     // Report detected metadata from the last imported file
     if (lastImported) {
       const meta = [];
@@ -4999,7 +5014,7 @@ function importFiles(fileList) {
       if (lastImported.time_sig) meta.push(`time ${lastImported.time_sig}`);
       if (meta.length) msg += ` · ${meta.join(', ')}`;
     }
-    toast(msg);
+    toast(msg, fails ? 'error' : 'success');
   })();
 }
 
